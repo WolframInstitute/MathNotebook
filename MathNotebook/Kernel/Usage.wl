@@ -1,0 +1,15 @@
+Package["WolframInstitute`MathNotebook`"]
+
+CopyCellReference::usage = "CopyCellReference[] copies a live, clickable reference to the selected cell to the clipboard."
+TagSelectedCell::usage = "TagSelectedCell[] assigns a cell tag to the selected cell, for use as a citation anchor."
+GoBack::usage = "GoBack[] moves the selection back to the cell from which the last hyperlink was clicked."
+InsertEnvironment::usage = "InsertEnvironment[style] inserts a new cell of the given environment style at the current position."
+InsertCitation::usage = "InsertCitation[] inserts a citation link to a tagged reference cell."
+ConvertLaTeXCells::usage = "ConvertLaTeXCells[] converts LaTeX math fragments in the input notebook into native typeset math.\nConvertLaTeXCells[notebook] converts the given notebook."
+ConvertMathCells::usage = "ConvertMathCells[] converts native typeset math in the input notebook into LaTeX fragments.\nConvertMathCells[notebook] converts the given notebook."
+ConvertToMaTeX::usage = "ConvertToMaTeX[] renders display math cells in the input notebook with MaTeX.\nConvertToMaTeX[notebook] converts the given notebook."
+ConvertFromMaTeX::usage = "ConvertFromMaTeX[] converts MaTeX-rendered cells back to native typeset math.\nConvertFromMaTeX[notebook] converts the given notebook."
+InstallMaTeX::usage = "InstallMaTeX[] installs and configures the MaTeX paclet."
+InstallLaTeXFonts::usage = "InstallLaTeXFonts[] installs Latin Modern and TeX Gyre OpenType fonts from the local TeX Live distribution."
+OpenTutorial::usage = "OpenTutorial[] opens a copy of the MathNotebook tutorial notebook."
+$LastHyperlinkCell::usage = "$LastHyperlinkCell is the cell from which the last hyperlink was clicked."

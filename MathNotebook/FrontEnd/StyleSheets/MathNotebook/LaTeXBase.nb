@@ -1,0 +1,470 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Wolfram 15.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       154,          7]
+NotebookDataLength[     21206,        461]
+NotebookOptionsPosition[     12974,        360]
+NotebookOutlinePosition[     13311,        374]
+CellTagsIndexPosition[     13268,        371]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[StyleData[StyleDefinitions -> "Default.nb"],ExpressionUUID->"83d7a3e1-a2fc-44b3-b127-40c097cb58fc"],
+
+Cell[StyleData["Notebook"],
+ LightDark->"Light",
+ PrintingOptions->{"PaperSize"->{595.28, 841.89},
+ "PrintingMargins"->{{72, 72}, {72, 72}}},
+ CreateCellID->True,
+ DefaultNewCellStyle->"Text",
+ Background->GrayLevel[
+  1],ExpressionUUID->"cb77eb47-39e3-46a0-8eb0-432b516b0b9c"],
+
+Cell[StyleData["Title"],
+ CellMargins->{{80, 80}, {12, 40}},
+ TextAlignment->Center,
+ FontSize->26,
+ FontWeight->"Bold",
+ FontColor->GrayLevel[
+  0],ExpressionUUID->"4e75cd1e-657f-4699-817e-7f26d0f42458"],
+
+Cell[StyleData["Title", "Printout"],
+ FontSize->17,ExpressionUUID->"a3693555-9e6e-488e-976a-00d497c87baf"],
+
+Cell[StyleData["Author", StyleDefinitions -> StyleData["Text"]],
+ CellMargins->{{80, 80}, {4, 12}},
+ TextAlignment->Center,
+ ParagraphIndent->0,
+ MenuSortingValue->1250,
+ FontSize->14,
+ FontVariations->{
+ "CapsType"->
+  "SmallCaps"},ExpressionUUID->"7691093b-67da-48c5-add3-e0785179ba21"],
+
+Cell[StyleData["Author", "Printout"],
+ FontSize->11,ExpressionUUID->"86c2cd38-1c4b-40d5-8c03-1661219f0b57"],
+
+Cell[StyleData["Date", StyleDefinitions -> StyleData["Text"]],
+ CellMargins->{{80, 80}, {4, 8}},
+ TextAlignment->Center,
+ ParagraphIndent->0,
+ MenuSortingValue->1260,
+ FontSize->12,
+ FontSlant->"Italic",ExpressionUUID->"6bbd4201-0e29-4ee3-a7ac-f26285cd5472"],
+
+Cell[StyleData["Date", "Printout"],
+ FontSize->9,ExpressionUUID->"866e3377-d20f-43f7-bae1-f7f0eb33d79d"],
+
+Cell[StyleData["Abstract", StyleDefinitions -> StyleData["Text"]],
+ CellDingbat->Cell[
+   TextData["Abstract. "], FontWeight -> "Bold", FontSlant -> "Plain"],
+ CellMargins->{{130, 110}, {8, 24}},
+ ParagraphIndent->0,
+ MenuSortingValue->1270,
+ FontSize->12,ExpressionUUID->"96027074-ef23-43f2-9f35-4315d88666b6"],
+
+Cell[StyleData["Abstract", "Printout"],
+ FontSize->9,ExpressionUUID->"4761ec14-73af-4aef-90be-f0c31f75fd05"],
+
+Cell[StyleData["Section"],
+ CellFrame->False,
+ CellDingbat->Cell[
+   TextData[{
+     CounterBox["Section"], "."}]],
+ CellMargins->{{40, 25}, {10, 28}},
+ CounterIncrements->"Section",
+ CounterAssignments->{{"Subsection", 0}, {"Subsubsection", 0}, {"Theorem", 0}},
+ FontSize->19,
+ FontColor->GrayLevel[
+  0],ExpressionUUID->"eb6de0cf-ac81-4f2e-889c-dfdf01b4a104"],
+
+Cell[StyleData["Section", "Printout"],
+ FontSize->14,ExpressionUUID->"0cea2e42-5e7c-4ee2-9847-04cad9ab888d"],
+
+Cell[StyleData["Subsection"],
+ CellFrame->False,
+ CellDingbat->Cell[
+   TextData[{
+     CounterBox["Section"], ".", 
+     CounterBox["Subsection"], "."}]],
+ CellMargins->{{48, 25}, {8, 20}},
+ CounterIncrements->"Subsection",
+ CounterAssignments->{{"Subsubsection", 0}},
+ FontSize->16,
+ FontColor->GrayLevel[
+  0],ExpressionUUID->"2efd3a4d-8f0d-4765-b614-970c6a3224cc"],
+
+Cell[StyleData["Subsection", "Printout"],
+ FontSize->12,ExpressionUUID->"10830470-2d04-44cb-95f4-7e418327a7e6"],
+
+Cell[StyleData["Subsubsection"],
+ CellFrame->False,
+ CellDingbat->Cell[
+   TextData[{
+     CounterBox["Section"], ".", 
+     CounterBox["Subsection"], ".", 
+     CounterBox["Subsubsection"], "."}]],
+ CellMargins->{{56, 25}, {8, 16}},
+ CounterIncrements->"Subsubsection",
+ FontSize->14,
+ FontColor->GrayLevel[
+  0],ExpressionUUID->"e3877e11-5a8f-4f56-9649-af8fe6d1b036"],
+
+Cell[StyleData["Subsubsection", "Printout"],
+ FontSize->11,ExpressionUUID->"5d9aa7d7-f87f-4fec-aff3-101784dfa718"],
+
+Cell[StyleData["Text"],
+ CellMargins->{{66, 10}, {4, 4}},
+ TextJustification->1.,
+ Hyphenation->True,
+ ParagraphIndent->15.,
+ FontSize->13,ExpressionUUID->"5dfe26c3-f765-4101-ab7b-e359786a5fc4"],
+
+Cell[StyleData["Text", "Printout"],
+ FontSize->10,ExpressionUUID->"81938712-a618-48ac-8591-bc429e1f2ec0"],
+
+Cell[StyleData["DisplayFormula"],
+ CellMargins->{{66, 10}, {6, 6}},
+ FontSize->13,ExpressionUUID->"64934b1e-f1b9-413c-bf70-d6a4a66726e3"],
+
+Cell[StyleData["DisplayFormula", "Printout"],
+ FontSize->10,ExpressionUUID->"9fa4d93c-c6ef-402b-98f1-326528974d6a"],
+
+Cell[StyleData["DisplayFormulaNumbered"],
+ CellMargins->{{66, 10}, {6, 6}},
+ CellFrameLabels->{{None, 
+    Cell[
+     TextData[{"(", 
+       CounterBox["DisplayFormulaNumbered"], ")"}], 
+     "DisplayFormulaEquationNumber"]}, {None, None}},
+ CounterIncrements->"DisplayFormulaNumbered",
+ FontSize->13,ExpressionUUID->"38ee4c4e-c5d6-402b-a158-336f0e5599c9"],
+
+Cell[StyleData["DisplayFormulaNumbered", "Printout"],
+ FontSize->10,ExpressionUUID->"be2375b3-c070-489b-b084-52dca5813a72"],
+
+Cell[StyleData["DisplayFormulaEquationNumber"],
+ FontSize->12,ExpressionUUID->"650d76ae-49c0-4b32-b267-6eeba3e4010d"],
+
+Cell[StyleData["DisplayFormulaEquationNumber", "Printout"],
+ FontSize->10,ExpressionUUID->"42454cd2-a294-4447-b1d7-cc0622a88d9c"],
+
+Cell[StyleData["Theorem", StyleDefinitions -> StyleData["Text"]],
+ CellDingbat->Cell[
+   TextData[{"Theorem ", 
+     CounterBox["Section"], ".", 
+     CounterBox["Theorem"], "."}], FontWeight -> "Bold", FontSlant -> "Plain"],
+ CellMargins->{{130, 10}, {8, 8}},
+ CounterIncrements->"Theorem",
+ MenuSortingValue->2610,
+ FontSlant->"Italic",ExpressionUUID->"c50a2693-1334-4097-97f5-fd235b509ec9"],
+
+Cell[StyleData["Theorem", "Printout"],
+ FontSize->10,ExpressionUUID->"bfd852f4-333f-4651-8c93-bb9719ec7fca"],
+
+Cell[StyleData["Lemma", StyleDefinitions -> StyleData["Text"]],
+ CellDingbat->Cell[
+   TextData[{"Lemma ", 
+     CounterBox["Section"], ".", 
+     CounterBox["Theorem"], "."}], FontWeight -> "Bold", FontSlant -> "Plain"],
+ CellMargins->{{130, 10}, {8, 8}},
+ CounterIncrements->"Theorem",
+ MenuSortingValue->2620,
+ FontSlant->"Italic",ExpressionUUID->"b49bcb8e-0ef4-4946-aeff-99de99dca37e"],
+
+Cell[StyleData["Lemma", "Printout"],
+ FontSize->10,ExpressionUUID->"5395996e-1789-4b3d-bb27-4dce8da83909"],
+
+Cell[StyleData["Proposition", StyleDefinitions -> StyleData["Text"]],
+ CellDingbat->Cell[
+   TextData[{"Proposition ", 
+     CounterBox["Section"], ".", 
+     CounterBox["Theorem"], "."}], FontWeight -> "Bold", FontSlant -> "Plain"],
+ CellMargins->{{130, 10}, {8, 8}},
+ CounterIncrements->"Theorem",
+ MenuSortingValue->2630,
+ FontSlant->"Italic",ExpressionUUID->"aa65c999-bfe1-42c3-8989-b6fec7acd43a"],
+
+Cell[StyleData["Proposition", "Printout"],
+ FontSize->10,ExpressionUUID->"4ce31355-8315-42d7-af61-9dcc012458a8"],
+
+Cell[StyleData["Corollary", StyleDefinitions -> StyleData["Text"]],
+ CellDingbat->Cell[
+   TextData[{"Corollary ", 
+     CounterBox["Section"], ".", 
+     CounterBox["Theorem"], "."}], FontWeight -> "Bold", FontSlant -> "Plain"],
+ CellMargins->{{130, 10}, {8, 8}},
+ CounterIncrements->"Theorem",
+ MenuSortingValue->2640,
+ FontSlant->"Italic",ExpressionUUID->"4c79117e-b0cd-4f8f-a172-145ba2de710b"],
+
+Cell[StyleData["Corollary", "Printout"],
+ FontSize->10,ExpressionUUID->"c3d316a4-90cd-472c-95a3-7e6ea2b9ff8a"],
+
+Cell[StyleData["Conjecture", StyleDefinitions -> StyleData["Text"]],
+ CellDingbat->Cell[
+   TextData[{"Conjecture ", 
+     CounterBox["Section"], ".", 
+     CounterBox["Theorem"], "."}], FontWeight -> "Bold", FontSlant -> "Plain"],
+ CellMargins->{{130, 10}, {8, 8}},
+ CounterIncrements->"Theorem",
+ MenuSortingValue->2650,
+ FontSlant->"Italic",ExpressionUUID->"578225f0-bf68-480c-a2d1-0c32053e9791"],
+
+Cell[StyleData["Conjecture", "Printout"],
+ FontSize->10,ExpressionUUID->"9cefeeca-f91f-4748-a9df-347255f9b272"],
+
+Cell[StyleData["Claim", StyleDefinitions -> StyleData["Text"]],
+ CellDingbat->Cell[
+   TextData[{"Claim ", 
+     CounterBox["Section"], ".", 
+     CounterBox["Theorem"], "."}], FontWeight -> "Bold", FontSlant -> "Plain"],
+ CellMargins->{{130, 10}, {8, 8}},
+ CounterIncrements->"Theorem",
+ MenuSortingValue->2660,
+ FontSlant->"Italic",ExpressionUUID->"d28175eb-c446-410f-9f3b-94e31af7a4d3"],
+
+Cell[StyleData["Claim", "Printout"],
+ FontSize->10,ExpressionUUID->"0c79aecc-9326-42a3-9cc8-7fb62ae2db18"],
+
+Cell[StyleData["Definition", StyleDefinitions -> StyleData["Text"]],
+ CellDingbat->Cell[
+   TextData[{"Definition ", 
+     CounterBox["Section"], ".", 
+     CounterBox["Theorem"], "."}], FontWeight -> "Bold", FontSlant -> "Plain"],
+ CellMargins->{{130, 10}, {8, 8}},
+ CounterIncrements->"Theorem",
+ MenuSortingValue->2670,
+ FontSlant->"Plain",ExpressionUUID->"2c6c8315-a079-4eff-843f-a06edeec9daa"],
+
+Cell[StyleData["Definition", "Printout"],
+ FontSize->10,ExpressionUUID->"26c959b6-59fa-481d-a430-a1426fa841de"],
+
+Cell[StyleData["Example", StyleDefinitions -> StyleData["Text"]],
+ CellDingbat->Cell[
+   TextData[{"Example ", 
+     CounterBox["Section"], ".", 
+     CounterBox["Theorem"], "."}], FontWeight -> "Bold", FontSlant -> "Plain"],
+ CellMargins->{{130, 10}, {8, 8}},
+ CounterIncrements->"Theorem",
+ MenuSortingValue->2680,
+ FontSlant->"Plain",ExpressionUUID->"7abc255c-0442-4dbf-b0cd-e2f903c47ca5"],
+
+Cell[StyleData["Example", "Printout"],
+ FontSize->10,ExpressionUUID->"c55fa9db-fb0e-4a2b-9f42-4cebfea3f13e"],
+
+Cell[StyleData["Construction", StyleDefinitions -> StyleData["Text"]],
+ CellDingbat->Cell[
+   TextData[{"Construction ", 
+     CounterBox["Section"], ".", 
+     CounterBox["Theorem"], "."}], FontWeight -> "Bold", FontSlant -> "Plain"],
+ CellMargins->{{130, 10}, {8, 8}},
+ CounterIncrements->"Theorem",
+ MenuSortingValue->2690,
+ FontSlant->"Plain",ExpressionUUID->"b4a06061-3e12-432f-8783-04cec245a3ed"],
+
+Cell[StyleData["Construction", "Printout"],
+ FontSize->10,ExpressionUUID->"866f5b26-e70c-4bcc-8652-a5b51d5fae71"],
+
+Cell[StyleData["Remark", StyleDefinitions -> StyleData["Text"]],
+ CellDingbat->Cell[
+   TextData[{"Remark ", 
+     CounterBox["Section"], ".", 
+     CounterBox["Theorem"], "."}], FontWeight -> "Plain", FontSlant -> 
+   "Italic"],
+ CellMargins->{{130, 10}, {8, 8}},
+ CounterIncrements->"Theorem",
+ MenuSortingValue->2700,
+ FontSlant->"Plain",ExpressionUUID->"7f67a84e-2c23-4c31-b5d0-f6e91fccc13d"],
+
+Cell[StyleData["Remark", "Printout"],
+ FontSize->10,ExpressionUUID->"a49528b8-74a5-4cef-95c1-e73c4bb5b91c"],
+
+Cell[StyleData["Question", StyleDefinitions -> StyleData["Text"]],
+ CellDingbat->Cell[
+   TextData[{"Question ", 
+     CounterBox["Section"], ".", 
+     CounterBox["Theorem"], "."}], FontWeight -> "Plain", FontSlant -> 
+   "Italic"],
+ CellMargins->{{130, 10}, {8, 8}},
+ CounterIncrements->"Theorem",
+ MenuSortingValue->2710,
+ FontSlant->"Plain",ExpressionUUID->"889914a6-01f4-4c7c-9220-fad81df5ddf8"],
+
+Cell[StyleData["Question", "Printout"],
+ FontSize->10,ExpressionUUID->"19ad1d65-569e-4fdb-abdd-380592b61d66"],
+
+Cell[StyleData["Observation", StyleDefinitions -> StyleData["Text"]],
+ CellDingbat->Cell[
+   TextData[{"Observation ", 
+     CounterBox["Section"], ".", 
+     CounterBox["Theorem"], "."}], FontWeight -> "Plain", FontSlant -> 
+   "Italic"],
+ CellMargins->{{130, 10}, {8, 8}},
+ CounterIncrements->"Theorem",
+ MenuSortingValue->2720,
+ FontSlant->"Plain",ExpressionUUID->"56afdcfb-9d56-45c9-898d-51b634e3bbf2"],
+
+Cell[StyleData["Observation", "Printout"],
+ FontSize->10,ExpressionUUID->"4a494f76-66d2-43be-ace1-8c9ef4d04565"],
+
+Cell[StyleData["Proof", StyleDefinitions -> StyleData["Text"]],
+ CellDingbat->Cell[
+   TextData["Proof."], FontSlant -> "Italic", FontWeight -> "Plain"],
+ CellMargins->{{130, 10}, {8, 8}},
+ CellFrameLabels->{{None, 
+    Cell[
+     TextData["\[EmptySquare]"]]}, {None, None}},
+ MenuSortingValue->
+  2740,ExpressionUUID->"c24dd7f0-51a7-4997-b5a8-7dc9e62cf666"],
+
+Cell[StyleData["Proof", "Printout"],
+ FontSize->10,ExpressionUUID->"2d32ea4f-c2f5-4ab9-b35b-705215168a08"],
+
+Cell[StyleData["Hyperlink", StyleDefinitions -> StyleData["Link"]],
+ ContextMenu->FEPrivate`FrontEndResource["ContextMenus", "Hyperlink"],
+ FontColor->RGBColor[0, 0, 0.7],
+ ButtonBoxOptions->{
+ ButtonFunction:>((WolframInstitute`MathNotebook`$LastHyperlinkCell = First[
+     SelectedCells[]]; FrontEndExecute[{
+     NotebookLocate[#2, "OpenInNewWindow" -> 
+      CurrentValue["HyperlinkModifierKey"]]}])& ),
+ Evaluator->"Local",
+ Method->"Queued"},ExpressionUUID->"26e12408-4692-44be-9779-02df90c3854f"],
+
+Cell[StyleData["Citation", StyleDefinitions -> StyleData["Hyperlink"]],
+ FontColor->RGBColor[
+  0.7, 0, 0],ExpressionUUID->"2f338079-a8ec-4193-a53c-9e101df32488"],
+
+Cell[StyleData["URL", StyleDefinitions -> StyleData["Hyperlink"]],
+ FontColor->RGBColor[
+  0.8, 0, 0.8],ExpressionUUID->"eb17e544-b514-4b29-b3ab-b8a076babffb"],
+
+Cell[StyleData["Reference", StyleDefinitions -> StyleData["Text"]],
+ CellMargins->{{90, 10}, {3, 3}},
+ ParagraphIndent->-24,
+ MenuSortingValue->
+  2750,ExpressionUUID->"17c1def0-23ca-4428-861c-da2f2d4b7ddb"],
+
+Cell[StyleData["Reference", "Printout"],
+ FontSize->10,ExpressionUUID->"1959d966-dc69-4d83-8d5a-47d41895cdd2"]
+},
+FrontEndVersion->"15.0 for Mac OS X ARM (64-bit) (May 19, 2026)",
+StyleDefinitions->"PrivateStylesheetFormatting.nb",
+ExpressionUUID->"827ae1c1-b582-47a9-9665-f1749364d65f"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[554, 20, 104, 0, 70, 49, 0, "StyleData", "StyleDefinitions", "",ExpressionUUID->"83d7a3e1-a2fc-44b3-b127-40c097cb58fc"],
+Cell[661, 22, 277, 7, 70, 27, 0, "StyleData", "Notebook", "All",ExpressionUUID->"cb77eb47-39e3-46a0-8eb0-432b516b0b9c"],
+Cell[941, 31, 204, 6, 70, 24, 0, "StyleData", "Title", "All",ExpressionUUID->"4e75cd1e-657f-4699-817e-7f26d0f42458"],
+Cell[1148, 39, 106, 1, 70, 36, 0, "StyleData", "Title", "Printout",ExpressionUUID->"a3693555-9e6e-488e-976a-00d497c87baf"],
+Cell[1257, 42, 288, 8, 70, 64, 0, "StyleData", "Author", "All",ExpressionUUID->"7691093b-67da-48c5-add3-e0785179ba21",
+ MenuSortingValue->1250],
+Cell[1548, 52, 107, 1, 70, 37, 0, "StyleData", "Author", "Printout",ExpressionUUID->"86c2cd38-1c4b-40d5-8c03-1661219f0b57"],
+Cell[1658, 55, 258, 6, 70, 62, 0, "StyleData", "Date", "All",ExpressionUUID->"6bbd4201-0e29-4ee3-a7ac-f26285cd5472",
+ MenuSortingValue->1260],
+Cell[1919, 63, 104, 1, 70, 35, 0, "StyleData", "Date", "Printout",ExpressionUUID->"866e3377-d20f-43f7-bae1-f7f0eb33d79d"],
+Cell[2026, 66, 311, 6, 70, 66, 0, "StyleData", "Abstract", "All",ExpressionUUID->"96027074-ef23-43f2-9f35-4315d88666b6",
+ MenuSortingValue->1270],
+Cell[2340, 74, 108, 1, 70, 39, 0, "StyleData", "Abstract", "Printout",ExpressionUUID->"4761ec14-73af-4aef-90be-f0c31f75fd05"],
+Cell[2451, 77, 361, 10, 70, 26, 0, "StyleData", "Section", "All",ExpressionUUID->"eb6de0cf-ac81-4f2e-889c-dfdf01b4a104",
+ CounterIncrements->"Section",
+ CounterAssignments->{{"Subsection", 0}, {"Subsubsection", 0}, {"Theorem", 0}}],
+Cell[2815, 89, 108, 1, 70, 38, 0, "StyleData", "Section", "Printout",ExpressionUUID->"0cea2e42-5e7c-4ee2-9847-04cad9ab888d"],
+Cell[2926, 92, 368, 11, 70, 29, 0, "StyleData", "Subsection", "All",ExpressionUUID->"2efd3a4d-8f0d-4765-b614-970c6a3224cc",
+ CounterIncrements->"Subsection",
+ CounterAssignments->{{"Subsubsection", 0}}],
+Cell[3297, 105, 111, 1, 70, 41, 0, "StyleData", "Subsection", "Printout",ExpressionUUID->"10830470-2d04-44cb-95f4-7e418327a7e6"],
+Cell[3411, 108, 369, 11, 70, 32, 0, "StyleData", "Subsubsection", "All",ExpressionUUID->"e3877e11-5a8f-4f56-9649-af8fe6d1b036",
+ CounterIncrements->"Subsubsection"],
+Cell[3783, 121, 114, 1, 70, 44, 0, "StyleData", "Subsubsection", "Printout",ExpressionUUID->"5d9aa7d7-f87f-4fec-aff3-101784dfa718"],
+Cell[3900, 124, 194, 5, 70, 23, 0, "StyleData", "Text", "All",ExpressionUUID->"5dfe26c3-f765-4101-ab7b-e359786a5fc4"],
+Cell[4097, 131, 105, 1, 70, 35, 0, "StyleData", "Text", "Printout",ExpressionUUID->"81938712-a618-48ac-8591-bc429e1f2ec0"],
+Cell[4205, 134, 137, 2, 70, 33, 0, "StyleData", "DisplayFormula", "All",ExpressionUUID->"64934b1e-f1b9-413c-bf70-d6a4a66726e3"],
+Cell[4345, 138, 115, 1, 70, 45, 0, "StyleData", "DisplayFormula", "Printout",ExpressionUUID->"9fa4d93c-c6ef-402b-98f1-326528974d6a"],
+Cell[4463, 141, 356, 8, 70, 41, 0, "StyleData", "DisplayFormulaNumbered", "All",ExpressionUUID->"38ee4c4e-c5d6-402b-a158-336f0e5599c9",
+ CounterIncrements->"DisplayFormulaNumbered"],
+Cell[4822, 151, 123, 1, 70, 53, 0, "StyleData", "DisplayFormulaNumbered", "Printout",ExpressionUUID->"be2375b3-c070-489b-b084-52dca5813a72"],
+Cell[4948, 154, 117, 1, 70, 47, 0, "StyleData", "DisplayFormulaEquationNumber", "All",ExpressionUUID->"650d76ae-49c0-4b32-b267-6eeba3e4010d"],
+Cell[5068, 157, 129, 1, 70, 59, 0, "StyleData", "DisplayFormulaEquationNumber", "Printout",ExpressionUUID->"42454cd2-a294-4447-b1d7-cc0622a88d9c"],
+Cell[5200, 160, 393, 8, 70, 65, 0, "StyleData", "Theorem", "All",ExpressionUUID->"c50a2693-1334-4097-97f5-fd235b509ec9",
+ CounterIncrements->"Theorem",
+ MenuSortingValue->2610],
+Cell[5596, 170, 108, 1, 70, 38, 0, "StyleData", "Theorem", "Printout",ExpressionUUID->"bfd852f4-333f-4651-8c93-bb9719ec7fca"],
+Cell[5707, 173, 389, 8, 70, 63, 0, "StyleData", "Lemma", "All",ExpressionUUID->"b49bcb8e-0ef4-4946-aeff-99de99dca37e",
+ CounterIncrements->"Theorem",
+ MenuSortingValue->2620],
+Cell[6099, 183, 106, 1, 70, 36, 0, "StyleData", "Lemma", "Printout",ExpressionUUID->"5395996e-1789-4b3d-bb27-4dce8da83909"],
+Cell[6208, 186, 401, 8, 70, 69, 0, "StyleData", "Proposition", "All",ExpressionUUID->"aa65c999-bfe1-42c3-8989-b6fec7acd43a",
+ CounterIncrements->"Theorem",
+ MenuSortingValue->2630],
+Cell[6612, 196, 112, 1, 70, 42, 0, "StyleData", "Proposition", "Printout",ExpressionUUID->"4ce31355-8315-42d7-af61-9dcc012458a8"],
+Cell[6727, 199, 397, 8, 70, 67, 0, "StyleData", "Corollary", "All",ExpressionUUID->"4c79117e-b0cd-4f8f-a172-145ba2de710b",
+ CounterIncrements->"Theorem",
+ MenuSortingValue->2640],
+Cell[7127, 209, 110, 1, 70, 40, 0, "StyleData", "Corollary", "Printout",ExpressionUUID->"c3d316a4-90cd-472c-95a3-7e6ea2b9ff8a"],
+Cell[7240, 212, 399, 8, 70, 68, 0, "StyleData", "Conjecture", "All",ExpressionUUID->"578225f0-bf68-480c-a2d1-0c32053e9791",
+ CounterIncrements->"Theorem",
+ MenuSortingValue->2650],
+Cell[7642, 222, 111, 1, 70, 41, 0, "StyleData", "Conjecture", "Printout",ExpressionUUID->"9cefeeca-f91f-4748-a9df-347255f9b272"],
+Cell[7756, 225, 389, 8, 70, 63, 0, "StyleData", "Claim", "All",ExpressionUUID->"d28175eb-c446-410f-9f3b-94e31af7a4d3",
+ CounterIncrements->"Theorem",
+ MenuSortingValue->2660],
+Cell[8148, 235, 106, 1, 70, 36, 0, "StyleData", "Claim", "Printout",ExpressionUUID->"0c79aecc-9326-42a3-9cc8-7fb62ae2db18"],
+Cell[8257, 238, 398, 8, 70, 68, 0, "StyleData", "Definition", "All",ExpressionUUID->"2c6c8315-a079-4eff-843f-a06edeec9daa",
+ CounterIncrements->"Theorem",
+ MenuSortingValue->2670],
+Cell[8658, 248, 111, 1, 70, 41, 0, "StyleData", "Definition", "Printout",ExpressionUUID->"26c959b6-59fa-481d-a430-a1426fa841de"],
+Cell[8772, 251, 392, 8, 70, 65, 0, "StyleData", "Example", "All",ExpressionUUID->"7abc255c-0442-4dbf-b0cd-e2f903c47ca5",
+ CounterIncrements->"Theorem",
+ MenuSortingValue->2680],
+Cell[9167, 261, 108, 1, 70, 38, 0, "StyleData", "Example", "Printout",ExpressionUUID->"c55fa9db-fb0e-4a2b-9f42-4cebfea3f13e"],
+Cell[9278, 264, 402, 8, 70, 70, 0, "StyleData", "Construction", "All",ExpressionUUID->"b4a06061-3e12-432f-8783-04cec245a3ed",
+ CounterIncrements->"Theorem",
+ MenuSortingValue->2690],
+Cell[9683, 274, 113, 1, 70, 43, 0, "StyleData", "Construction", "Printout",ExpressionUUID->"866f5b26-e70c-4bcc-8652-a5b51d5fae71"],
+Cell[9799, 277, 396, 9, 70, 64, 0, "StyleData", "Remark", "All",ExpressionUUID->"7f67a84e-2c23-4c31-b5d0-f6e91fccc13d",
+ CounterIncrements->"Theorem",
+ MenuSortingValue->2700],
+Cell[10198, 288, 107, 1, 70, 37, 0, "StyleData", "Remark", "Printout",ExpressionUUID->"a49528b8-74a5-4cef-95c1-e73c4bb5b91c"],
+Cell[10308, 291, 400, 9, 70, 66, 0, "StyleData", "Question", "All",ExpressionUUID->"889914a6-01f4-4c7c-9220-fad81df5ddf8",
+ CounterIncrements->"Theorem",
+ MenuSortingValue->2710],
+Cell[10711, 302, 109, 1, 70, 39, 0, "StyleData", "Question", "Printout",ExpressionUUID->"19ad1d65-569e-4fdb-abdd-380592b61d66"],
+Cell[10823, 305, 406, 9, 70, 69, 0, "StyleData", "Observation", "All",ExpressionUUID->"56afdcfb-9d56-45c9-898d-51b634e3bbf2",
+ CounterIncrements->"Theorem",
+ MenuSortingValue->2720],
+Cell[11232, 316, 112, 1, 70, 42, 0, "StyleData", "Observation", "Printout",ExpressionUUID->"4a494f76-66d2-43be-ace1-8c9ef4d04565"],
+Cell[11347, 319, 358, 8, 70, 63, 0, "StyleData", "Proof", "All",ExpressionUUID->"c24dd7f0-51a7-4997-b5a8-7dc9e62cf666",
+ MenuSortingValue->2740],
+Cell[11708, 329, 106, 1, 70, 36, 0, "StyleData", "Proof", "Printout",ExpressionUUID->"2d32ea4f-c2f5-4ab9-b35b-705215168a08"],
+Cell[11817, 332, 503, 9, 70, 67, 0, "StyleData", "Hyperlink", "All",ExpressionUUID->"26e12408-4692-44be-9779-02df90c3854f"],
+Cell[12323, 343, 162, 2, 70, 71, 0, "StyleData", "Citation", "All",ExpressionUUID->"2f338079-a8ec-4193-a53c-9e101df32488"],
+Cell[12488, 347, 159, 2, 70, 66, 0, "StyleData", "URL", "All",ExpressionUUID->"eb17e544-b514-4b29-b3ab-b8a076babffb"],
+Cell[12650, 351, 207, 4, 70, 67, 0, "StyleData", "Reference", "All",ExpressionUUID->"17c1def0-23ca-4428-861c-da2f2d4b7ddb",
+ MenuSortingValue->2750],
+Cell[12860, 357, 110, 1, 70, 40, 0, "StyleData", "Reference", "Printout",ExpressionUUID->"1959d966-dc69-4d83-8d5a-47d41895cdd2"]
+}
+]
+*)
+
+(* End of internal cache information *)
