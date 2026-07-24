@@ -111,10 +111,10 @@ baseStyleSheet[] := Notebook[ Flatten @ {
     FontSize -> 13, CellMargins -> { { 66, 10 }, { 4, 4 } } ],
   Cell[ StyleData[ "Text", "Printout" ], FontSize -> 10 ],
 
-  Cell[ StyleData[ "DisplayFormula" ], FontSize -> 13, CellMargins -> { { 66, 10 }, { 6, 6 } } ],
+  Cell[ StyleData[ "DisplayFormula" ], TextAlignment -> Center, FontSize -> 13, CellMargins -> { { 66, 10 }, { 6, 6 } } ],
   Cell[ StyleData[ "DisplayFormula", "Printout" ], FontSize -> 10 ],
 
-  Cell[ StyleData[ "DisplayFormulaNumbered" ], FontSize -> 13, CellMargins -> { { 66, 10 }, { 6, 6 } },
+  Cell[ StyleData[ "DisplayFormulaNumbered" ], TextAlignment -> Center, FontSize -> 13, CellMargins -> { { 66, 10 }, { 6, 6 } },
     CounterIncrements -> "DisplayFormulaNumbered",
     CellFrameLabels -> { { None, Cell[ TextData[ { "(", CounterBox[ "DisplayFormulaNumbered" ], ")" } ], "DisplayFormulaEquationNumber" ] }, { None, None } } ],
   Cell[ StyleData[ "DisplayFormulaNumbered", "Printout" ], FontSize -> 10 ],

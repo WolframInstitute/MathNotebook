@@ -10,65 +10,68 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       154,          7]
-NotebookDataLength[      5098,        106]
-NotebookOptionsPosition[      2905,         72]
-NotebookOutlinePosition[      3315,         88]
-CellTagsIndexPosition[      3272,         85]
+NotebookDataLength[      5143,        109]
+NotebookOptionsPosition[      2950,         75]
+NotebookOutlinePosition[      3360,         91]
+CellTagsIndexPosition[      3317,         88]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
 Notebook[{
-Cell["Writing Mathematics in Notebooks", "Title",ExpressionUUID->"96a420cc-685c-462e-8e79-f746a2d22836"],
+Cell["Writing Mathematics in Notebooks", "Title",ExpressionUUID->"d0ffb6c2-e29c-4a3f-96f6-d5bec7f189a8"],
 
-Cell["MathNotebook Tutorial", "Author",ExpressionUUID->"40d824fa-5bf8-4660-9979-7334a460b7eb"],
+Cell["MathNotebook Tutorial", "Author",ExpressionUUID->"2087caa5-3598-4ac7-a88f-400a140365f3"],
 
 Cell["\<\
 How to write a mathematics paper in a Wolfram notebook: referencing, journal \
 stylesheets, LaTeX conversion, and MaTeX rendering.\
-\>", "Abstract",ExpressionUUID->"0e158f81-aff4-40ac-9836-6f1af0754cf2"],
+\>", "Abstract",ExpressionUUID->"fc54f7ea-aa43-4daa-b816-ea8a0e8013ef"],
 
-Cell["Getting Started", "Section",ExpressionUUID->"99c4871a-3fd7-45df-8732-707807214095"],
+Cell["Getting Started", "Section",ExpressionUUID->"c03ab298-3fc7-4ab2-911d-ab74d25a9a53"],
 
-Cell["Content to be written.", "Text",ExpressionUUID->"a472d17b-77c4-48f8-8bac-02091769cfb6"],
+Cell["Content to be written.", "Text",ExpressionUUID->"4725e8f7-62aa-4166-b050-491cdd5569ab"],
 
-Cell["Referencing", "Section",ExpressionUUID->"f72479cd-a447-4768-a440-a600f3bc5f51"],
+Cell["Referencing", "Section",ExpressionUUID->"b15c2c35-66bf-498e-a3ec-79ee4f557a8b"],
 
-Cell["Content to be written.", "Text",ExpressionUUID->"b91a3878-c975-42f9-af5d-7de70666e2da"],
+Cell["Content to be written.", "Text",ExpressionUUID->"10ba64b5-d60f-4434-a765-513158dbca7b"],
 
-Cell["Stylesheets", "Section",ExpressionUUID->"b6088c6f-cb93-4edf-9533-e4c51ce2c276"],
+Cell["Stylesheets", "Section",ExpressionUUID->"546e40fa-8be6-438b-8e48-a07a33c4b884"],
 
-Cell["Content to be written.", "Text",ExpressionUUID->"38a10340-6e9d-4608-88f8-0417c581dd03"],
+Cell["Content to be written.", "Text",ExpressionUUID->"a7353736-d2a2-4891-8c76-ec963dcf6261"],
 
-Cell["Math Input Shortcuts", "Section",ExpressionUUID->"8eb8a4b0-cd12-49c8-8dfc-33119ef9752e"],
+Cell["Math Input Shortcuts", "Section",ExpressionUUID->"5ecf4b0c-c5f1-420c-b029-7c8ca394735c"],
 
 Cell["\<\
 Ctrl+9 starts an inline math cell inside a text cell; Ctrl+0 exits it.\
-\>", "Item",ExpressionUUID->"80a343f4-2fcf-48b8-982d-b3c332b63cfe"],
+\>", "Item",ExpressionUUID->"5cf465fd-18b5-4489-880f-49aa8baa7334"],
 
 Cell["\<\
 Ctrl+/ fraction, Ctrl+^ superscript, Ctrl+_ subscript, Ctrl+2 square root.\
-\>", "Item",ExpressionUUID->"f74faa31-2bab-4fe1-8ef2-aec0e549ddbd"],
+\>", "Item",ExpressionUUID->"825e4041-8032-446a-90b7-1e8c9af8d7b6"],
 
 Cell["\<\
 Esc-name-Esc enters symbols: esc a esc gives \[Alpha], esc el esc gives \
 \[Element], esc -> esc gives \[Rule].\
-\>", "Item",ExpressionUUID->"18f590c0-9b6d-445c-aea2-ddc09ffea64d"],
+\>", "Item",ExpressionUUID->"81a30ae4-1703-490b-bad8-248d116b3267"],
 
-Cell["Ctrl+Shift+E toggles the underlying cell expression.", "Item",ExpressionUUID->"4f7699de-0c54-422a-a62f-38de223647ba"],
+Cell["\<\
+Cmd+Shift+E toggles the underlying cell expression (Ctrl+Shift+E on Windows \
+and Linux).\
+\>", "Item",ExpressionUUID->"639cdf5c-9873-4e41-8296-7105d8029544"],
 
-Cell["Content to be written.", "Text",ExpressionUUID->"cb7c34da-5f59-470b-a868-eec13374e51e"],
+Cell["Content to be written.", "Text",ExpressionUUID->"5abf85f2-f8fd-4a36-98d2-a2de5f475525"],
 
-Cell["LaTeX Conversion", "Section",ExpressionUUID->"8aff6af0-2329-4ff5-9daa-6eeda8de6700"],
+Cell["LaTeX Conversion", "Section",ExpressionUUID->"bb084ce5-ce47-4209-909e-a8785a3324bd"],
 
-Cell["Content to be written.", "Text",ExpressionUUID->"ec459ba5-06ea-4263-a945-e5f27914fc76"],
+Cell["Content to be written.", "Text",ExpressionUUID->"9dec0bcb-beb7-4e5e-8488-2e1e3f53ff2e"],
 
-Cell["MaTeX", "Section",ExpressionUUID->"abc21032-5fd5-4729-b131-af662e7fc29f"],
+Cell["MaTeX", "Section",ExpressionUUID->"0270fe6c-bc17-4c03-a87d-81050c2900c3"],
 
-Cell["Content to be written.", "Text",ExpressionUUID->"05e4d907-7847-4721-9d1b-0dcd6a92482b"],
+Cell["Content to be written.", "Text",ExpressionUUID->"f5f9dcd0-f054-43fc-ad0f-2b5af07d3893"],
 
-Cell["Best Practices", "Section",ExpressionUUID->"28990355-4a40-418b-8999-1ce6d821bf08"],
+Cell["Best Practices", "Section",ExpressionUUID->"23ebddef-8aa9-47e7-b3e2-471c888e675d"],
 
-Cell["Content to be written.", "Text",ExpressionUUID->"dc6acc8f-51c7-4703-b6b2-8fd9e73dcfcc"]
+Cell["Content to be written.", "Text",ExpressionUUID->"11e68a00-d7dc-44c4-ba8c-0e96ac33f413"]
 },
 LightDark->"Light",
 FrontEndVersion->"15.0 for Mac OS X ARM (64-bit) (May 19, 2026)",
@@ -87,27 +90,27 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[554, 20, 104, 0, 70, "Title",ExpressionUUID->"96a420cc-685c-462e-8e79-f746a2d22836"],
-Cell[661, 22, 94, 0, 70, "Author",ExpressionUUID->"40d824fa-5bf8-4660-9979-7334a460b7eb"],
-Cell[758, 24, 213, 3, 70, "Abstract",ExpressionUUID->"0e158f81-aff4-40ac-9836-6f1af0754cf2"],
-Cell[974, 29, 89, 0, 70, "Section",ExpressionUUID->"99c4871a-3fd7-45df-8732-707807214095"],
-Cell[1066, 31, 93, 0, 70, "Text",ExpressionUUID->"a472d17b-77c4-48f8-8bac-02091769cfb6"],
-Cell[1162, 33, 85, 0, 70, "Section",ExpressionUUID->"f72479cd-a447-4768-a440-a600f3bc5f51"],
-Cell[1250, 35, 93, 0, 70, "Text",ExpressionUUID->"b91a3878-c975-42f9-af5d-7de70666e2da"],
-Cell[1346, 37, 85, 0, 70, "Section",ExpressionUUID->"b6088c6f-cb93-4edf-9533-e4c51ce2c276"],
-Cell[1434, 39, 93, 0, 70, "Text",ExpressionUUID->"38a10340-6e9d-4608-88f8-0417c581dd03"],
-Cell[1530, 41, 94, 0, 70, "Section",ExpressionUUID->"8eb8a4b0-cd12-49c8-8dfc-33119ef9752e"],
-Cell[1627, 43, 149, 2, 70, "Item",ExpressionUUID->"80a343f4-2fcf-48b8-982d-b3c332b63cfe"],
-Cell[1779, 47, 153, 2, 70, "Item",ExpressionUUID->"f74faa31-2bab-4fe1-8ef2-aec0e549ddbd"],
-Cell[1935, 51, 190, 3, 70, "Item",ExpressionUUID->"18f590c0-9b6d-445c-aea2-ddc09ffea64d"],
-Cell[2128, 56, 123, 0, 70, "Item",ExpressionUUID->"4f7699de-0c54-422a-a62f-38de223647ba"],
-Cell[2254, 58, 93, 0, 70, "Text",ExpressionUUID->"cb7c34da-5f59-470b-a868-eec13374e51e"],
-Cell[2350, 60, 90, 0, 70, "Section",ExpressionUUID->"8aff6af0-2329-4ff5-9daa-6eeda8de6700"],
-Cell[2443, 62, 93, 0, 70, "Text",ExpressionUUID->"ec459ba5-06ea-4263-a945-e5f27914fc76"],
-Cell[2539, 64, 79, 0, 70, "Section",ExpressionUUID->"abc21032-5fd5-4729-b131-af662e7fc29f"],
-Cell[2621, 66, 93, 0, 70, "Text",ExpressionUUID->"05e4d907-7847-4721-9d1b-0dcd6a92482b"],
-Cell[2717, 68, 88, 0, 70, "Section",ExpressionUUID->"28990355-4a40-418b-8999-1ce6d821bf08"],
-Cell[2808, 70, 93, 0, 70, "Text",ExpressionUUID->"dc6acc8f-51c7-4703-b6b2-8fd9e73dcfcc"]
+Cell[554, 20, 104, 0, 70, "Title",ExpressionUUID->"d0ffb6c2-e29c-4a3f-96f6-d5bec7f189a8"],
+Cell[661, 22, 94, 0, 70, "Author",ExpressionUUID->"2087caa5-3598-4ac7-a88f-400a140365f3"],
+Cell[758, 24, 213, 3, 70, "Abstract",ExpressionUUID->"fc54f7ea-aa43-4daa-b816-ea8a0e8013ef"],
+Cell[974, 29, 89, 0, 70, "Section",ExpressionUUID->"c03ab298-3fc7-4ab2-911d-ab74d25a9a53"],
+Cell[1066, 31, 93, 0, 70, "Text",ExpressionUUID->"4725e8f7-62aa-4166-b050-491cdd5569ab"],
+Cell[1162, 33, 85, 0, 70, "Section",ExpressionUUID->"b15c2c35-66bf-498e-a3ec-79ee4f557a8b"],
+Cell[1250, 35, 93, 0, 70, "Text",ExpressionUUID->"10ba64b5-d60f-4434-a765-513158dbca7b"],
+Cell[1346, 37, 85, 0, 70, "Section",ExpressionUUID->"546e40fa-8be6-438b-8e48-a07a33c4b884"],
+Cell[1434, 39, 93, 0, 70, "Text",ExpressionUUID->"a7353736-d2a2-4891-8c76-ec963dcf6261"],
+Cell[1530, 41, 94, 0, 70, "Section",ExpressionUUID->"5ecf4b0c-c5f1-420c-b029-7c8ca394735c"],
+Cell[1627, 43, 149, 2, 70, "Item",ExpressionUUID->"5cf465fd-18b5-4489-880f-49aa8baa7334"],
+Cell[1779, 47, 153, 2, 70, "Item",ExpressionUUID->"825e4041-8032-446a-90b7-1e8c9af8d7b6"],
+Cell[1935, 51, 190, 3, 70, "Item",ExpressionUUID->"81a30ae4-1703-490b-bad8-248d116b3267"],
+Cell[2128, 56, 168, 3, 70, "Item",ExpressionUUID->"639cdf5c-9873-4e41-8296-7105d8029544"],
+Cell[2299, 61, 93, 0, 70, "Text",ExpressionUUID->"5abf85f2-f8fd-4a36-98d2-a2de5f475525"],
+Cell[2395, 63, 90, 0, 70, "Section",ExpressionUUID->"bb084ce5-ce47-4209-909e-a8785a3324bd"],
+Cell[2488, 65, 93, 0, 70, "Text",ExpressionUUID->"9dec0bcb-beb7-4e5e-8488-2e1e3f53ff2e"],
+Cell[2584, 67, 79, 0, 70, "Section",ExpressionUUID->"0270fe6c-bc17-4c03-a87d-81050c2900c3"],
+Cell[2666, 69, 93, 0, 70, "Text",ExpressionUUID->"f5f9dcd0-f054-43fc-ad0f-2b5af07d3893"],
+Cell[2762, 71, 88, 0, 70, "Section",ExpressionUUID->"23ebddef-8aa9-47e7-b3e2-471c888e675d"],
+Cell[2853, 73, 93, 0, 70, "Text",ExpressionUUID->"11e68a00-d7dc-44c4-ba8c-0e96ac33f413"]
 }
 ]
 *)

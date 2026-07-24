@@ -22,7 +22,7 @@ tutorialNotebook = Notebook[ {
   Cell[ "Ctrl+9 starts an inline math cell inside a text cell; Ctrl+0 exits it.", "Item" ],
   Cell[ "Ctrl+/ fraction, Ctrl+^ superscript, Ctrl+_ subscript, Ctrl+2 square root.", "Item" ],
   Cell[ "Esc-name-Esc enters symbols: esc a esc gives \[Alpha], esc el esc gives \[Element], esc -> esc gives \[Rule].", "Item" ],
-  Cell[ "Ctrl+Shift+E toggles the underlying cell expression.", "Item" ],
+  Cell[ "Cmd+Shift+E toggles the underlying cell expression (Ctrl+Shift+E on Windows and Linux).", "Item" ],
   placeholder,
 
   Cell[ "LaTeX Conversion", "Section" ],

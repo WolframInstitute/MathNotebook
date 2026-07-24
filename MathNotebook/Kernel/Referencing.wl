@@ -12,20 +12,25 @@ PackageScope["$referenceLabelSpec"]
 PackageScope["referenceButton"]
 
 CopyCellReference[] :=
-  With[ { cell = First[ SelectedCells[ InputNotebook[] ], MessageDialog[ "Select a cell!" ]; Return[] ] },
-    With[ { style = First @ Flatten @ { CurrentValue[ cell, CellStyle ] } },
-      CopyToClipboard @ referenceButton[ CurrentValue[ cell, CellID ], Lookup[ $referenceLabelSpec, style, { "", { style }, "" } ] ]
-    ]
-  ]
+  Replace[ SelectedCells[ InputNotebook[] ], {
+    { cell_, ___ } :>
+      With[ { style = First @ Flatten @ { CurrentValue[ cell, CellStyle ] } },
+        CopyToClipboard @ referenceButton[ CurrentValue[ cell, CellID ], Lookup[ $referenceLabelSpec, style, { "", { style }, "" } ] ]
+      ],
+    {} :> MessageDialog[ "Select a cell!" ] } ]
 
 TagSelectedCell[] :=
-  With[ { cell = First[ SelectedCells[ InputNotebook[] ], MessageDialog[ "Select a cell!" ]; Return[] ] },
-    SetOptions[ cell, CellTags -> InputString[ "Cell tag:" ] ]
-  ]
+  Replace[ SelectedCells[ InputNotebook[] ], {
+    { cell_, ___ } :>
+      With[ { tag = InputString[ "Cell tag:" ] },
+        If[ StringQ[ tag ], SetOptions[ cell, CellTags -> tag ] ]
+      ],
+    {} :> MessageDialog[ "Select a cell!" ] } ]
 
 InsertCitation[] :=
   With[ { tag = InputString[ "Citation tag:" ] },
-    NotebookWrite[ InputNotebook[], ButtonBox[ "[" <> tag <> "]", BaseStyle -> "Citation", ButtonData -> tag ] ]
+    If[ StringQ[ tag ],
+      NotebookWrite[ InputNotebook[], ButtonBox[ "[" <> tag <> "]", BaseStyle -> "Citation", ButtonData -> tag ] ] ]
   ]
 
 GoBack[] :=

@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       154,          7]
-NotebookDataLength[      9774,        270]
-NotebookOptionsPosition[      9284,        249]
-NotebookOutlinePosition[      9806,        272]
-CellTagsIndexPosition[      9763,        269]
+NotebookDataLength[      9878,        274]
+NotebookOptionsPosition[      9388,        253]
+NotebookOutlinePosition[      9910,        276]
+CellTagsIndexPosition[      9867,        273]
 WindowTitle->MathNotebook
 WindowFrame->Palette*)
 
@@ -100,7 +100,9 @@ Cell[BoxData[
        "\"Observation\"" :> (Needs["WolframInstitute`MathNotebook`"]; 
         WolframInstitute`MathNotebook`InsertEnvironment["Observation"])},
       Appearance->"PopupMenu",
-      ImageSize->{200, 27}]},
+      Evaluator->Automatic,
+      ImageSize->{200, 27},
+      Method->"Queued"]},
     {
      ButtonBox["\<\"Proof\"\>",
       Appearance->"Palette",
@@ -163,7 +165,9 @@ Cell[BoxData[
         InputNotebook[], StyleDefinitions -> "Default.nb", LightDark -> 
          Automatic]},
       Appearance->"PopupMenu",
-      ImageSize->{200, 27}]},
+      Evaluator->Automatic,
+      ImageSize->{200, 27},
+      Method->"Queued"]},
     {
      StyleBox["\<\"LaTeX\"\>",
       StripOnInput->False,
@@ -245,7 +249,7 @@ Cell[BoxData[
    GridBoxAlignment->{"Columns" -> {{Left}}},
    GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
    GridBoxSpacings->{"Columns" -> {{0}}, "Rows" -> {0, {0.35}, 0}}],
-  "Column"]],ExpressionUUID->"5fe560fd-195e-4b0b-bdc6-9869f7040121"]
+  "Column"]],ExpressionUUID->"633d3ccf-d478-42af-9643-3a44e2e7d57a"]
 },
 Editable->False,
 Saveable->False,
@@ -271,7 +275,7 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[581, 21, 8699, 226, 571, InheritFromParent,ExpressionUUID->"5fe560fd-195e-4b0b-bdc6-9869f7040121"]
+Cell[581, 21, 8803, 230, 571, InheritFromParent,ExpressionUUID->"633d3ccf-d478-42af-9643-3a44e2e7d57a"]
 }
 ]
 *)

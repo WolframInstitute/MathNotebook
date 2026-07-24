@@ -53,8 +53,12 @@ paletteColumn = Column[ {
     kernelButton[ "Tutorial", WolframInstitute`MathNotebook`OpenTutorial[] ]
   }, Spacings -> { 0, { 0, { 0.35 }, 0 } } ];
 
+paletteBoxes = ReplaceAll[ ToBoxes @ paletteColumn,
+  ActionMenuBox[ label_, items_, options___ ] :>
+    ActionMenuBox[ label, items, Evaluator -> Automatic, Method -> "Queued", options ] ];
+
 paletteNotebook = Notebook[
-  { Cell[ BoxData[ ToBoxes @ paletteColumn ] ] },
+  { Cell[ BoxData[ paletteBoxes ] ] },
   WindowTitle -> "MathNotebook",
   WindowSize -> All,
   WindowFrame -> "Palette",
