@@ -3,6 +3,8 @@ repoDirectory = Replace[ $ScriptCommandLine,
 tutorialPath = FileNameJoin[ { repoDirectory, "MathNotebook", "Assets", "MathNotebookTutorial.nb" } ];
 
 placeholder = Cell[ "Content to be written.", "Text" ];
+key[ text_String ] := StyleBox[ text, FontWeight -> "Bold" ];
+name[ text_String ] := StyleBox[ text, FontSlant -> "Italic" ];
 
 tutorialNotebook = Notebook[ {
   Cell[ "Writing Mathematics in Notebooks", "Title" ],
@@ -19,11 +21,11 @@ tutorialNotebook = Notebook[ {
   placeholder,
 
   Cell[ "Math Input Shortcuts", "Section" ],
-  Cell[ "Ctrl+9 starts an inline math cell inside a text cell; Ctrl+0 exits it.", "Item" ],
-  Cell[ "Ctrl+/ fraction, Ctrl+^ superscript, Ctrl+_ subscript, Ctrl+2 square root.", "Item" ],
-  Cell[ "Esc-name-Esc enters symbols: esc a esc gives \[Alpha], esc el esc gives \[Element], esc -> esc gives \[Rule].", "Item" ],
-  Cell[ "Cmd+Shift+E toggles the underlying cell expression (Ctrl+Shift+E on Windows and Linux).", "Item" ],
-  placeholder,
+  Cell[ TextData[ { key[ "Ctrl+9" ], " inline math in text, ", key[ "Ctrl+0" ], " exits." } ], "Item" ],
+  Cell[ TextData[ { key[ "Ctrl+/" ], " fraction, ", key[ "Ctrl+2" ], " square root." } ], "Item" ],
+  Cell[ TextData[ { key[ "Ctrl+^" ], " superscript, ", key[ "Ctrl+_" ], " subscript, ", key[ "Ctrl+%" ], " switches between them." } ], "Item" ],
+  Cell[ TextData[ { key[ "esc" ], " ", name[ "name" ], " ", key[ "esc" ], " enters symbols: ", name[ "a" ], " \[RightArrow] \[Alpha], ", name[ "el" ], " \[RightArrow] \[Element], ", name[ "->" ], " \[RightArrow] \[Rule]." } ], "Item" ],
+  Cell[ TextData[ { key[ "Cmd+Shift+E" ], " shows the cell expression (", key[ "Ctrl+Shift+E" ], " on Windows)." } ], "Item" ],
 
   Cell[ "LaTeX Conversion", "Section" ],
   placeholder,
