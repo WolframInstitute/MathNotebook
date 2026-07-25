@@ -10,17 +10,17 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       154,          7]
-NotebookDataLength[     23163,        625]
-NotebookOptionsPosition[     17006,        549]
-NotebookOutlinePosition[     17416,        565]
-CellTagsIndexPosition[     17373,        562]
+NotebookDataLength[     27862,        734]
+NotebookOptionsPosition[     20673,        647]
+NotebookOutlinePosition[     21083,        663]
+CellTagsIndexPosition[     21040,        660]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
 Notebook[{
-Cell["Writing Mathematics in Notebooks", "Title",ExpressionUUID->"67cbd00a-fcfb-4f1f-8fff-6cbab44da84b"],
+Cell["Writing Mathematics in Notebooks", "Title",ExpressionUUID->"a9984114-75a3-4e86-95a9-a770ea95f52b"],
 
-Cell["MathNotebook Tutorial", "Author",ExpressionUUID->"94cbbf83-699d-444b-95e0-b85922aa3b2a"],
+Cell["MathNotebook Tutorial", "Author",ExpressionUUID->"44de18bd-905d-44f0-a1f9-b2e41412feb8"],
 
 Cell["\<\
 How to write a mathematics paper in a Wolfram notebook: journal stylesheets, \
@@ -28,16 +28,16 @@ live referencing, and conversion between LaTeX source and native typeset \
 math. Whether the mathematics is written as LaTeX or as built-in typeset math \
 is your choice throughout \[LongDash] the palette only moves a selection from \
 one to the other.\
-\>", "Abstract",ExpressionUUID->"63d520ee-33e3-4f6a-939e-86df91ed1a1f"],
+\>", "Abstract",ExpressionUUID->"7acf437e-82ea-42f7-bfee-a244a62ea1af"],
 
-Cell["Getting Started", "Section",ExpressionUUID->"8a434be9-de51-4196-b1a9-429d31ebdb33"],
+Cell["Getting Started", "Section",ExpressionUUID->"14217eef-29ad-4ef0-b54c-a42053db5785"],
 
 Cell[TextData[{
  "After installing the paclet, restart the front end so that ",
  StyleBox["Palettes \[RightArrow] MathNotebook",
   FontSlant->"Italic"],
  " and the stylesheet menu appear."
-}], "Item",ExpressionUUID->"eae4fdd1-e6bd-4766-8615-b20e88597ba9"],
+}], "Item",ExpressionUUID->"010a5f03-70fc-4ffc-8e3c-702803e649d5"],
 
 Cell[TextData[{
  "Give a notebook a journal style with ",
@@ -50,7 +50,7 @@ Cell[TextData[{
  StyleBox["Default",
   FontSlant->"Italic"],
  " in that menu takes it back."
-}], "Item",ExpressionUUID->"87669035-214e-4530-be57-df352017bc3a"],
+}], "Item",ExpressionUUID->"ddf22f3c-9265-4a0a-8514-ca0fd090bd77"],
 
 Cell[TextData[{
  "Style the opening cells ",
@@ -69,20 +69,20 @@ Cell[TextData[{
  StyleBox["Text",
   FontSlant->"Italic"],
  " cells."
-}], "Item",ExpressionUUID->"580a7314-37ec-48ab-80dd-ae7d11c7b0ac"],
+}], "Item",ExpressionUUID->"8e9a99a4-238e-416a-a60a-45de9f996c5a"],
 
 Cell["\<\
 Every palette button acts on the notebook you were last editing, and on its \
 current selection.\
-\>", "Item",ExpressionUUID->"a4ca8647-baa0-435a-a822-ba790197624d"],
+\>", "Item",ExpressionUUID->"ad60efe2-57f1-4a8a-9bbc-1eadfa83b767"],
 
 Cell["\<\
 The journal stylesheets are light-only; applying one from the palette also \
 sets the notebook to light mode, so printed and exported output matches the \
 screen.\
-\>", "Item",ExpressionUUID->"4e7e2d30-fc73-4b93-85aa-c3e7e6ce22cb"],
+\>", "Item",ExpressionUUID->"1b804658-ad16-4571-beff-3adade8d1ea5"],
 
-Cell["Referencing", "Section",ExpressionUUID->"4b05b361-60f2-4dff-ab89-830ce82aef8a"],
+Cell["Referencing", "Section",ExpressionUUID->"f3ff4a5d-4574-4546-8ac1-97fbcc5564d7"],
 
 Cell[TextData[{
  "Select a numbered cell \[LongDash] an equation, a theorem, a section, a \
@@ -90,19 +90,19 @@ numbered item \[LongDash] and press ",
  StyleBox["Copy reference",
   FontSlant->"Italic"],
  ", then paste into your text."
-}], "Item",ExpressionUUID->"3bf6cd5e-151f-46bc-b762-830943825ebd"],
+}], "Item",ExpressionUUID->"9f33583b-3ff3-49f2-b18c-26d4cfc9bb00"],
 
 Cell["\<\
 The pasted reference is a live button showing the current number, so \
 reordering cells renumbers every reference to them.\
-\>", "Item",ExpressionUUID->"844f29d2-fa87-445d-a31f-1b58ffd62efb"],
+\>", "Item",ExpressionUUID->"332f28a3-0a2a-49b7-8fbc-a89cf629c03c"],
 
 Cell[TextData[{
  "Clicking a reference jumps to its target; ",
  StyleBox["\[UpArrow] Go back",
   FontSlant->"Italic"],
  " returns to where you clicked from."
-}], "Item",ExpressionUUID->"d5b551a2-5971-401b-898a-c85b7332e0c1"],
+}], "Item",ExpressionUUID->"3fd3b2f9-4a04-4ef3-a649-c2777fe9a01f"],
 
 Cell[TextData[{
  StyleBox["Tag cell",
@@ -115,31 +115,31 @@ give a bibliography: style each entry ",
  StyleBox["Reference",
   FontSlant->"Italic"],
  ", tag it, cite it."
-}], "Item",ExpressionUUID->"5bff977e-11e3-4a45-9db2-704830249720"],
+}], "Item",ExpressionUUID->"0573fcec-3b44-4e49-9793-87e47b6299dd"],
 
 Cell[TextData[{
  "Existing tags are listed under ",
  StyleBox["Cell \[RightArrow] Cell Tags",
   FontSlant->"Italic"],
  "."
-}], "Item",ExpressionUUID->"5d3cb18c-73c2-46ba-995c-1467aae7da48"],
+}], "Item",ExpressionUUID->"4347fe88-ab32-44fb-b458-cbda6e90bd77"],
 
 Cell["\<\
 The theorem below and the equation after it are practice targets: select \
 either one and copy a reference to it.\
-\>", "Item",ExpressionUUID->"2939d5bc-60a1-405b-8bdd-63836d4eb841"],
+\>", "Item",ExpressionUUID->"1abee08f-86bf-4c2b-b3f3-7ea1641dc6d9"],
 
-Cell["The exponential map is surjective onto the unit circle.", "Theorem",ExpressionUUID->"41190983-f8b7-43b4-a16c-34c961fd010c"],
+Cell["The exponential map is surjective onto the unit circle.", "Theorem",ExpressionUUID->"a7fa71ef-ca9c-446a-b97c-75becd0368b9"],
 
 Cell[BoxData[
  FormBox[
   RowBox[{
    SuperscriptBox["e", 
     RowBox[{"\[ImaginaryI]", "\[Pi]"}]], "+", "1", "=", "0"}], 
-  TraditionalForm]], "DisplayFormulaNumbered",ExpressionUUID->"badea812-866d-\
-4133-b151-a31879a35aa3"],
+  TraditionalForm]], "DisplayFormulaNumbered",ExpressionUUID->"72f4aa94-054f-\
+496d-9366-d11e8ac1b26a"],
 
-Cell["Stylesheets", "Section",ExpressionUUID->"6719bf46-3e87-4756-a056-89ff341aae64"],
+Cell["Stylesheets", "Section",ExpressionUUID->"019808b6-1136-43e1-9b67-26dcaaaa77fa"],
 
 Cell[TextData[{
  "Four templates: ",
@@ -155,19 +155,19 @@ Cell[TextData[{
  StyleBox["RevTeXAPS",
   FontSlant->"Italic"],
  " (Times)."
-}], "Item",ExpressionUUID->"ef975d77-31b6-4325-b35d-e1b78d479a99"],
+}], "Item",ExpressionUUID->"fbdb4a8c-343c-4391-8654-35e41e926b88"],
 
 Cell["\<\
 All four define the same style names, so switching between them is instant \
 and changes nothing but the typography.\
-\>", "Item",ExpressionUUID->"7613aa02-3be3-42a1-86ba-e940ab5f945b"],
+\>", "Item",ExpressionUUID->"07304783-1a52-47e0-a2aa-dc2e76442509"],
 
 Cell["\<\
 Theorem, Lemma, Proposition, Corollary, Conjecture, Claim, Definition, \
 Example, Construction, Remark, Question, and Observation share a single \
 counter that resets at each section, exactly as in LaTeX; numbered equations \
 count continuously through the document.\
-\>", "Item",ExpressionUUID->"0da2fd9f-bb3e-4fd8-9c92-7a8ff29b62ba"],
+\>", "Item",ExpressionUUID->"c64d4ef1-2230-4ce5-9b46-9ab969c741fb"],
 
 Cell[TextData[{
  "Insert environments from the palette's ",
@@ -183,7 +183,7 @@ Cell[TextData[{
  StyleBox["Equation (n)",
   FontSlant->"Italic"],
  " buttons."
-}], "Item",ExpressionUUID->"a1c48c08-4510-4386-8dc7-718209419668"],
+}], "Item",ExpressionUUID->"51f09595-a47c-4b3c-8261-0cc37b438145"],
 
 Cell[TextData[{
  "Latin Modern and TeX Gyre are LaTeX fonts, not system fonts: press ",
@@ -198,9 +198,107 @@ Cell[TextData[{
  ") into your user font directory, then restart the front end. They are \
 installed for the whole machine, not inside Mathematica, so any application \
 can use them."
-}], "Item",ExpressionUUID->"e1c5cfd9-c7f7-42fd-b20c-31910c0b2ca6"],
+}], "Item",ExpressionUUID->"575d05b1-baff-4b09-bdb8-c215cccf69fa"],
 
-Cell["Math Input Shortcuts", "Section",ExpressionUUID->"fcfdf629-a330-4248-8ad3-0bafba74774c"],
+Cell["Reading and Writing Comfortably", "Section",ExpressionUUID->"6606f3f3-ff7c-485c-9f83-ebdc53f06865"],
+
+Cell["\<\
+Each palette group folds: click its opener or its name to collapse it, so \
+only the buttons you are using take up room. The palette remembers which \
+groups are open across front end restarts.\
+\>", "Item",ExpressionUUID->"6a6ba97a-6c27-4460-9c5b-415f913cc3f1"],
+
+Cell[TextData[{
+ "The ",
+ StyleBox["Document view",
+  FontSlant->"Italic"],
+ " group holds three sliders and a reset. Like every other palette control \
+they act on the notebook you were last editing, so leave the palette open \
+beside your paper and drag while you read it."
+}], "Item",ExpressionUUID->"1b21a995-620f-4651-892e-95fb4763d970"],
+
+Cell[TextData[{
+ StyleBox["Text size",
+  FontSlant->"Italic"],
+ " sets the size of ",
+ StyleBox["Text",
+  FontSlant->"Italic"],
+ " and scales the title, the headings, and the abstract with it, so the \
+document keeps its proportions instead of one style growing alone."
+}], "Item",ExpressionUUID->"6988613d-6566-4b9c-9d19-03ecd3d1e549"],
+
+Cell[TextData[{
+ StyleBox["Math size",
+  FontSlant->"Italic"],
+ " does the same for displayed equations and their numbers, independently of \
+the prose \[LongDash] the usual reason to reach for it is an equation left \
+too small to read beside text you have just enlarged."
+}], "Item",ExpressionUUID->"e59ee201-ea5f-40f4-ba4e-02cb9f921411"],
+
+Cell[TextData[{
+ StyleBox["Column width",
+  FontSlant->"Italic"],
+ " is the fraction of the page the content occupies, centered in it. ",
+ StyleBox["0.9",
+  FontSlant->"Italic"],
+ " is the measure the stylesheets already set; narrowing it gives the short \
+line a printed page has, which is what makes a paper readable on a wide \
+screen. Section numbers and the theorem and abstract dingbats keep hanging in \
+the margin at every width."
+}], "Item",ExpressionUUID->"3f5e128c-98a0-4eaa-9689-4264a546c7bb"],
+
+Cell[TextData[{
+ "All three set real font sizes and margins, so they reach the exported PDF. ",
+ StyleBox["Format \[RightArrow] Magnification",
+  FontSlant->"Italic"],
+ " is a different thing entirely \[LongDash] it zooms the screen and never \
+changes print."
+}], "Item",ExpressionUUID->"bf672668-f5e3-435e-8c24-878a67707b2e"],
+
+Cell["\<\
+The settings are stored in the notebook itself, so they survive saving and \
+reopening and travel with the file to a coauthor.\
+\>", "Item",ExpressionUUID->"455251b5-a666-47ac-b3a7-d3277325a79d"],
+
+Cell[TextData[{
+ StyleBox["Reset view",
+  FontSlant->"Italic"],
+ " returns the notebook to its stylesheet defaults and leaves no trace of the \
+overrides; applying a stylesheet clears them too, since the new sheet \
+replaces them."
+}], "Item",ExpressionUUID->"130e2d5d-1215-47ab-80bf-ea64e8966e22"],
+
+Cell[TextData[{
+ "MaTeX cells are images and cannot inherit a style, so ",
+ StyleBox["Math size",
+  FontSlant->"Italic"],
+ " re-renders each of them through LaTeX at the new size, from the TeX the \
+cell stores."
+}], "Item",ExpressionUUID->"63ab3041-1c21-4f90-9ce4-9716b0cea1d5"],
+
+Cell[TextData[{
+ "The same from code, on any notebook: ",
+ StyleBox["SetDocumentFontSize[nb, 16]",
+  FontSlant->"Italic"],
+ ", ",
+ StyleBox["SetMathFontSize[nb, 16]",
+  FontSlant->"Italic"],
+ ", ",
+ StyleBox["SetContentWidth[nb, 0.6]",
+  FontSlant->"Italic"],
+ " \[LongDash] each takes ",
+ StyleBox["Automatic",
+  FontSlant->"Italic"],
+ " to drop its own override \[LongDash] and ",
+ StyleBox["ResetDocumentView[nb]",
+  FontSlant->"Italic"],
+ " to drop all of them. They work on a notebook still using ",
+ StyleBox["Default",
+  FontSlant->"Italic"],
+ " too."
+}], "Item",ExpressionUUID->"0d024e43-91a2-4149-acb7-249037ed9987"],
+
+Cell["Math Input Shortcuts", "Section",ExpressionUUID->"e57cfe1f-4ace-4de0-bc3e-94d9f2e07279"],
 
 Cell[TextData[{
  StyleBox["Ctrl+9",
@@ -209,7 +307,7 @@ Cell[TextData[{
  StyleBox["Ctrl+0",
   FontWeight->"Bold"],
  " exits."
-}], "Item",ExpressionUUID->"552e254b-5cb7-46b3-b210-060f778286ae"],
+}], "Item",ExpressionUUID->"210e022a-f569-418d-bbae-48723e19b0bf"],
 
 Cell[TextData[{
  StyleBox["Ctrl+/",
@@ -218,7 +316,7 @@ Cell[TextData[{
  StyleBox["Ctrl+2",
   FontWeight->"Bold"],
  " square root."
-}], "Item",ExpressionUUID->"bed69c31-c369-4ec6-a814-69848b13312f"],
+}], "Item",ExpressionUUID->"8cf34796-a7e8-4621-993d-eb76c91792fe"],
 
 Cell[TextData[{
  StyleBox["Ctrl+^",
@@ -230,7 +328,7 @@ Cell[TextData[{
  StyleBox["Ctrl+%",
   FontWeight->"Bold"],
  " switches between them."
-}], "Item",ExpressionUUID->"6b6de742-46aa-4c55-b75d-81365812cf1f"],
+}], "Item",ExpressionUUID->"dea1d970-3682-4c24-b6d1-43a1d9479a6c"],
 
 Cell[TextData[{
  StyleBox["esc",
@@ -251,7 +349,7 @@ Cell[TextData[{
  StyleBox["->",
   FontSlant->"Italic"],
  " \[RightArrow] \[Rule]."
-}], "Item",ExpressionUUID->"b1b93d20-93bc-4d3a-bc54-1fdb653f233c"],
+}], "Item",ExpressionUUID->"3552626e-6421-4180-a816-e96befc0c7d0"],
 
 Cell[TextData[{
  StyleBox["Cmd+Shift+E",
@@ -260,9 +358,9 @@ Cell[TextData[{
  StyleBox["Ctrl+Shift+E",
   FontWeight->"Bold"],
  " on Windows)."
-}], "Item",ExpressionUUID->"3da92399-cab8-4a05-8708-b495345dfb56"],
+}], "Item",ExpressionUUID->"fc291203-1775-40ee-aae8-ab5d49754e77"],
 
-Cell["Working with Cells", "Section",ExpressionUUID->"d562e702-ac85-4001-ac53-298bc829b911"],
+Cell["Working with Cells", "Section",ExpressionUUID->"c6db296d-98c3-49d7-882d-8a8ef52f351b"],
 
 Cell[TextData[{
  "Click a cell bracket to select the cell; drag across brackets to select \
@@ -270,13 +368,13 @@ several; ",
  StyleBox["Delete",
   FontWeight->"Bold"],
  " removes them."
-}], "Item",ExpressionUUID->"5a6a3696-1a1b-411e-b73d-13af3c0d6c3d"],
+}], "Item",ExpressionUUID->"a4b5c689-5f26-4a74-86dc-956a77a85e3f"],
 
 Cell[TextData[{
  StyleBox["Ctrl+.",
   FontWeight->"Bold"],
  " extends the selection outward; repeat to reach the whole cell."
-}], "Item",ExpressionUUID->"3e825862-48c3-4344-bc16-a18c771c2b6f"],
+}], "Item",ExpressionUUID->"9d4d9e43-6827-4ddc-9d36-0c1bb5a2b97a"],
 
 Cell[TextData[{
  StyleBox["Cmd+1",
@@ -294,7 +392,7 @@ Cell[TextData[{
  StyleBox["9",
   FontWeight->"Bold"],
  " restyle a cell: Title, Section, Subsection, Text, Input."
-}], "Item",ExpressionUUID->"12f2dd55-f788-41f6-b507-f678f894382b"],
+}], "Item",ExpressionUUID->"f52607b6-7377-4e83-a517-d5ac167fc420"],
 
 Cell[TextData[{
  StyleBox["Cmd+Shift+D",
@@ -303,7 +401,7 @@ Cell[TextData[{
  StyleBox["Cmd+Shift+M",
   FontWeight->"Bold"],
  " merges selected cells."
-}], "Item",ExpressionUUID->"303a0c63-240e-4d2a-b29c-ed34327c2fed"],
+}], "Item",ExpressionUUID->"4b7711d5-8bf9-40aa-b411-9d6e2574ae93"],
 
 Cell[TextData[{
  StyleBox["Ctrl+G",
@@ -312,7 +410,7 @@ Cell[TextData[{
  StyleBox["Ctrl+Shift+G",
   FontWeight->"Bold"],
  " ungroups."
-}], "Item",ExpressionUUID->"c7057d1a-1035-44b2-b41e-cdaa7e23f002"],
+}], "Item",ExpressionUUID->"b6bbda7d-5c7e-4c55-8f10-10fc5816ff9d"],
 
 Cell[TextData[{
  "Double-click a group bracket to close or open the group; ",
@@ -322,14 +420,14 @@ Cell[TextData[{
  StyleBox["Cmd+Shift+}",
   FontWeight->"Bold"],
  " open and close all subgroups."
-}], "Item",ExpressionUUID->"de870f04-7fb7-493e-b6c5-c5804a8f5535"],
+}], "Item",ExpressionUUID->"3daf0f92-92f5-4b71-9f73-6b5365a594ec"],
 
 Cell["\<\
 Double-click a closed group's remaining bracket to reopen it; use Cell \
 \[RightArrow] Delete All Output before sharing a notebook.\
-\>", "Item",ExpressionUUID->"4133914b-45e6-4554-94ae-dbaf5c759f8a"],
+\>", "Item",ExpressionUUID->"5769f120-07e1-43e9-8c7d-6ad4efbc0772"],
 
-Cell["LaTeX Conversion", "Section",ExpressionUUID->"b7fd6de3-e976-4b16-a0ef-7a6c83a39c50"],
+Cell["LaTeX Conversion", "Section",ExpressionUUID->"1a44d5ce-9740-4c1a-adfa-1d56eb107b3c"],
 
 Cell[TextData[{
  "Select the cells to convert, then press ",
@@ -339,7 +437,7 @@ Cell[TextData[{
  StyleBox["Math \[Rule] TeX",
   FontSlant->"Italic"],
  ". With nothing selected the whole notebook is converted."
-}], "Item",ExpressionUUID->"444d38a8-0b36-4934-b8a1-de865e2207b1"],
+}], "Item",ExpressionUUID->"2befc7b9-8fa1-405d-8894-4b0e858d2abf"],
 
 Cell[TextData[{
  StyleBox["TeX \[Rule] math",
@@ -364,7 +462,7 @@ Cell[TextData[{
   FontSlant->"Italic"],
  "; the starred forms stay unnumbered, the unstarred ones become numbered \
 equations."
-}], "Item",ExpressionUUID->"54725c80-b55b-4a37-9501-2f1a683f919c"],
+}], "Item",ExpressionUUID->"280f456b-847d-4b9a-b4e3-d53cc2aca435"],
 
 Cell[TextData[{
  "An ",
@@ -374,7 +472,7 @@ Cell[TextData[{
  StyleBox["&",
   FontSlant->"Italic"],
  ", so it stays editable as one equation cell."
-}], "Item",ExpressionUUID->"cf258f34-21da-44ab-a62d-e06f25f295e9"],
+}], "Item",ExpressionUUID->"c83fc93c-15ca-48a3-a668-9bc48fb71aae"],
 
 Cell[TextData[{
  "Each converted cell keeps its original TeX, so ",
@@ -382,7 +480,7 @@ Cell[TextData[{
   FontSlant->"Italic"],
  " gives back what you typed rather than a re-serialization of the boxes. \
 Anything the parser cannot read is left untouched."
-}], "Item",ExpressionUUID->"3ed4e564-9f27-4f1b-ade6-ad007341f9dc"],
+}], "Item",ExpressionUUID->"31eb35f1-7404-456b-ac35-e38ed7e744e0"],
 
 Cell[TextData[{
  "Input, Code, and Output cells are skipped, so ",
@@ -390,9 +488,9 @@ Cell[TextData[{
   FontSlant->"Italic"],
  " in code is safe. To bring in a LaTeX paper, paste it as Text cells and \
 convert."
-}], "Item",ExpressionUUID->"1587adc7-13e3-4257-9115-8229a41e3d25"],
+}], "Item",ExpressionUUID->"70f6d732-f260-4720-ab18-349275184d96"],
 
-Cell["MaTeX", "Section",ExpressionUUID->"84cbbe4f-92ea-45ec-b730-ac90d7e4b247"],
+Cell["MaTeX", "Section",ExpressionUUID->"4272e9a5-e78a-436b-a1e3-932b8acba809"],
 
 Cell[TextData[{
  "MaTeX (",
@@ -404,7 +502,7 @@ Cell[TextData[{
  ") is optional, and needs a TeX distribution and Ghostscript. It is used \
 only by the MaTeX buttons; referencing, stylesheets, and LaTeX conversion do \
 not."
-}], "Item",ExpressionUUID->"e99f8292-61fd-4796-ac2b-a21a8beb0397"],
+}], "Item",ExpressionUUID->"43951284-1fea-404a-b0bd-125d0bc18d94"],
 
 Cell[TextData[{
  "Use it when an equation has to come out of real LaTeX \[LongDash] macros, \
@@ -412,7 +510,7 @@ Cell[TextData[{
  StyleBox["tikz-cd",
   FontSlant->"Italic"],
  " diagrams, exact journal metrics."
-}], "Item",ExpressionUUID->"35a6328d-1ee6-4d00-84ca-2e4b2958507a"],
+}], "Item",ExpressionUUID->"634fd6fd-5883-4e9f-9386-a96b86d58568"],
 
 Cell[TextData[{
  StyleBox["Install MaTeX",
@@ -424,7 +522,7 @@ Cell[TextData[{
  StyleBox["gs",
   FontSlant->"Italic"],
  "."
-}], "Item",ExpressionUUID->"a2836990-224e-4239-91a7-9c417a41b475"],
+}], "Item",ExpressionUUID->"e2d484b0-886a-494f-8c6b-526cf24103c5"],
 
 Cell[TextData[{
  StyleBox["Math \[Rule] MaTeX",
@@ -433,7 +531,7 @@ Cell[TextData[{
  StyleBox["MaTeX \[Rule] math",
   FontSlant->"Italic"],
  " restores editable typeset math from the TeX stored in each cell."
-}], "Item",ExpressionUUID->"91b4f81f-662a-4dcf-82ea-58d1d8490b5d"],
+}], "Item",ExpressionUUID->"cb386158-4d3d-40bb-b2d5-0be4af6520a6"],
 
 Cell[TextData[{
  StyleBox["MaTeX preferences",
@@ -450,43 +548,43 @@ for ",
   FontSlant->"Italic"],
  " to route TeX typed into a notebook through LaTeX instead of the built-in \
 parser."
-}], "Item",ExpressionUUID->"d6c8bdd3-2a44-40f9-ad8f-c9c5242bcf17"],
+}], "Item",ExpressionUUID->"6ec692c7-c7c3-45bb-b78a-4f50b6aa4cba"],
 
 Cell["\<\
 MaTeX cells are images: convert them back before editing, and keep rendering \
 for last.\
-\>", "Item",ExpressionUUID->"211e5651-0478-40fe-b7cf-a03d1050c6ca"],
+\>", "Item",ExpressionUUID->"6259dde1-245d-4224-b0da-a5a803c5d2ba"],
 
-Cell["Best Practices", "Section",ExpressionUUID->"5bc3db9b-3fc8-4d53-b9ea-8d7c023edc24"],
+Cell["Best Practices", "Section",ExpressionUUID->"f758bb03-214d-400a-8e98-129657ec4567"],
 
 Cell["\<\
 One environment per cell, inserted from the palette, keeps the styles and \
 counters consistent.\
-\>", "Item",ExpressionUUID->"3d8ae895-ea04-4ce1-848c-ca6215dccfcb"],
+\>", "Item",ExpressionUUID->"4e5e77d2-bd2c-43cd-a286-0703e1d0f3e8"],
 
 Cell["\<\
 Tag cells as you write them; tagging a theorem after fifty pages means \
 finding it again.\
-\>", "Item",ExpressionUUID->"d3420ca6-24a0-4689-86ad-03ec8fcb8d1e"],
+\>", "Item",ExpressionUUID->"3781e4cb-c540-4131-ad8d-0ed94755939f"],
 
 Cell["\<\
 Do not strip cell tagging rules: they hold the TeX source that makes the \
 round trip lossless.\
-\>", "Item",ExpressionUUID->"9f7f95a0-7e6f-4b8e-b138-c63dcae706d6"],
+\>", "Item",ExpressionUUID->"b69a7045-d815-41d1-ac61-8c9871b2a344"],
 
 Cell["\<\
 Convert to LaTeX at submission time, not continuously \[LongDash] the \
 notebook is the source.\
-\>", "Item",ExpressionUUID->"0d788cc1-cfa0-4b3e-abce-d66119f540f1"],
+\>", "Item",ExpressionUUID->"82d0320f-9ddb-4aa2-9988-84003c4845a0"],
 
 Cell[TextData[{
  "Before sharing: ",
  StyleBox["Cell \[RightArrow] Delete All Output",
   FontSlant->"Italic"],
  ", and convert MaTeX cells back to math so a coauthor can edit them."
-}], "Item",ExpressionUUID->"69ce67fb-0bdc-4309-a04b-c3d6837c611f"],
+}], "Item",ExpressionUUID->"3a90c4f3-e400-4fdd-bba4-f74ba0e39ccb"],
 
-Cell["Credits", "Section",ExpressionUUID->"0c104dc6-7cb8-4ca2-b9b8-f87a78e7fb87"],
+Cell["Credits", "Section",ExpressionUUID->"42ad7c91-082b-4ec4-9b7b-14030d93da1f"],
 
 Cell[TextData[{
  "The referencing scheme and the MaTeX integration are originally due to Nik \
@@ -497,7 +595,7 @@ Murzin, ",
     URL["https://github.com/sw1sh"], None},
   ButtonNote->"https://github.com/sw1sh"],
  "; this paclet packages and extends that work."
-}], "Text",ExpressionUUID->"39295836-100a-4bb8-883f-868f5f2aa666"],
+}], "Text",ExpressionUUID->"6fa003b2-d3eb-4054-9856-0361c75fa4c9"],
 
 Cell[TextData[{
  "Nik Murzin, ",
@@ -506,7 +604,7 @@ Cell[TextData[{
   ButtonData->{
     URL["https://github.com/sw1sh"], None},
   ButtonNote->"https://github.com/sw1sh"]
-}], "Reference",ExpressionUUID->"86967dc8-6542-4128-a38f-d3c9db1bd0a1"],
+}], "Reference",ExpressionUUID->"182e8688-c351-48a0-9543-5e1581a5a0f9"],
 
 Cell[TextData[{
  "Szabolcs Horvat, MaTeX: LaTeX labels in Mathematica, ",
@@ -515,7 +613,7 @@ Cell[TextData[{
   ButtonData->{
     URL["https://github.com/szhorvat/MaTeX"], None},
   ButtonNote->"https://github.com/szhorvat/MaTeX"]
-}], "Reference",ExpressionUUID->"3af78ba6-e1da-4682-b9d3-65d2c9f86bbe"],
+}], "Reference",ExpressionUUID->"a86bf2f4-64a8-45f9-bd80-7dc6bcc50ffc"],
 
 Cell[TextData[{
  "TeX Live, ",
@@ -530,7 +628,7 @@ Cell[TextData[{
   ButtonData->{
     URL["https://tug.org/mactex/"], None},
   ButtonNote->"https://tug.org/mactex/"]
-}], "Reference",ExpressionUUID->"970f9d46-d53a-4eef-8b2b-4656bad3f325"],
+}], "Reference",ExpressionUUID->"542291db-2b68-42c6-8d6b-4d9973b67dc2"],
 
 Cell[TextData[{
  "Latin Modern, ",
@@ -545,13 +643,13 @@ Cell[TextData[{
   ButtonData->{
     URL["https://ctan.org/pkg/tex-gyre"], None},
   ButtonNote->"https://ctan.org/pkg/tex-gyre"]
-}], "Reference",ExpressionUUID->"4e4b4675-0e45-4149-b712-f8acaea7e821"]
+}], "Reference",ExpressionUUID->"da6d61ad-f698-44d2-bc64-cd6285a3ca59"]
 },
 LightDark->"Light",
 FrontEndVersion->"15.0 for Mac OS X ARM (64-bit) (May 19, 2026)",
 StyleDefinitions->FrontEnd`FileName[{"MathNotebook"}, "AMSArticle.nb", 
   CharacterEncoding -> "UTF-8"],
-ExpressionUUID->"bb56f0fd-66e9-4528-89f7-f91da59440d9"
+ExpressionUUID->"f54201dd-cfd0-4853-9744-80e8ff8fdc62"
 ]
 (* End of Notebook Content *)
 
@@ -564,69 +662,80 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[554, 20, 104, 0, 70, "Title",ExpressionUUID->"67cbd00a-fcfb-4f1f-8fff-6cbab44da84b"],
-Cell[661, 22, 94, 0, 70, "Author",ExpressionUUID->"94cbbf83-699d-444b-95e0-b85922aa3b2a"],
-Cell[758, 24, 414, 6, 70, "Abstract",ExpressionUUID->"63d520ee-33e3-4f6a-939e-86df91ed1a1f"],
-Cell[1175, 32, 89, 0, 70, "Section",ExpressionUUID->"8a434be9-de51-4196-b1a9-429d31ebdb33"],
-Cell[1267, 34, 255, 5, 70, "Item",ExpressionUUID->"eae4fdd1-e6bd-4766-8615-b20e88597ba9"],
-Cell[1525, 41, 387, 11, 70, "Item",ExpressionUUID->"87669035-214e-4530-be57-df352017bc3a"],
-Cell[1915, 54, 387, 17, 70, "Item",ExpressionUUID->"580a7314-37ec-48ab-80dd-ae7d11c7b0ac"],
-Cell[2305, 73, 175, 3, 70, "Item",ExpressionUUID->"a4ca8647-baa0-435a-a822-ba790197624d"],
-Cell[2483, 78, 241, 4, 70, "Item",ExpressionUUID->"4e7e2d30-fc73-4b93-85aa-c3e7e6ce22cb"],
-Cell[2727, 84, 85, 0, 70, "Section",ExpressionUUID->"4b05b361-60f2-4dff-ab89-830ce82aef8a"],
-Cell[2815, 86, 281, 6, 70, "Item",ExpressionUUID->"3bf6cd5e-151f-46bc-b762-830943825ebd"],
-Cell[3099, 94, 201, 3, 70, "Item",ExpressionUUID->"844f29d2-fa87-445d-a31f-1b58ffd62efb"],
-Cell[3303, 99, 224, 5, 70, "Item",ExpressionUUID->"d5b551a2-5971-401b-898a-c85b7332e0c1"],
-Cell[3530, 106, 391, 11, 70, "Item",ExpressionUUID->"5bff977e-11e3-4a45-9db2-704830249720"],
-Cell[3924, 119, 189, 5, 70, "Item",ExpressionUUID->"5d3cb18c-73c2-46ba-995c-1467aae7da48"],
-Cell[4116, 126, 192, 3, 70, "Item",ExpressionUUID->"2939d5bc-60a1-405b-8bdd-63836d4eb841"],
-Cell[4311, 131, 129, 0, 70, "Theorem",ExpressionUUID->"41190983-f8b7-43b4-a16c-34c961fd010c"],
-Cell[4443, 133, 226, 6, 70, "DisplayFormulaNumbered",ExpressionUUID->"badea812-866d-4133-b151-a31879a35aa3"],
-Cell[4672, 141, 85, 0, 70, "Section",ExpressionUUID->"6719bf46-3e87-4756-a056-89ff341aae64"],
-Cell[4760, 143, 381, 14, 70, "Item",ExpressionUUID->"ef975d77-31b6-4325-b35d-e1b78d479a99"],
-Cell[5144, 159, 195, 3, 70, "Item",ExpressionUUID->"7613aa02-3be3-42a1-86ba-e940ab5f945b"],
-Cell[5342, 164, 345, 5, 70, "Item",ExpressionUUID->"0da2fd9f-bb3e-4fd8-9c92-7a8ff29b62ba"],
-Cell[5690, 171, 376, 14, 70, "Item",ExpressionUUID->"a1c48c08-4510-4386-8dc7-718209419668"],
-Cell[6069, 187, 594, 13, 70, "Item",ExpressionUUID->"e1c5cfd9-c7f7-42fd-b20c-31910c0b2ca6"],
-Cell[6666, 202, 94, 0, 70, "Section",ExpressionUUID->"fcfdf629-a330-4248-8ad3-0bafba74774c"],
-Cell[6763, 204, 206, 7, 70, "Item",ExpressionUUID->"552e254b-5cb7-46b3-b210-060f778286ae"],
-Cell[6972, 213, 201, 7, 70, "Item",ExpressionUUID->"bed69c31-c369-4ec6-a814-69848b13312f"],
-Cell[7176, 222, 274, 10, 70, "Item",ExpressionUUID->"6b6de742-46aa-4c55-b75d-81365812cf1f"],
-Cell[7453, 234, 446, 19, 70, "Item",ExpressionUUID->"b1b93d20-93bc-4d3a-bc54-1fdb653f233c"],
-Cell[7902, 255, 229, 7, 70, "Item",ExpressionUUID->"3da92399-cab8-4a05-8708-b495345dfb56"],
-Cell[8134, 264, 92, 0, 70, "Section",ExpressionUUID->"d562e702-ac85-4001-ac53-298bc829b911"],
-Cell[8229, 266, 231, 6, 70, "Item",ExpressionUUID->"5a6a3696-1a1b-411e-b73d-13af3c0d6c3d"],
-Cell[8463, 274, 192, 4, 70, "Item",ExpressionUUID->"3e825862-48c3-4344-bc16-a18c771c2b6f"],
-Cell[8658, 280, 361, 16, 70, "Item",ExpressionUUID->"12f2dd55-f788-41f6-b507-f678f894382b"],
-Cell[9022, 298, 241, 7, 70, "Item",ExpressionUUID->"303a0c63-240e-4d2a-b29c-ed34327c2fed"],
-Cell[9266, 307, 217, 7, 70, "Item",ExpressionUUID->"c7057d1a-1035-44b2-b41e-cdaa7e23f002"],
-Cell[9486, 316, 284, 8, 70, "Item",ExpressionUUID->"de870f04-7fb7-493e-b6c5-c5804a8f5535"],
-Cell[9773, 326, 210, 3, 70, "Item",ExpressionUUID->"4133914b-45e6-4554-94ae-dbaf5c759f8a"],
-Cell[9986, 331, 90, 0, 70, "Section",ExpressionUUID->"b7fd6de3-e976-4b16-a0ef-7a6c83a39c50"],
-Cell[10079, 333, 304, 8, 70, "Item",ExpressionUUID->"444d38a8-0b36-4934-b8a1-de865e2207b1"],
-Cell[10386, 343, 603, 23, 70, "Item",ExpressionUUID->"54725c80-b55b-4a37-9501-2f1a683f919c"],
-Cell[10992, 368, 268, 8, 70, "Item",ExpressionUUID->"cf258f34-21da-44ab-a62d-e06f25f295e9"],
-Cell[11263, 378, 316, 6, 70, "Item",ExpressionUUID->"3ed4e564-9f27-4f1b-ade6-ad007341f9dc"],
-Cell[11582, 386, 258, 6, 70, "Item",ExpressionUUID->"1587adc7-13e3-4257-9115-8229a41e3d25"],
-Cell[11843, 394, 79, 0, 70, "Section",ExpressionUUID->"84cbbe4f-92ea-45ec-b730-ac90d7e4b247"],
-Cell[11925, 396, 442, 10, 70, "Item",ExpressionUUID->"e99f8292-61fd-4796-ac2b-a21a8beb0397"],
-Cell[12370, 408, 245, 6, 70, "Item",ExpressionUUID->"35a6328d-1ee6-4d00-84ca-2e4b2958507a"],
-Cell[12618, 416, 287, 10, 70, "Item",ExpressionUUID->"a2836990-224e-4239-91a7-9c417a41b475"],
-Cell[12908, 428, 323, 7, 70, "Item",ExpressionUUID->"91b4f81f-662a-4dcf-82ea-58d1d8490b5d"],
-Cell[13234, 437, 519, 15, 70, "Item",ExpressionUUID->"d6c8bdd3-2a44-40f9-ad8f-c9c5242bcf17"],
-Cell[13756, 454, 167, 3, 70, "Item",ExpressionUUID->"211e5651-0478-40fe-b7cf-a03d1050c6ca"],
-Cell[13926, 459, 88, 0, 70, "Section",ExpressionUUID->"5bc3db9b-3fc8-4d53-b9ea-8d7c023edc24"],
-Cell[14017, 461, 175, 3, 70, "Item",ExpressionUUID->"3d8ae895-ea04-4ce1-848c-ca6215dccfcb"],
-Cell[14195, 466, 169, 3, 70, "Item",ExpressionUUID->"d3420ca6-24a0-4689-86ad-03ec8fcb8d1e"],
-Cell[14367, 471, 174, 3, 70, "Item",ExpressionUUID->"9f7f95a0-7e6f-4b8e-b138-c63dcae706d6"],
-Cell[14544, 476, 174, 3, 70, "Item",ExpressionUUID->"0d788cc1-cfa0-4b3e-abce-d66119f540f1"],
-Cell[14721, 481, 248, 5, 70, "Item",ExpressionUUID->"69ce67fb-0bdc-4309-a04b-c3d6837c611f"],
-Cell[14972, 488, 81, 0, 70, "Section",ExpressionUUID->"0c104dc6-7cb8-4ca2-b9b8-f87a78e7fb87"],
-Cell[15056, 490, 381, 9, 70, "Text",ExpressionUUID->"39295836-100a-4bb8-883f-868f5f2aa666"],
-Cell[15440, 501, 271, 7, 70, "Reference",ExpressionUUID->"86967dc8-6542-4128-a38f-d3c9db1bd0a1"],
-Cell[15714, 510, 339, 7, 70, "Reference",ExpressionUUID->"3af78ba6-e1da-4682-b9d3-65d2c9f86bbe"],
-Cell[16056, 519, 470, 13, 70, "Reference",ExpressionUUID->"970f9d46-d53a-4eef-8b2b-4656bad3f325"],
-Cell[16529, 534, 473, 13, 70, "Reference",ExpressionUUID->"4e4b4675-0e45-4149-b712-f8acaea7e821"]
+Cell[554, 20, 104, 0, 70, "Title",ExpressionUUID->"a9984114-75a3-4e86-95a9-a770ea95f52b"],
+Cell[661, 22, 94, 0, 70, "Author",ExpressionUUID->"44de18bd-905d-44f0-a1f9-b2e41412feb8"],
+Cell[758, 24, 414, 6, 70, "Abstract",ExpressionUUID->"7acf437e-82ea-42f7-bfee-a244a62ea1af"],
+Cell[1175, 32, 89, 0, 70, "Section",ExpressionUUID->"14217eef-29ad-4ef0-b54c-a42053db5785"],
+Cell[1267, 34, 255, 5, 70, "Item",ExpressionUUID->"010a5f03-70fc-4ffc-8e3c-702803e649d5"],
+Cell[1525, 41, 387, 11, 70, "Item",ExpressionUUID->"ddf22f3c-9265-4a0a-8514-ca0fd090bd77"],
+Cell[1915, 54, 387, 17, 70, "Item",ExpressionUUID->"8e9a99a4-238e-416a-a60a-45de9f996c5a"],
+Cell[2305, 73, 175, 3, 70, "Item",ExpressionUUID->"ad60efe2-57f1-4a8a-9bbc-1eadfa83b767"],
+Cell[2483, 78, 241, 4, 70, "Item",ExpressionUUID->"1b804658-ad16-4571-beff-3adade8d1ea5"],
+Cell[2727, 84, 85, 0, 70, "Section",ExpressionUUID->"f3ff4a5d-4574-4546-8ac1-97fbcc5564d7"],
+Cell[2815, 86, 281, 6, 70, "Item",ExpressionUUID->"9f33583b-3ff3-49f2-b18c-26d4cfc9bb00"],
+Cell[3099, 94, 201, 3, 70, "Item",ExpressionUUID->"332f28a3-0a2a-49b7-8fbc-a89cf629c03c"],
+Cell[3303, 99, 224, 5, 70, "Item",ExpressionUUID->"3fd3b2f9-4a04-4ef3-a649-c2777fe9a01f"],
+Cell[3530, 106, 391, 11, 70, "Item",ExpressionUUID->"0573fcec-3b44-4e49-9793-87e47b6299dd"],
+Cell[3924, 119, 189, 5, 70, "Item",ExpressionUUID->"4347fe88-ab32-44fb-b458-cbda6e90bd77"],
+Cell[4116, 126, 192, 3, 70, "Item",ExpressionUUID->"1abee08f-86bf-4c2b-b3f3-7ea1641dc6d9"],
+Cell[4311, 131, 129, 0, 70, "Theorem",ExpressionUUID->"a7fa71ef-ca9c-446a-b97c-75becd0368b9"],
+Cell[4443, 133, 226, 6, 70, "DisplayFormulaNumbered",ExpressionUUID->"72f4aa94-054f-496d-9366-d11e8ac1b26a"],
+Cell[4672, 141, 85, 0, 70, "Section",ExpressionUUID->"019808b6-1136-43e1-9b67-26dcaaaa77fa"],
+Cell[4760, 143, 381, 14, 70, "Item",ExpressionUUID->"fbdb4a8c-343c-4391-8654-35e41e926b88"],
+Cell[5144, 159, 195, 3, 70, "Item",ExpressionUUID->"07304783-1a52-47e0-a2aa-dc2e76442509"],
+Cell[5342, 164, 345, 5, 70, "Item",ExpressionUUID->"c64d4ef1-2230-4ce5-9b46-9ab969c741fb"],
+Cell[5690, 171, 376, 14, 70, "Item",ExpressionUUID->"51f09595-a47c-4b3c-8261-0cc37b438145"],
+Cell[6069, 187, 594, 13, 70, "Item",ExpressionUUID->"575d05b1-baff-4b09-bdb8-c215cccf69fa"],
+Cell[6666, 202, 105, 0, 70, "Section",ExpressionUUID->"6606f3f3-ff7c-485c-9f83-ebdc53f06865"],
+Cell[6774, 204, 272, 4, 70, "Item",ExpressionUUID->"6a6ba97a-6c27-4460-9c5b-415f913cc3f1"],
+Cell[7049, 210, 342, 7, 70, "Item",ExpressionUUID->"1b21a995-620f-4651-892e-95fb4763d970"],
+Cell[7394, 219, 336, 8, 70, "Item",ExpressionUUID->"6988613d-6566-4b9c-9d19-03ecd3d1e549"],
+Cell[7733, 229, 340, 6, 70, "Item",ExpressionUUID->"e59ee201-ea5f-40f4-ba4e-02cb9f921411"],
+Cell[8076, 237, 505, 10, 70, "Item",ExpressionUUID->"3f5e128c-98a0-4eaa-9689-4264a546c7bb"],
+Cell[8584, 249, 327, 6, 70, "Item",ExpressionUUID->"bf672668-f5e3-435e-8c24-878a67707b2e"],
+Cell[8914, 257, 205, 3, 70, "Item",ExpressionUUID->"455251b5-a666-47ac-b3a7-d3277325a79d"],
+Cell[9122, 262, 298, 6, 70, "Item",ExpressionUUID->"130e2d5d-1215-47ab-80bf-ea64e8966e22"],
+Cell[9423, 270, 279, 6, 70, "Item",ExpressionUUID->"63ab3041-1c21-4f90-9ce4-9716b0cea1d5"],
+Cell[9705, 278, 625, 20, 70, "Item",ExpressionUUID->"0d024e43-91a2-4149-acb7-249037ed9987"],
+Cell[10333, 300, 94, 0, 70, "Section",ExpressionUUID->"e57cfe1f-4ace-4de0-bc3e-94d9f2e07279"],
+Cell[10430, 302, 206, 7, 70, "Item",ExpressionUUID->"210e022a-f569-418d-bbae-48723e19b0bf"],
+Cell[10639, 311, 201, 7, 70, "Item",ExpressionUUID->"8cf34796-a7e8-4621-993d-eb76c91792fe"],
+Cell[10843, 320, 274, 10, 70, "Item",ExpressionUUID->"dea1d970-3682-4c24-b6d1-43a1d9479a6c"],
+Cell[11120, 332, 446, 19, 70, "Item",ExpressionUUID->"3552626e-6421-4180-a816-e96befc0c7d0"],
+Cell[11569, 353, 229, 7, 70, "Item",ExpressionUUID->"fc291203-1775-40ee-aae8-ab5d49754e77"],
+Cell[11801, 362, 92, 0, 70, "Section",ExpressionUUID->"c6db296d-98c3-49d7-882d-8a8ef52f351b"],
+Cell[11896, 364, 231, 6, 70, "Item",ExpressionUUID->"a4b5c689-5f26-4a74-86dc-956a77a85e3f"],
+Cell[12130, 372, 192, 4, 70, "Item",ExpressionUUID->"9d4d9e43-6827-4ddc-9d36-0c1bb5a2b97a"],
+Cell[12325, 378, 361, 16, 70, "Item",ExpressionUUID->"f52607b6-7377-4e83-a517-d5ac167fc420"],
+Cell[12689, 396, 241, 7, 70, "Item",ExpressionUUID->"4b7711d5-8bf9-40aa-b411-9d6e2574ae93"],
+Cell[12933, 405, 217, 7, 70, "Item",ExpressionUUID->"b6bbda7d-5c7e-4c55-8f10-10fc5816ff9d"],
+Cell[13153, 414, 284, 8, 70, "Item",ExpressionUUID->"3daf0f92-92f5-4b71-9f73-6b5365a594ec"],
+Cell[13440, 424, 210, 3, 70, "Item",ExpressionUUID->"5769f120-07e1-43e9-8c7d-6ad4efbc0772"],
+Cell[13653, 429, 90, 0, 70, "Section",ExpressionUUID->"1a44d5ce-9740-4c1a-adfa-1d56eb107b3c"],
+Cell[13746, 431, 304, 8, 70, "Item",ExpressionUUID->"2befc7b9-8fa1-405d-8894-4b0e858d2abf"],
+Cell[14053, 441, 603, 23, 70, "Item",ExpressionUUID->"280f456b-847d-4b9a-b4e3-d53cc2aca435"],
+Cell[14659, 466, 268, 8, 70, "Item",ExpressionUUID->"c83fc93c-15ca-48a3-a668-9bc48fb71aae"],
+Cell[14930, 476, 316, 6, 70, "Item",ExpressionUUID->"31eb35f1-7404-456b-ac35-e38ed7e744e0"],
+Cell[15249, 484, 258, 6, 70, "Item",ExpressionUUID->"70f6d732-f260-4720-ab18-349275184d96"],
+Cell[15510, 492, 79, 0, 70, "Section",ExpressionUUID->"4272e9a5-e78a-436b-a1e3-932b8acba809"],
+Cell[15592, 494, 442, 10, 70, "Item",ExpressionUUID->"43951284-1fea-404a-b0bd-125d0bc18d94"],
+Cell[16037, 506, 245, 6, 70, "Item",ExpressionUUID->"634fd6fd-5883-4e9f-9386-a96b86d58568"],
+Cell[16285, 514, 287, 10, 70, "Item",ExpressionUUID->"e2d484b0-886a-494f-8c6b-526cf24103c5"],
+Cell[16575, 526, 323, 7, 70, "Item",ExpressionUUID->"cb386158-4d3d-40bb-b2d5-0be4af6520a6"],
+Cell[16901, 535, 519, 15, 70, "Item",ExpressionUUID->"6ec692c7-c7c3-45bb-b78a-4f50b6aa4cba"],
+Cell[17423, 552, 167, 3, 70, "Item",ExpressionUUID->"6259dde1-245d-4224-b0da-a5a803c5d2ba"],
+Cell[17593, 557, 88, 0, 70, "Section",ExpressionUUID->"f758bb03-214d-400a-8e98-129657ec4567"],
+Cell[17684, 559, 175, 3, 70, "Item",ExpressionUUID->"4e5e77d2-bd2c-43cd-a286-0703e1d0f3e8"],
+Cell[17862, 564, 169, 3, 70, "Item",ExpressionUUID->"3781e4cb-c540-4131-ad8d-0ed94755939f"],
+Cell[18034, 569, 174, 3, 70, "Item",ExpressionUUID->"b69a7045-d815-41d1-ac61-8c9871b2a344"],
+Cell[18211, 574, 174, 3, 70, "Item",ExpressionUUID->"82d0320f-9ddb-4aa2-9988-84003c4845a0"],
+Cell[18388, 579, 248, 5, 70, "Item",ExpressionUUID->"3a90c4f3-e400-4fdd-bba4-f74ba0e39ccb"],
+Cell[18639, 586, 81, 0, 70, "Section",ExpressionUUID->"42ad7c91-082b-4ec4-9b7b-14030d93da1f"],
+Cell[18723, 588, 381, 9, 70, "Text",ExpressionUUID->"6fa003b2-d3eb-4054-9856-0361c75fa4c9"],
+Cell[19107, 599, 271, 7, 70, "Reference",ExpressionUUID->"182e8688-c351-48a0-9543-5e1581a5a0f9"],
+Cell[19381, 608, 339, 7, 70, "Reference",ExpressionUUID->"a86bf2f4-64a8-45f9-bd80-7dc6bcc50ffc"],
+Cell[19723, 617, 470, 13, 70, "Reference",ExpressionUUID->"542291db-2b68-42c6-8d6b-4d9973b67dc2"],
+Cell[20196, 632, 473, 13, 70, "Reference",ExpressionUUID->"da6d61ad-f698-44d2-bc64-cd6285a3ca59"]
 }
 ]
 *)

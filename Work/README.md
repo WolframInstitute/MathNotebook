@@ -21,7 +21,7 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 
 ## Active
 
-- [Palette Usability & Document View Controls](Active/PaletteUsability.md) — next: **T5**, document the three view controls in the tutorial and add tests
+- [Palette Usability & Document View Controls](Active/PaletteUsability.md) — next: **T6**, feedback round — Pavel writes with it on a real document
 
 ## Backlog
 

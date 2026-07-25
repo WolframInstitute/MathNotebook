@@ -36,6 +36,18 @@ tutorialNotebook = Notebook[ {
   Cell[ TextData[ { "Insert environments from the palette's ", name[ "Insert environment" ], " menu, or with the ", name[ "Proof" ], ", ", name[ "Equation" ], ", and ", name[ "Equation (n)" ], " buttons." } ], "Item" ],
   Cell[ TextData[ { "Latin Modern and TeX Gyre are LaTeX fonts, not system fonts: press ", name[ "Install LaTeX fonts" ], " once to copy them out of a local TeX distribution (", link[ "tug.org/texlive", "https://tug.org/texlive/" ], ") into your user font directory, then restart the front end. They are installed for the whole machine, not inside Mathematica, so any application can use them." } ], "Item" ],
 
+  Cell[ "Reading and Writing Comfortably", "Section" ],
+  Cell[ "Each palette group folds: click its opener or its name to collapse it, so only the buttons you are using take up room. The palette remembers which groups are open across front end restarts.", "Item" ],
+  Cell[ TextData[ { "The ", name[ "Document view" ], " group holds three sliders and a reset. Like every other palette control they act on the notebook you were last editing, so leave the palette open beside your paper and drag while you read it." } ], "Item" ],
+  Cell[ TextData[ { name[ "Text size" ], " sets the size of ", name[ "Text" ], " and scales the title, the headings, and the abstract with it, so the document keeps its proportions instead of one style growing alone." } ], "Item" ],
+  Cell[ TextData[ { name[ "Math size" ], " does the same for displayed equations and their numbers, independently of the prose \[LongDash] the usual reason to reach for it is an equation left too small to read beside text you have just enlarged." } ], "Item" ],
+  Cell[ TextData[ { name[ "Column width" ], " is the fraction of the page the content occupies, centered in it. ", name[ "0.9" ], " is the measure the stylesheets already set; narrowing it gives the short line a printed page has, which is what makes a paper readable on a wide screen. Section numbers and the theorem and abstract dingbats keep hanging in the margin at every width." } ], "Item" ],
+  Cell[ TextData[ { "All three set real font sizes and margins, so they reach the exported PDF. ", name[ "Format \[RightArrow] Magnification" ], " is a different thing entirely \[LongDash] it zooms the screen and never changes print." } ], "Item" ],
+  Cell[ "The settings are stored in the notebook itself, so they survive saving and reopening and travel with the file to a coauthor.", "Item" ],
+  Cell[ TextData[ { name[ "Reset view" ], " returns the notebook to its stylesheet defaults and leaves no trace of the overrides; applying a stylesheet clears them too, since the new sheet replaces them." } ], "Item" ],
+  Cell[ TextData[ { "MaTeX cells are images and cannot inherit a style, so ", name[ "Math size" ], " re-renders each of them through LaTeX at the new size, from the TeX the cell stores." } ], "Item" ],
+  Cell[ TextData[ { "The same from code, on any notebook: ", name[ "SetDocumentFontSize[nb, 16]" ], ", ", name[ "SetMathFontSize[nb, 16]" ], ", ", name[ "SetContentWidth[nb, 0.6]" ], " \[LongDash] each takes ", name[ "Automatic" ], " to drop its own override \[LongDash] and ", name[ "ResetDocumentView[nb]" ], " to drop all of them. They work on a notebook still using ", name[ "Default" ], " too." } ], "Item" ],
+
   Cell[ "Math Input Shortcuts", "Section" ],
   Cell[ TextData[ { key[ "Ctrl+9" ], " inline math in text, ", key[ "Ctrl+0" ], " exits." } ], "Item" ],
   Cell[ TextData[ { key[ "Ctrl+/" ], " fraction, ", key[ "Ctrl+2" ], " square root." } ], "Item" ],

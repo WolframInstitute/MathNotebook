@@ -18,6 +18,7 @@ PackageScope["viewSettings"]
 PackageScope["viewStyleSheet"]
 PackageScope["parentStyleSheet"]
 PackageScope["viewStyleCells"]
+PackageScope["mergedStyleCells"]
 PackageScope["maTeXFontSize"]
 PackageScope["rescaleMaTeXCells"]
 PackageScope["resizedMaTeXCell"]
@@ -93,12 +94,20 @@ viewStyleSheet[ parent_, settings_Association ] :=
     StyleDefinitions -> "PrivateStylesheetFormatting.nb" ]
 
 viewStyleCells[ parent_, settings_Association ] :=
-  Join[
+  mergedStyleCells @ Join[
     fontSizeCells[ Complement[ styleFontSizeNames[], $mathStyleNames ],
       Lookup[ settings, "DocumentFontSize", Automatic ], documentFontSizeAnchor[] ],
     fontSizeCells[ $mathStyleNames,
       Lookup[ settings, "MathFontSize", Automatic ], mathFontSizeAnchor[] ],
     contentWidthCells[ parent, Lookup[ settings, "ContentWidth", Automatic ] ] ]
+
+(* Of two cells carrying the same StyleData head the front end keeps the first and discards the
+   second outright — it does not merge their options. Nearly every style the size control writes
+   also gets a margin from the width control, so emitting them as separate cells would let a text
+   size silently cancel the column width; one cell per style and environment is the only safe form. *)
+mergedStyleCells[ cells_List ] :=
+  KeyValueMap[ { style, options } |-> Cell[ style, Sequence @@ options ],
+    Merge[ Map[ First[ # ] -> Rest[ List @@ # ] &, cells ], Catenate ] ]
 
 fontSizeCells[ _, Automatic, _ ] :=
   { }

@@ -55,7 +55,6 @@ The style names to touch are already partitioned in `Scripts/BuildStyleSheets.wl
 
 ## Tasks
 
-- [ ] T5 — Document all of it in the tutorial (`Scripts/BuildTutorial.wls`), in a new section on reading and writing comfortably; tests for the three functions.
 - [ ] T6 — Feedback round: Pavel writes with it on a real document; revise.
 
 ### Done
@@ -64,6 +63,7 @@ The style names to touch are already partitioned in `Scripts/BuildStyleSheets.wl
 - [x] T2 — Foldable groups with persisted state; rebuild the palette and its screenshot. (Session 2)
 - [x] T3 — `SetDocumentFontSize` / `SetMathFontSize` plus palette sliders, with a reset, and a decision recorded on MaTeX cells. (Session 3)
 - [x] T4 — `SetContentWidth` plus slider — exposing the native option if T1 found one, otherwise private style definitions. (Session 4)
+- [x] T5 — Document all of it in the tutorial (`Scripts/BuildTutorial.wls`), in a new section on reading and writing comfortably; tests for the three functions. (Session 5)
 
 ## Progress
 
@@ -145,6 +145,25 @@ The style names to touch are already partitioned in `Scripts/BuildStyleSheets.wl
   - Ink-column measurements are exact in print (the 0.6 shift matched `0.2 × 451.28` pt to the pixel) but not on screen, where `Scaled` resolves against a `PageWidth` noticeably wider than the window: the right edge moved 232 px where the window width predicts 180. Use print for numbers, screen only for direction.
 - **Next:** T5 — document the three controls in the tutorial and add tests.
 
+### Session 5 — 2026-07-26 — T5
+
+- **Prompt:** `/next-session` on this item.
+- **Did:** Added a *Reading and Writing Comfortably* section to `Scripts/BuildTutorial.wls` — ten items covering the fold, the three sliders, what each one scales, that they are real sizes and margins rather than `Magnification`, that they are stored in the notebook and survive save and reopen, the MaTeX re-render, reset, and the four functions from code — and rebuilt `MathNotebook/Assets/MathNotebookTutorial.nb`.
+  Added `MathNotebook/Tests/View.wlt`, fourteen tests over the pure core: the size hierarchy read out of the base sheet, an untouched document producing no override cells, the anchor size reproducing every base size exactly, the whole hierarchy scaling, prose and mathematics staying independent, the equation number scaling with the math, the `"Printout"` variant always being written, the width arithmetic, and the stylesheet wrapper's parent cell and marker.
+  The margin tests stub `baseCellMargins[ "StubSheet.nb" ]` so the arithmetic is checked without a front end; the suite stays kernel-only and now runs 49 tests, all passing.
+  Writing those tests turned up a real defect and it is fixed here: `viewStyleCells` emitted the font size and the column margin for a style as **two** cells, so setting a text size made the column width a silent no-op on every style that also carries a size — which is nearly all of them.
+  `mergedStyleCells` now folds the generated cells into one per style and environment.
+  Verified in print on an AMS-styled document: ink column `{ 108, 520 }` by default, `{ 60, 534 }` at text size 20, `{ 176, 424 }` at text size 20 *and* width 0.6 — the combination that previously did nothing — and `{ 108, 520 }` again after `ResetDocumentView`, with `Text` back at 13.
+  Save/reopen verified separately: sizes, margins and the stored tagging rules all come back unchanged, and reset afterwards still restores the bare parent sheet with `TaggingRules` `Inherited`.
+  Built and installed 0.1.6 so T6's feedback round runs against the fix.
+- **Learned:**
+  - **Of two `StyleData` cells for the same style and environment, the first wins and the second is discarded whole** — measured directly, both for the same option written twice (30 and 44 → 30) and for two different options (a `FontSize` cell followed by a `CellMargins` cell → the size applied, the margins fell back to the parent's `{ { 66, 10 }, { 7, 8 } }`). T1 recorded this as "both dropped", which is not what happens and hides the failure mode that actually bit: the option in the second cell is the one that vanishes. `CLAUDE.md` corrected.
+  - **The `PackageScope` trap caught the tests themselves.** `fontSizeCells` has no `PackageScope` declaration, so the test's call stayed unevaluated and `Cases` over it returned `{ }` — a test that failed for a reason unrelated to what it was testing. Rewrote it through `viewStyleCells` rather than widen the package surface for a test.
+  - **`Scaled[ f ] + 0` evaluates to `Scaled[ f ]`**, so a pattern like `Scaled[ _ ] + offset_?NumericQ` silently skips every style whose offset is zero. Assert the absence of negative offsets instead of taking a `Min`.
+  - **Neither sheet reference resolves headlessly any more.** `StyleDefinitions -> "MathNotebook/AMSArticle.nb"` fell back to `Default.nb` in `wolframscript` with 0.1.5 installed, exactly as `FrontEnd`FileName` does — the `Title` size read 45, not 26. `StyleDefinitions -> Get[ <absolute path> ]` loads it every time. Two whole measurement runs were made on `Default.nb` before the assertion caught it; the assertion is the only reason the numbers above are trustworthy.
+  - The tutorial deliberately does not claim that the text slider scales the theorem, proof, reference or list styles, because it does not yet — that is T1 of `ViewAndReferenceDefects`. The section is accurate as written and needs one more sentence once that item lands.
+- **Next:** T6 — Pavel writes with it on a real document; revise.
+
 ## Decisions
 
 | Date | Decision | Rationale |
@@ -166,4 +185,5 @@ The style names to touch are already partitioned in `Scripts/BuildStyleSheets.wl
 | 2026-07-26 | The width is a fraction of the page, realised as a symmetric `Scaled` inset plus a per-style point offset | `Scaled` resolves against `PageWidth`, so the column follows a window resize and still prints; the offsets keep the hanging section numbers and dingbats inside the page, which one margin pair for every style would not |
 | 2026-07-26 | Per-style base geometry is read from the document's own stylesheet chain, not from `LaTeXBase.nb` | reading `{ StyleDefinitions, style, CellMargins }` resolves through the chain, so the control covers the list styles the paclet never declares and a document still on `Default.nb` |
 | 2026-07-26 | Offsets are anchored on the smallest base margin, and the slider tops out at 0.9 rather than 1 | `Section` sits left of `Text`, so a `Text` anchor gives negative offsets; and the dingbats hang left of the anchor by their own width, so zero inset would clip them |
+| 2026-07-26 | The three controls emit one merged `StyleData` cell per style and environment, not one cell per control | of two cells for the same style the front end keeps the first and discards the second, so a text size and a column width written separately cancel — the width never reaching any style that carries a size |
 | 2026-07-26 | Pavel's report of unchanged font size in itemized, reference and theorem cells is its own work item, not a revision of T3 | the reference label is a referencing defect and the font-size fix replaces T3's extraction with T4's chain reader, so it is a rewrite rather than a tweak; see `Work/Backlog/ViewAndReferenceDefects.md` |
