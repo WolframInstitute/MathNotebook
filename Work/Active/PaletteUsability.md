@@ -55,7 +55,6 @@ The style names to touch are already partitioned in `Scripts/BuildStyleSheets.wl
 
 ## Tasks
 
-- [ ] T2 — Foldable groups with state persisted in `$FrontEnd` tagging rules; rebuild the palette and its screenshot.
 - [ ] T3 — `SetDocumentFontSize` / `SetMathFontSize` plus palette sliders, with a reset, and a decision recorded on MaTeX cells.
 - [ ] T4 — `SetContentWidth` plus slider — exposing the native option if T1 found one, otherwise private style definitions.
 - [ ] T5 — Document all of it in the tutorial (`Scripts/BuildTutorial.wls`), in a new section on reading and writing comfortably; tests for the three functions.
@@ -64,6 +63,7 @@ The style names to touch are already partitioned in `Scripts/BuildStyleSheets.wl
 ### Done
 
 - [x] T1 — Investigate the three mechanisms in a scratch notebook; write down what actually works in 15.0, especially whether a native centered-content-width option exists. (Session 1)
+- [x] T2 — Foldable groups with persisted state; rebuild the palette and its screenshot. (Session 2)
 
 ## Progress
 
@@ -86,6 +86,25 @@ The style names to touch are already partitioned in `Scripts/BuildStyleSheets.wl
   - Headless testing note: `"MathNotebook/AMSArticle.nb"` resolves in the service front end, but `FrontEnd`FileName[ { <absolute path> }, ... ]` does not — it silently falls back to `Default.nb`, which produced two wrong intermediate results before being caught. Always assert the sheet loaded (`CurrentValue[ nb, { StyleDefinitions, "Title", FontSize } ]` is 26, not 45).
 - **Next:** T2 — foldable palette groups with state in `$FrontEnd` tagging rules.
 
+### Session 2 — 2026-07-25 — T2
+
+- **Did:** Rewrote `Scripts/BuildPalette.wls` so the palette is a list of six foldable groups instead of a flat `Column` of labels and buttons.
+  The seventeen buttons are now data — `$groups` is a list of `{ key, label, buttons }` — rendered by either `paletteGroup` (the live, foldable version written into the palette) or `staticGroup` (a fully-open rendition used only for the README screenshot, because `Rasterize` does not evaluate `Dynamic`).
+  Each group header is an `Opener` plus a click-anywhere label that highlights on hover.
+  Rebuilt `MathNotebook/FrontEnd/Palettes/MathNotebook.nb` and `Images/Palette.png`; all 35 tests still pass and the script runs clean under `wolframscript`.
+- **Learned:**
+  - **The Spec's premise about persistence was wrong, and the native channel is better.** `Saveable -> False` does not stop a palette's own tagging rules from persisting: the front end saves them in `$UserBaseDirectory/FrontEnd/init.m` under `CurrentValue[ $FrontEnd, PalettesMenuSettings ]`, an association keyed by palette file name — and `"MathNotebook.nb"` is already a key there.
+    `WritingAssistant.nb` and `ColorSchemes.nb` store exactly this kind of fold state that way (`"ShowWritingTools" -> True`, `"GradientsOpener" -> True`).
+    So state is written on `EvaluationNotebook[]` under a flat key (`"ReferencingOpen"`, …), matching Wolfram's own palettes, instead of polluting global `$FrontEnd` tagging rules.
+  - **`PaneSelector` sizes to the *largest* pane unless `ImageSize -> Automatic` is given explicitly.** Without it a closed group still reserves its open height, so the fold does nothing — measured 540 px for both states, versus 540 open / collapsed closed with the option. This is the one non-obvious line in the implementation.
+  - **`CurrentValue[ EvaluationNotebook[ ], { TaggingRules, key }, True ]` is the whole mechanism** — a three-argument `CurrentValue` supplies the default, so no initialization is needed and no kernel is ever launched to display or fold the palette. Assignment happens in an `EventHandler` with `Method -> "Preemptive"`, copied from `BasicMathAssistant.nb`. The label is a `PaneSelector` over two handlers (one setting `False`, one setting `True`) rather than a `Not`, so nothing has to be computed.
+  - **Fold state drives layout, verified by measurement.** With tagging rules baked into a copy of the palette, `AbsoluteCurrentValue[ nb, WindowSize ]` gives 603 px tall for the default (all open), 211 px all closed, and 308 px with only Referencing open. `WindowSize -> { All, All }` refits at open time.
+  - **Whether the window refits *live* on a click could not be verified headlessly** — a kernel-side write to an open palette's `TaggingRules` neither changed the size nor read back. `BasicMathAssistant.nb` folds live with this same construction, so it is expected to work; confirm by hand.
+  - `Rasterize` renders `Dynamic` as an unevaluated placeholder and `PaneSelectorBox` at its default max size, so a raster can neither show nor measure fold state — hence the separate static rendition for the screenshot.
+  - **Do not `Import` a palette `.nb` into a variable to inspect it.** The returned expression is re-evaluated, so the literal `EvaluationNotebook[]` inside it evaluates to `$Failed` with `FrontEndObject::notavail` and every `CurrentValue` collapses to its default — which silently emptied two verification queries. Read it as text and match with `StringCases`, or count boxes without dereferencing.
+  - `Images/` was never added to git even though `README.md` embeds `Images/Palette.png`; tracked as of this session.
+- **Next:** T3 — `SetDocumentFontSize` / `SetMathFontSize` plus palette sliders, with a reset, and a decision recorded on MaTeX cells.
+
 ## Decisions
 
 | Date | Decision | Rationale |
@@ -96,3 +115,5 @@ The style names to touch are already partitioned in `Scripts/BuildStyleSheets.wl
 | 2026-07-25 | Content width is a fraction of the window via symmetric `Scaled` cell margins, not a point width | `Scaled` resolves against `PageWidth`, which is `WindowWidth` on screen; the point-width alternative needs a Dynamic that cannot be verified headlessly |
 | 2026-07-25 | Font-size changes re-render MaTeX cells rather than declining to scale them | the TeX survives in `TaggingRules` under `"SourceTeX"` |
 | 2026-07-25 | Reset restores the recovered parent stylesheet value verbatim, whatever its form | the palette supplies a `FrontEnd`FileName`, the menus a string |
+| 2026-07-25 | Fold state lives in the palette notebook's own `TaggingRules`, not `$FrontEnd`'s — a deviation from the Spec's requirement, pending Pavel's confirmation | the front end already persists palette tagging rules in `init.m` under `PalettesMenuSettings`, keyed by palette file name, so `Saveable -> False` is irrelevant; this is what the built-in palettes do and it keeps the state scoped to the palette |
+| 2026-07-25 | Every group opens by default | folding is opt-in, so a first-time user still sees all seventeen buttons; the closed-by-default alternative hides functionality |

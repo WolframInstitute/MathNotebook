@@ -21,7 +21,7 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 
 ## Active
 
-- [Palette Usability & Document View Controls](Active/PaletteUsability.md) — next: **T2**, foldable palette groups with open/closed state in `$FrontEnd` tagging rules
+- [Palette Usability & Document View Controls](Active/PaletteUsability.md) — next: **T3**, `SetDocumentFontSize` / `SetMathFontSize` plus palette sliders and a reset
 
 ## Backlog
 
