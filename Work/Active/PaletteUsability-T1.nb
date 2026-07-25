@@ -1,0 +1,442 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Wolfram 15.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       154,          7]
+NotebookDataLength[     21937,        433]
+NotebookOptionsPosition[     16366,        364]
+NotebookOutlinePosition[     16683,        378]
+CellTagsIndexPosition[     16640,        375]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell["T1 \[LongDash] Document View Controls in 15.0", "Title",ExpressionUUID->"0c12c8f9-4212-43ba-98c5-8b1cb1a9043b"],
+
+Cell["\<\
+Scratch investigation for the Work item Palette Usability & Document View \
+Controls. Every claim in the Findings section was produced by the experiments \
+below, measured on an exported PDF rather than by eye, because print is the \
+acceptance test.\
+\>", "Text",ExpressionUUID->"687051de-4d0e-4e3d-b39e-a7d1df1b4807"],
+
+Cell["\<\
+Run Setup first. The experiments are independent of each other.\
+\>", "Text",ExpressionUUID->"be95b2cb-6523-48cb-a149-177581e15d15"],
+
+Cell["Setup", "Section",ExpressionUUID->"c70cadae-4820-4bae-9752-6f22a4435484"],
+
+Cell["\<\
+The canonical style-name partition lives in Scripts/BuildStyleSheets.wls as \
+$proseStyles and $mathStyles. This is a copy for the scratch harness only.\
+\>", "Text",ExpressionUUID->"519dc973-d525-4859-b19a-709908b06fab"],
+
+Cell["\<\
+$columnStyles = Join[
+  { \"Title\", \"Author\", \"Date\", \"Abstract\", \"Section\", \
+\"Subsection\", \"Subsubsection\",
+    \"Text\", \"Item\", \"ItemNumbered\", \"ItemParagraph\", \"Reference\", \
+\"Proof\" },
+  { \"Theorem\", \"Lemma\", \"Proposition\", \"Corollary\", \"Conjecture\", \
+\"Claim\",
+    \"Definition\", \"Example\", \"Construction\", \"Remark\", \"Question\", \
+\"Observation\" },
+  { \"DisplayFormula\", \"DisplayFormulaNumbered\", \
+\"DisplayFormulaEquationNumber\" } ]\
+\>", "Input",ExpressionUUID->"8cf6880a-e808-4dd7-93cc-a03a494de8c2"],
+
+Cell["\<\
+A private stylesheet is a Notebook expression whose first cell chains to the \
+shared sheet. Overrides are the cells after it.\
+\>", "Text",ExpressionUUID->"6179a775-a32b-419b-9171-115f999fd00b"],
+
+Cell["\<\
+privateSheet[ parent_, overrides_List ] :=
+  Notebook[ Prepend[ overrides, Cell[ StyleData[ StyleDefinitions -> parent ] \
+] ],
+    StyleDefinitions -> \"PrivateStylesheetFormatting.nb\" ]\
+\>", "Input",ExpressionUUID->"eca615a7-eab3-4373-aa79-b9295e7025bc"],
+
+Cell["\<\
+$sample = {
+  Cell[ \"Test Document\", \"Title\" ],
+  Cell[ StringRepeat[ \"Abstract text here. \", 6 ], \"Abstract\" ],
+  Cell[ StringRepeat[ \"The quick brown fox jumps over the lazy dog. \", 8 ], \
+\"Text\" ],
+  Cell[ StringRepeat[ \"Every compact set is closed and bounded. \", 6 ], \
+\"Theorem\" ],
+  Cell[ StringRepeat[ \"Immediate from the definitions. \", 4 ], \"Proof\" ],
+  Cell[ BoxData @ RowBox[ { \"\\[Integral]\", SuperscriptBox[ \"x\", \"2\" ], \
+\"\\[DifferentialD]\", \"x\" } ],
+    \"DisplayFormulaNumbered\" ] }\
+\>", "Input",ExpressionUUID->"9de41425-cd5f-48d5-93b0-9abdcba0c655"],
+
+Cell["\<\
+testDocument[ overrides_List, notebookOptions_List : {} ] :=
+  CreateDocument[ $sample, Visible -> False, WindowSize -> { 900, 700 }, \
+Sequence @@ notebookOptions,
+    StyleDefinitions -> privateSheet[ \"MathNotebook/AMSArticle.nb\", \
+overrides ] ]\
+\>", "Input",ExpressionUUID->"dbad21a7-8bc6-4acf-ae34-82baa4a7fa20"],
+
+Cell["\<\
+Two measurements on the printed page: how many wrapped lines the body \
+occupies, a proxy for font size, and the horizontal extent of the ink between \
+rows 120 and 700, which is the body without the running header and the page \
+number.\
+\>", "Text",ExpressionUUID->"428d3399-0b92-4381-bd38-001edfcdadde"],
+
+Cell["\<\
+printReport[ overrides_List, notebookOptions_List : {} ] :=
+  Module[ { file = FileNameJoin[ { $TemporaryDirectory, \
+\"MathNotebookT1.pdf\" } ], document, page },
+    document = testDocument[ overrides, notebookOptions ];
+    Export[ file, document ];
+    NotebookClose[ document ];
+    page = First @ Import[ file, \"PageImages\" ];
+    <| \"lines\" -> Length @ StringSplit[ First @ Import[ file, \
+\"PagePlaintext\" ], \"\\n\" ],
+       \"inkColumns\" -> MinMax @ Part[ Position[
+         Part[ ImageData @ Binarize[ ColorConvert[ page, \"Grayscale\" ], 0.9 \
+], 120 ;; 700 ], 0 ], All, 2 ],
+       \"page\" -> ImageTake[ page, { 1, 480 } ] |> ]\
+\>", "Input",ExpressionUUID->"1e543fae-54c4-4888-9f7a-361d63d15115"],
+
+Cell["Experiment 1 \[LongDash] CurrentValue cannot write a style definition", \
+"Section",ExpressionUUID->"90e60ab7-efe5-4dcc-a1f4-807314ba3bd7"],
+
+Cell["\<\
+Assigning to the StyleDefinitions path is silently ignored. It neither \
+converts the shared sheet into a private one nor records the value, so the \
+private sheet has to be built and installed explicitly.\
+\>", "Text",ExpressionUUID->"cf422f6d-6016-4100-9a7e-70d0f50d7973"],
+
+Cell["\<\
+document = CreateDocument[ { Cell[ \"x\", \"Text\" ] }, Visible -> False,
+  StyleDefinitions -> \"MathNotebook/AMSArticle.nb\" ];
+CurrentValue[ document, { StyleDefinitions, \"Text\", FontSize } ] = 20;
+CurrentValue[ document, { StyleDefinitions, \"Text\", FontSize } ]\
+\>", "Input",ExpressionUUID->"2078c0b5-7c9e-4224-b1c3-06daac879846"],
+
+Cell["Reads back 13, the stylesheet value, not 20.", "Text",ExpressionUUID->"75f6a976-fc60-406a-9d0f-1e976b0845ea"],
+
+Cell["\<\
+Experiment 2 \[LongDash] the Printout environment beats a plain override\
+\>", "Section",ExpressionUUID->"cdcbccba-0da0-491b-a58a-0851097a6100"],
+
+Cell["\<\
+LaTeXBase gives every prose and math style an explicit FontSize in its \
+Printout variant. An environment-specific definition wins over a plain one \
+across the whole chain, so an override on the bare style name changes the \
+screen and leaves the PDF untouched.\
+\>", "Text",ExpressionUUID->"e74af0fa-392e-499f-a979-bd819bd0b42d"],
+
+Cell["\<\
+{ printReport[ {} ][ \"lines\" ],
+  printReport[ { Cell[ StyleData[ \"Text\" ], FontSize -> 20 ] } ][ \"lines\" \
+],
+  printReport[ { Cell[ StyleData[ \"Text\" ], FontSize -> 20 ],
+    Cell[ StyleData[ \"Text\", \"Printout\" ], FontSize -> 15 ] } ][ \
+\"lines\" ] }\
+\>", "Input",ExpressionUUID->"0c9b2672-35ff-4664-95fc-0176a1601617"],
+
+Cell["\<\
+Gives { 10, 10, 12 }. The plain-only override is invisible in print; writing \
+both variants works.\
+\>", "Text",ExpressionUUID->"e7794192-a002-4c94-8365-5d9297567ec7"],
+
+Cell["Experiment 3 \[LongDash] duplicate StyleData cells are dropped", \
+"Section",ExpressionUUID->"876fb33a-f346-4120-98ac-4d9423d2c409"],
+
+Cell["\<\
+Two cells for the same style name and environment in one sheet neither merge \
+nor take turns. Both are ignored and the parent value survives, so a setter \
+must rewrite the existing override cell and never append a second one.\
+\>", "Text",ExpressionUUID->"62af6d18-f6b7-452d-85e9-f115887aecea"],
+
+Cell["\<\
+printReport[ { Cell[ StyleData[ \"Text\", \"Printout\" ], FontSize -> 8 ],
+  Cell[ StyleData[ \"Text\", \"Printout\" ], FontSize -> 16 ] } ][ \"lines\" ]\
+\>", "Input",ExpressionUUID->"1da9c6a0-dfbe-4ee1-85ab-6848a177c45b"],
+
+Cell["Gives 10, the unmodified baseline.", "Text",ExpressionUUID->"2a4b4539-a5c8-4624-b602-ea5e0b0ec1f4"],
+
+Cell["Experiment 4 \[LongDash] Magnification is screen-only", "Section",ExpressionUUID->"f8097537-6518-4b1e-9fc0-71cdb69a62ca"],
+
+Cell["\<\
+{ printReport[ {}, { Magnification -> 1 } ][ \"lines\" ],
+  printReport[ {}, { Magnification -> 2 } ][ \"lines\" ] }\
+\>", "Input",ExpressionUUID->"ebad561f-c735-4516-a2ef-625e9e3e1464"],
+
+Cell["\<\
+Identical, so Magnification must never be offered as a font-size control.\
+\>", "Text",ExpressionUUID->"c8b981fd-6eff-43c9-b87c-5f0e0293d5ae"],
+
+Cell["\<\
+Experiment 5 \[LongDash] a centered content column via Scaled cell margins\
+\>", "Section",ExpressionUUID->"ed506ea9-eddd-407a-86fc-7628f7726682"],
+
+Cell["\<\
+15.0 has no native centered-content-width option. The Format menu offers only \
+the three PageWidth word-wrapping choices, $FrontEnd carries no width \
+setting, the Preferences dialog has none, and the screen style environments \
+are Working, Presentation, SlideShow and Condensed. What does work is Scaled \
+inside CellMargins, which the front end resolves against PageWidth: \
+WindowWidth on screen, the printable width in print.\
+\>", "Text",ExpressionUUID->"d50a05d7-22f8-45a1-8f49-f8d6c26f4d06"],
+
+Cell["\<\
+scaledMargins[ fraction_ ] := Join[
+  Cell[ StyleData[ # ], CellMargins -> { { Scaled[ fraction ], Scaled[ \
+fraction ] }, { 4, 4 } } ] & /@ $columnStyles,
+  Cell[ StyleData[ #, \"Printout\" ],
+    CellMargins -> { { Scaled[ fraction ], Scaled[ fraction ] }, { 4, 4 } } ] \
+& /@ $columnStyles ]\
+\>", "Input",ExpressionUUID->"9e30c26b-bfa2-42e0-863f-7965c0bd4520"],
+
+Cell["\<\
+{ printReport[ {} ][ \"inkColumns\" ],
+  printReport[ scaledMargins[ 0.2 ] ][ \"inkColumns\" ] }\
+\>", "Input",ExpressionUUID->"c8f7475a-4e1d-4520-bcc4-e3a6b51e2602"],
+
+Cell["\<\
+Baseline { 76, 521 } on a 595 pt page against { 128, 422 }: a narrower block, \
+symmetric except for the theorem and proof dingbats, which are drawn in the \
+left margin and so protrude past the column.\
+\>", "Text",ExpressionUUID->"9a8f9789-5a96-499a-831d-6e631f0293da"],
+
+Cell["printReport[ scaledMargins[ 0.2 ] ][ \"page\" ]", "Input",ExpressionUUID->"63bdf131-1ea9-4434-9341-ddc915ae7135"],
+
+Cell["\<\
+Because Scaled tracks PageWidth and PageWidth is WindowWidth on screen, the \
+column is a fixed fraction of the window and follows a resize. A fixed point \
+width centered in the window is a different thing and is not reachable this \
+way.\
+\>", "Text",ExpressionUUID->"19cc84b3-9b5d-44e4-8586-f0276af7afea"],
+
+Cell["\<\
+Experiment 6 \[LongDash] Dynamic cell margins work but are print-hostile\
+\>", "Section",ExpressionUUID->"21e1e0a2-293a-4448-911d-8d4a32c115b9"],
+
+Cell["\<\
+The route to a column of fixed point width rather than a fixed fraction is a \
+Dynamic margin computed from the window. The front end does accept Dynamic in \
+CellMargins and lays it out exactly like the static equivalent, so the option \
+itself is fine.\
+\>", "Text",ExpressionUUID->"5e7bcde2-5f0b-4ce6-88dc-e9abb26f7999"],
+
+Cell["\<\
+bothVariants[ margins_ ] := { Cell[ StyleData[ \"Text\" ], CellMargins -> \
+margins ],
+  Cell[ StyleData[ \"Text\", \"Printout\" ], CellMargins -> margins ] }\
+\>", "Input",ExpressionUUID->"3caef482-0608-4c14-9cb3-38f171f114ef"],
+
+Cell["\<\
+{ printReport[ bothVariants @ { { 250, 250 }, { 4, 4 } } ][ \"lines\" ],
+  printReport[ bothVariants @ Dynamic @ { { 250, 250 }, { 4, 4 } } ][ \"lines\
+\" ] }\
+\>", "Input",ExpressionUUID->"986b8799-d33e-4147-8ff6-f6cb4091f6b2"],
+
+Cell["Gives { 23, 23 }: static and Dynamic agree.", "Text",ExpressionUUID->"3419a2de-3326-4463-9495-45b16fe82960"],
+
+Cell["\<\
+What fails is the quantity, not the mechanism. There is no window when the \
+document prints, so a margin computed from WindowSize collapses the printed \
+measure \[LongDash] here to a third of its width, 65 lines instead of 23.\
+\>", "Text",ExpressionUUID->"238ac554-e37a-4e4c-a3ee-e77bce45d2ff"],
+
+Cell["\<\
+printReport[ bothVariants @ Dynamic[
+  { { ( AbsoluteCurrentValue[ WindowSize ][[ 1 ]] - 300 ) / 2,
+      ( AbsoluteCurrentValue[ WindowSize ][[ 1 ]] - 300 ) / 2 }, { 4, 4 } } ] \
+][ \"lines\" ]\
+\>", "Input",ExpressionUUID->"a1623047-c457-4014-aa26-b97a87d38b3b"],
+
+Cell["\<\
+So a fixed point width is reachable, but only by splitting the two \
+environments: a window-driven Dynamic on the bare style name for the screen, \
+and a plain symmetric margin on the Printout variant for the page. Whether \
+that Dynamic actually tracks a live resize cannot be checked here, because a \
+headless front end never lays out to a window. Confirm it interactively in T4 \
+before choosing it over Scaled.\
+\>", "Text",ExpressionUUID->"04275b76-0f1d-4c8f-9e9e-60cd3eb088ee"],
+
+Cell["Experiment 7 \[LongDash] install, live update, and reset", "Section",ExpressionUUID->"1686fa8c-6527-40dc-ac03-61a1a887ed79"],
+
+Cell["\<\
+Installing a private sheet over a live document re-lays it out, and the \
+shared sheet it chains to is recoverable from the wrapper. That is the reset \
+path: point StyleDefinitions back at the parent and the document carries no \
+trace of the overrides. The parent is a string when the notebook was styled \
+from a menu and a FrontEnd`FileName when it was styled from the palette, so \
+it must be carried through as-is rather than reconstructed.\
+\>", "Text",ExpressionUUID->"0217f2fc-765f-480d-a05f-2989e220b29d"],
+
+Cell["\<\
+document = CreateDocument[ $sample, Visible -> False, WindowSize -> { 900, \
+700 },
+  StyleDefinitions -> \"MathNotebook/AMSArticle.nb\" ];
+SetOptions[ document, StyleDefinitions -> privateSheet[ CurrentValue[ \
+document, StyleDefinitions ],
+  { Cell[ StyleData[ \"Text\" ], FontSize -> 20 ],
+    Cell[ StyleData[ \"Text\", \"Printout\" ], FontSize -> 16 ] } ] ];
+parent = FirstCase[ CurrentValue[ document, StyleDefinitions ],
+  Cell[ StyleData[ StyleDefinitions -> name_ ] ] :> name, None, Infinity ]\
+\>", "Input",ExpressionUUID->"2138565b-0d44-42dd-9d2a-fbc01cfaa49f"],
+
+Cell["SetOptions[ document, StyleDefinitions -> parent ]", "Input",ExpressionUUID->"43f31ccc-4f38-40d5-b0ea-1be239ef507c"],
+
+Cell["\<\
+A private sheet also survives save and reopen unchanged, since \
+StyleDefinitions is an ordinary notebook option.\
+\>", "Text",ExpressionUUID->"58b4e32c-b0cb-4424-9aeb-8765c9edb087"],
+
+Cell["Findings", "Section",ExpressionUUID->"913ea705-901e-4a12-a513-e9acfc720aab"],
+
+Cell["\<\
+No native centered-content-width option exists in 15.0. The nearest thing is \
+Format \[FilledRightTriangle] Word Wrapping \[FilledRightTriangle] Wrap at \
+Paper Width, which shortens the measure but leaves the text left-aligned. \
+SetContentWidth has to be implemented.\
+\>", "Item",ExpressionUUID->"8cfc7342-9971-4ae8-860c-cbff677e9a9e"],
+
+Cell["\<\
+Private style definitions are the mechanism for all three controls: a \
+Notebook expression in StyleDefinitions whose first cell chains to the shared \
+sheet. StyleHints plays no part; nothing in Default.nb drives prose or math \
+size through it.\
+\>", "Item",ExpressionUUID->"c2d72128-2ec6-402e-9829-d019ef27340e"],
+
+Cell["\<\
+Every override must be written twice, once for the bare style name and once \
+for the Printout variant, or it will not reach the PDF.\
+\>", "Item",ExpressionUUID->"fc2a2698-a6bf-4cd2-9290-d299b8bcaed1"],
+
+Cell["\<\
+Overrides are rewritten in place. Appending a second cell for a style \
+silently loses both.\
+\>", "Item",ExpressionUUID->"082170af-5353-4688-9b52-9e0e4ae1e414"],
+
+Cell["\<\
+Content width: symmetric Scaled margins on all prose and math styles, in both \
+environments. The slider then sets a fraction of the window rather than a \
+point width, which is the recommendation. A fixed point width needs a \
+window-driven Dynamic on screen and a static margin in print, and that \
+Dynamic is unverified on screen.\
+\>", "Item",ExpressionUUID->"5dd157b1-dee9-4195-a492-ee50c906f9f0"],
+
+Cell["\<\
+Magnification is a separate screen-only zoom and belongs in a separate \
+control, if at all.\
+\>", "Item",ExpressionUUID->"7ad67c1a-fd46-456d-9603-4f56176b959a"],
+
+Cell["\<\
+Reset means recovering the parent sheet from the wrapper and assigning it \
+back. Applying a stylesheet from the palette already discards the wrapper, so \
+it resets everything as a side effect.\
+\>", "Item",ExpressionUUID->"86126f23-b5b3-4d37-891d-eb811cc35d3c"],
+
+Cell["\<\
+Equation numbers scale with the column for free: they live in CellFrameLabels \
+at the right edge of DisplayFormulaNumbered, so the margins carry them. Their \
+size still needs the DisplayFormulaEquationNumber override in both \
+environments.\
+\>", "Item",ExpressionUUID->"dfe958cd-2805-4a95-a943-d3ec217481bb"],
+
+Cell["\<\
+MaTeX cells keep their TeX in TaggingRules under SourceTeX and are rendered \
+by ConvertToMaTeX at a hardcoded FontSize of 14, so a size change can \
+re-render them rather than being unable to touch them.\
+\>", "Item",ExpressionUUID->"2f074897-5958-4533-a986-a24eca37a7aa"],
+
+Cell["\<\
+The theorem, proof and abstract dingbats are drawn in the left margin, so a \
+narrow column makes them protrude. Preserving each style's indent relative to \
+Text, rather than giving every style the same Scaled pair, is the fix.\
+\>", "Item",ExpressionUUID->"01fc0205-1708-4d01-92b9-f47ec659554a"]
+},
+FrontEndVersion->"15.0 for Mac OS X ARM (64-bit) (May 19, 2026)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"addb748b-31c9-40ac-9870-72f5b91484f3"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[554, 20, 117, 0, 70, "Title",ExpressionUUID->"0c12c8f9-4212-43ba-98c5-8b1cb1a9043b"],
+Cell[674, 22, 329, 5, 70, "Text",ExpressionUUID->"687051de-4d0e-4e3d-b39e-a7d1df1b4807"],
+Cell[1006, 29, 142, 2, 70, "Text",ExpressionUUID->"be95b2cb-6523-48cb-a149-177581e15d15"],
+Cell[1151, 33, 79, 0, 70, "Section",ExpressionUUID->"c70cadae-4820-4bae-9752-6f22a4435484"],
+Cell[1233, 35, 231, 3, 70, "Text",ExpressionUUID->"519dc973-d525-4859-b19a-709908b06fab"],
+Cell[1467, 40, 571, 12, 70, "Input",ExpressionUUID->"8cf6880a-e808-4dd7-93cc-a03a494de8c2"],
+Cell[2041, 54, 205, 3, 70, "Text",ExpressionUUID->"6179a775-a32b-419b-9171-115f999fd00b"],
+Cell[2249, 59, 268, 5, 70, "Input",ExpressionUUID->"eca615a7-eab3-4373-aa79-b9295e7025bc"],
+Cell[2520, 66, 610, 12, 70, "Input",ExpressionUUID->"9de41425-cd5f-48d5-93b0-9abdcba0c655"],
+Cell[3133, 80, 330, 6, 70, "Input",ExpressionUUID->"dbad21a7-8bc6-4acf-ae34-82baa4a7fa20"],
+Cell[3466, 88, 316, 5, 70, "Text",ExpressionUUID->"428d3399-0b92-4381-bd38-001edfcdadde"],
+Cell[3785, 95, 728, 14, 70, "Input",ExpressionUUID->"1e543fae-54c4-4888-9f7a-361d63d15115"],
+Cell[4516, 111, 145, 1, 70, "Section",ExpressionUUID->"90e60ab7-efe5-4dcc-a1f4-807314ba3bd7"],
+Cell[4664, 114, 284, 4, 70, "Text",ExpressionUUID->"cf422f6d-6016-4100-9a7e-70d0f50d7973"],
+Cell[4951, 120, 349, 5, 70, "Input",ExpressionUUID->"2078c0b5-7c9e-4224-b1c3-06daac879846"],
+Cell[5303, 127, 115, 0, 70, "Text",ExpressionUUID->"75f6a976-fc60-406a-9d0f-1e976b0845ea"],
+Cell[5421, 129, 154, 2, 70, "Section",ExpressionUUID->"cdcbccba-0da0-491b-a58a-0851097a6100"],
+Cell[5578, 133, 341, 5, 70, "Text",ExpressionUUID->"e74af0fa-392e-499f-a979-bd819bd0b42d"],
+Cell[5922, 140, 345, 7, 70, "Input",ExpressionUUID->"0c9b2672-35ff-4664-95fc-0176a1601617"],
+Cell[6270, 149, 178, 3, 70, "Text",ExpressionUUID->"e7794192-a002-4c94-8365-5d9297567ec7"],
+Cell[6451, 154, 138, 1, 70, "Section",ExpressionUUID->"876fb33a-f346-4120-98ac-4d9423d2c409"],
+Cell[6592, 157, 306, 4, 70, "Text",ExpressionUUID->"62af6d18-f6b7-452d-85e9-f115887aecea"],
+Cell[6901, 163, 233, 3, 70, "Input",ExpressionUUID->"1da9c6a0-dfbe-4ee1-85ab-6848a177c45b"],
+Cell[7137, 168, 105, 0, 70, "Text",ExpressionUUID->"2a4b4539-a5c8-4624-b602-ea5e0b0ec1f4"],
+Cell[7245, 170, 127, 0, 70, "Section",ExpressionUUID->"f8097537-6518-4b1e-9fc0-71cdb69a62ca"],
+Cell[7375, 172, 196, 3, 70, "Input",ExpressionUUID->"ebad561f-c735-4516-a2ef-625e9e3e1464"],
+Cell[7574, 177, 152, 2, 70, "Text",ExpressionUUID->"c8b981fd-6eff-43c9-b87c-5f0e0293d5ae"],
+Cell[7729, 181, 156, 2, 70, "Section",ExpressionUUID->"ed506ea9-eddd-407a-86fc-7628f7726682"],
+Cell[7888, 185, 510, 7, 70, "Text",ExpressionUUID->"d50a05d7-22f8-45a1-8f49-f8d6c26f4d06"],
+Cell[8401, 194, 374, 7, 70, "Input",ExpressionUUID->"9e30c26b-bfa2-42e0-863f-7965c0bd4520"],
+Cell[8778, 203, 176, 3, 70, "Input",ExpressionUUID->"c8f7475a-4e1d-4520-bcc4-e3a6b51e2602"],
+Cell[8957, 208, 281, 4, 70, "Text",ExpressionUUID->"9a8f9789-5a96-499a-831d-6e631f0293da"],
+Cell[9241, 214, 119, 0, 70, "Input",ExpressionUUID->"63bdf131-1ea9-4434-9341-ddc915ae7135"],
+Cell[9363, 216, 318, 5, 70, "Text",ExpressionUUID->"19cc84b3-9b5d-44e4-8586-f0276af7afea"],
+Cell[9684, 223, 154, 2, 70, "Section",ExpressionUUID->"21e1e0a2-293a-4448-911d-8d4a32c115b9"],
+Cell[9841, 227, 333, 5, 70, "Text",ExpressionUUID->"5e7bcde2-5f0b-4ce6-88dc-e9abb26f7999"],
+Cell[10177, 234, 238, 4, 70, "Input",ExpressionUUID->"3caef482-0608-4c14-9cb3-38f171f114ef"],
+Cell[10418, 240, 238, 4, 70, "Input",ExpressionUUID->"986b8799-d33e-4147-8ff6-f6cb4091f6b2"],
+Cell[10659, 246, 114, 0, 70, "Text",ExpressionUUID->"3419a2de-3326-4463-9495-45b16fe82960"],
+Cell[10776, 248, 307, 4, 70, "Text",ExpressionUUID->"238ac554-e37a-4e4c-a3ee-e77bce45d2ff"],
+Cell[11086, 254, 274, 5, 70, "Input",ExpressionUUID->"a1623047-c457-4014-aa26-b97a87d38b3b"],
+Cell[11363, 261, 494, 7, 70, "Text",ExpressionUUID->"04275b76-0f1d-4c8f-9e9e-60cd3eb088ee"],
+Cell[11860, 270, 130, 0, 70, "Section",ExpressionUUID->"1686fa8c-6527-40dc-ac03-61a1a887ed79"],
+Cell[11993, 272, 525, 7, 70, "Text",ExpressionUUID->"0217f2fc-765f-480d-a05f-2989e220b29d"],
+Cell[12521, 281, 582, 10, 70, "Input",ExpressionUUID->"2138565b-0d44-42dd-9d2a-fbc01cfaa49f"],
+Cell[13106, 293, 122, 0, 70, "Input",ExpressionUUID->"43f31ccc-4f38-40d5-b0ea-1be239ef507c"],
+Cell[13231, 295, 192, 3, 70, "Text",ExpressionUUID->"58b4e32c-b0cb-4424-9aeb-8765c9edb087"],
+Cell[13426, 300, 82, 0, 70, "Section",ExpressionUUID->"913ea705-901e-4a12-a513-e9acfc720aab"],
+Cell[13511, 302, 349, 5, 70, "Item",ExpressionUUID->"8cfc7342-9971-4ae8-860c-cbff677e9a9e"],
+Cell[13863, 309, 325, 5, 70, "Item",ExpressionUUID->"c2d72128-2ec6-402e-9829-d019ef27340e"],
+Cell[14191, 316, 212, 3, 70, "Item",ExpressionUUID->"fc2a2698-a6bf-4cd2-9290-d299b8bcaed1"],
+Cell[14406, 321, 171, 3, 70, "Item",ExpressionUUID->"082170af-5353-4688-9b52-9e0e4ae1e414"],
+Cell[14580, 326, 412, 6, 70, "Item",ExpressionUUID->"5dd157b1-dee9-4195-a492-ee50c906f9f0"],
+Cell[14995, 334, 171, 3, 70, "Item",ExpressionUUID->"7ad67c1a-fd46-456d-9603-4f56176b959a"],
+Cell[15169, 339, 273, 4, 70, "Item",ExpressionUUID->"86126f23-b5b3-4d37-891d-eb811cc35d3c"],
+Cell[15445, 345, 321, 5, 70, "Item",ExpressionUUID->"dfe958cd-2805-4a95-a943-d3ec217481bb"],
+Cell[15769, 352, 283, 4, 70, "Item",ExpressionUUID->"2f074897-5958-4533-a986-a24eca37a7aa"],
+Cell[16055, 358, 307, 4, 70, "Item",ExpressionUUID->"01fc0205-1708-4d01-92b9-f47ec659554a"]
+}
+]
+*)
+
+(* End of internal cache information *)
