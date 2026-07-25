@@ -7,17 +7,30 @@ $environments = { "Theorem", "Lemma", "Proposition", "Corollary", "Conjecture", 
 $styleSheets = { "AMSArticle", "ArXivArticle", "SpringerJournal", "RevTeXAPS" };
 $buttonSize = { 200, 27 };
 $labelSize = { 182, 20 };
+$fontSizeRange = { 8, 28, 1 };
+$sliderLabelSize = { 66, 20 };
+$sliderSize = { 106, 18 };
+$sliderReadoutSize = { 22, 20 };
+
+(* The neutral slider position is the base sheet's own Text size, so the sliders and
+   SetDocumentFontSize agree on what "unchanged" means. *)
+$defaultFontSize = FirstCase[
+  Get @ FileNameJoin[ { repoDirectory, "MathNotebook", "FrontEnd", "StyleSheets", "MathNotebook", "LaTeXBase.nb" } ],
+  Cell[ StyleData[ "Text" ], ___, FontSize -> size_, ___ ] :> size, 13, Infinity ];
 
 SetAttributes[ kernelButton, HoldRest ]
 kernelButton[ label_, code_ ] :=
   Button[ label, Needs[ "WolframInstitute`MathNotebook`" ]; code,
     Method -> "Queued", Appearance -> "Palette", ImageSize -> $buttonSize ]
 
+(* Applying a stylesheet replaces the private sheet the view controls install, so the stored
+   sizes have to go with it or the sliders would report a size the document no longer has. *)
 stylesheetItem[ name_String ] :=
   With[ { file = name <> ".nb" },
-    name :> SetOptions[ InputNotebook[],
-      StyleDefinitions -> FrontEnd`FileName[ { "MathNotebook" }, file, CharacterEncoding -> "UTF-8" ],
-      LightDark -> "Light" ] ]
+    name :> ( SetOptions[ InputNotebook[],
+        StyleDefinitions -> FrontEnd`FileName[ { "MathNotebook" }, file, CharacterEncoding -> "UTF-8" ],
+        LightDark -> "Light" ];
+      CurrentValue[ InputNotebook[], { TaggingRules, "MathNotebook" } ] = Inherited ) ]
 
 environmentItem[ environment_String ] :=
   environment :> ( Needs[ "WolframInstitute`MathNotebook`" ];
@@ -49,14 +62,45 @@ paletteGroup[ { key_String, label_String, buttons_List } ] :=
           { True -> clickableLabel[ label, path, False ],
             False -> clickableLabel[ label, path, True ] },
           Dynamic[ CurrentValue[ EvaluationNotebook[ ], path, True ] ], ImageSize -> Automatic ] } ],
-      PaneSelector[ { True -> Column[ buttons, Spacings -> 0 ], False -> Spacer[ 0 ] },
+      PaneSelector[ { True -> Column[ Map[ liveItem, buttons ], Spacings -> 0 ], False -> Spacer[ 0 ] },
         Dynamic[ CurrentValue[ EvaluationNotebook[ ], path, True ] ], ImageSize -> Automatic ]
     }, Spacings -> 0 ] ]
+
+sliderRow[ label_String, control_, readout_ ] :=
+  Row[ {
+    Pane[ Style[ label, 10, GrayLevel[ 0.35 ] ], ImageSize -> $sliderLabelSize, Alignment -> { Left, Center } ],
+    control,
+    Pane[ readout, ImageSize -> $sliderReadoutSize, Alignment -> { Right, Center } ]
+  } ]
+
+(* The slider reads and writes the focused document's own tagging rules, so it follows whichever
+   paper is in front and needs no kernel to display. Only the release calls the setter. *)
+sizeSlider[ label_String, key_String, setter_Symbol ] :=
+  With[ { path = { TaggingRules, "MathNotebook", key }, default = $defaultFontSize },
+    sliderRow[ label,
+      Slider[
+        Dynamic[ CurrentValue[ FrontEnd`InputNotebook[ ], path, default ],
+          ( Needs[ "WolframInstitute`MathNotebook`" ]; setter[ InputNotebook[ ], # ] ) & ],
+        $fontSizeRange, ImageSize -> $sliderSize, ContinuousAction -> False ],
+      Dynamic[ CurrentValue[ FrontEnd`InputNotebook[ ], path, default ] ] ] ]
+
+staticSizeSlider[ label_String ] :=
+  sliderRow[ label, Slider[ $defaultFontSize, $fontSizeRange, ImageSize -> $sliderSize ], $defaultFontSize ]
+
+(* Rasterize leaves a Dynamic unevaluated, so the screenshot needs a static stand-in for every
+   dynamic item; dual pairs the live rendition with it. *)
+SetAttributes[ dual, HoldAll ]
+
+liveItem[ dual[ live_, _ ] ] := live
+liveItem[ item_ ] := item
+
+staticItem[ dual[ _, static_ ] ] := static
+staticItem[ item_ ] := item
 
 staticGroup[ { key_String, label_String, buttons_List } ] :=
   Column[ {
     Row[ { Opener[ True ], groupLabel[ label ] } ],
-    Column[ buttons, Spacings -> 0 ]
+    Column[ Map[ staticItem, buttons ], Spacings -> 0 ]
   }, Spacings -> 0 ]
 
 $groups = {
@@ -76,6 +120,12 @@ $groups = {
       Append[ Map[ stylesheetItem, $styleSheets ],
         "Default" :> SetOptions[ InputNotebook[], StyleDefinitions -> "Default.nb", LightDark -> Automatic ] ],
       Appearance -> "PopupMenu", ImageSize -> $buttonSize ] } },
+  { "View", "Document view", {
+    dual[ sizeSlider[ "Text size", "DocumentFontSize", WolframInstitute`MathNotebook`SetDocumentFontSize ],
+      staticSizeSlider[ "Text size" ] ],
+    dual[ sizeSlider[ "Math size", "MathFontSize", WolframInstitute`MathNotebook`SetMathFontSize ],
+      staticSizeSlider[ "Math size" ] ],
+    kernelButton[ "Reset view", WolframInstitute`MathNotebook`ResetDocumentView[] ] } },
   { "Convert", "LaTeX \[LeftRightArrow] math (selection)", {
     kernelButton[ "TeX \[Rule] math", WolframInstitute`MathNotebook`ConvertLaTeXCells[] ],
     kernelButton[ "Math \[Rule] TeX", WolframInstitute`MathNotebook`ConvertMathCells[] ] } },

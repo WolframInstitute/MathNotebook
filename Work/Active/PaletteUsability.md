@@ -55,7 +55,6 @@ The style names to touch are already partitioned in `Scripts/BuildStyleSheets.wl
 
 ## Tasks
 
-- [ ] T3 — `SetDocumentFontSize` / `SetMathFontSize` plus palette sliders, with a reset, and a decision recorded on MaTeX cells.
 - [ ] T4 — `SetContentWidth` plus slider — exposing the native option if T1 found one, otherwise private style definitions.
 - [ ] T5 — Document all of it in the tutorial (`Scripts/BuildTutorial.wls`), in a new section on reading and writing comfortably; tests for the three functions.
 - [ ] T6 — Feedback round: Pavel writes with it on a real document; revise.
@@ -64,6 +63,7 @@ The style names to touch are already partitioned in `Scripts/BuildStyleSheets.wl
 
 - [x] T1 — Investigate the three mechanisms in a scratch notebook; write down what actually works in 15.0, especially whether a native centered-content-width option exists. (Session 1)
 - [x] T2 — Foldable groups with persisted state; rebuild the palette and its screenshot. (Session 2)
+- [x] T3 — `SetDocumentFontSize` / `SetMathFontSize` plus palette sliders, with a reset, and a decision recorded on MaTeX cells. (Session 3)
 
 ## Progress
 
@@ -105,6 +105,27 @@ The style names to touch are already partitioned in `Scripts/BuildStyleSheets.wl
   - `Images/` was never added to git even though `README.md` embeds `Images/Palette.png`; tracked as of this session.
 - **Next:** T3 — `SetDocumentFontSize` / `SetMathFontSize` plus palette sliders, with a reset, and a decision recorded on MaTeX cells.
 
+### Session 3 — 2026-07-26 — T3
+
+- **Did:** Added `MathNotebook/Kernel/View.wl` with `SetDocumentFontSize`, `SetMathFontSize` and `ResetDocumentView`, and a *Document view* group to the palette holding a text-size slider, a math-size slider and a *Reset view* button.
+  A size is stored on the document under `{ TaggingRules, "MathNotebook", <key> }` and the whole private stylesheet is rebuilt from those two values on every call, so the sliders read a document's real state and no override cell is ever appended twice.
+  Both sliders scale the *whole* hierarchy proportionally about `Text` (prose) and `DisplayFormula` (math): the ratios are read out of the paclet's own `LaTeXBase.nb` at run time, so nothing about the size hierarchy is restated in kernel code.
+  MaTeX cells are re-rendered from their stored TeX at the scaled size, as T1's decision required.
+  Verified on exported PDFs: 9 → 12 → 8 wrapped body lines at Text 13 / 18 / 9 and exactly 9 again after reset, with the notebook's `StyleDefinitions` back to the bare `"MathNotebook/AMSArticle.nb"` and its tagging rules empty; MaTeX images measured 46 px wide at math 13, 89 px at math 26, and 46 px again after reset; palette window 695 px all open, 247 px all closed, 303 px with only *Document view* open.
+  All 35 tests still pass.
+- **Learned:**
+  - **In the `Package[]` format an undeclared symbol is private to its own file.** `writeCells` is defined in `Conversion.wl` without a `PackageScope` declaration, so `View.wl` got its own definition-less `View`PackagePrivate`writeCells` and the MaTeX re-render **silently did nothing** — the call simply stayed unevaluated, with no message and no failure. Declaring `PackageScope["writeCells"]` fixed it. The same latent bug sits in the *uncommitted* `MaTeX.wl` work, whose `ConvertToMaTeX[{cell, ...}]` / `ConvertFromMaTeX[{cell, ...}]` selection paths call `writeCells` across files; the one-line declaration repairs those too.
+  - **The front end drops `TaggingRules` from a private stylesheet notebook** — as a string, a rule list or an association alike — while adding `Visible` and `FrontEndVersion` of its own. So a generated sheet cannot be recognised by its options. A hidden marker *cell* (`Cell[StyleData["MathNotebookView"], StyleMenuListing -> None, MenuSortingValue -> None]`) survives intact. Without it every call nested the previous sheet inside the new one — measured three deep — and reset silently left the overrides in place.
+  - **Reading the size hierarchy back out of `LaTeXBase.nb` is exact and cheap.** Styles that inherit from `Text` carry *no* bare `FontSize` but *do* carry an explicit `"Printout"` size, so the extraction naturally yields 11 screen sizes and 25 printout ones; writing only the variants that exist keeps theorem and proof styles inheriting from `Text` on screen while still reaching print.
+  - `Rasterize` needs a static stand-in for *every* dynamic item, not just the fold: the slider rasterised with its thumb at the minimum and the readout as a `⋮` placeholder. `Scripts/BuildPalette.wls` now pairs each dynamic item with a static one through `dual[ live, static ]`, which `paletteGroup` and `staticGroup` select from.
+  - `FrontEnd`CurrentValue[ FrontEnd`InputNotebook[], { TaggingRules, ... }, default ]` inside a `Dynamic` is the front-end-side idiom for a palette control that follows the focused document — `SlideShow.nb` uses exactly this shape. Nested `TaggingRules` paths do resolve in the front end. **Not verifiable headlessly:** whether the slider tracks a document switch live and whether its release-time setter fires, same limitation as T2's fold.
+  - Newly converted MaTeX cells still render at the base size of 14 until the math slider is touched again — `ConvertToMaTeX` does not yet consult the document's math size. Left as a rough edge for T6 rather than widening T3.
+  - The service front end's link died reproducibly at the tail of a long verification script (five PDF exports, then a second document). The same steps pass in isolation; split long headless front-end checks into separate scripts.
+  - The installed paclet was still 0.1.3, two sessions stale, so the palette Pavel actually saw had neither the folding nor the view controls.
+    Built and installed 0.1.4 at the end of this session — the archive must include `FrontEnd/` and `Assets/` as well as `Kernel/` and `Tests/`, which the generic build recipe omits; without them the palette, the five stylesheets and the tutorial vanish from the install.
+    The front end needs a restart before the new palette is served.
+- **Next:** T4 — `SetContentWidth` plus slider.
+
 ## Decisions
 
 | Date | Decision | Rationale |
@@ -117,3 +138,9 @@ The style names to touch are already partitioned in `Scripts/BuildStyleSheets.wl
 | 2026-07-25 | Reset restores the recovered parent stylesheet value verbatim, whatever its form | the palette supplies a `FrontEnd`FileName`, the menus a string |
 | 2026-07-25 | Fold state lives in the palette notebook's own `TaggingRules`, not `$FrontEnd`'s — a deviation from the Spec's requirement, pending Pavel's confirmation | the front end already persists palette tagging rules in `init.m` under `PalettesMenuSettings`, keyed by palette file name, so `Saveable -> False` is irrelevant; this is what the built-in palettes do and it keeps the state scoped to the palette |
 | 2026-07-25 | Every group opens by default | folding is opt-in, so a first-time user still sees all seventeen buttons; the closed-by-default alternative hides functionality |
+| 2026-07-26 | One slider scales the whole hierarchy proportionally about `Text` (prose) / `DisplayFormula` (math), rather than setting one style | an author wants the document bigger, not `Text` bigger while `Title` stays put; the ratios come from `LaTeXBase.nb` so they are never restated in code |
+| 2026-07-26 | View state lives on the document under `{ TaggingRules, "MathNotebook", <key> }` and the private sheet is rebuilt whole on every call | the front-end-side slider can then read the focused document's real size, and rebuilding sidesteps the duplicate-`StyleData` trap entirely |
+| 2026-07-26 | The generated sheet is marked by a hidden `StyleData` cell, not by notebook options | the front end drops `TaggingRules` from a stylesheet notebook, so options cannot carry a marker; without one the sheets nest and reset cannot recover the parent |
+| 2026-07-26 | Applying a stylesheet from the palette also clears the stored sizes | the new sheet replaces the private one, so keeping the numbers would make the sliders report a size the document no longer has |
+| 2026-07-26 | No `Magnification` slider | the Spec warns against conflating the two and the front end already has a window zoom control; revisit if T6 asks for it |
+| 2026-07-26 | `ResetDocumentView` is a fourth exported function beside the three in the Spec | "any control returns to the stylesheet default" needs both a per-control reset (`Automatic`) and a one-click clear-all; T4's width joins the same reset |

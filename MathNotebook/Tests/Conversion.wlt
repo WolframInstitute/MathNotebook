@@ -68,3 +68,18 @@ VerificationTest[
   Map[ First, First @ convertMathNotebook[ $converted ] ],
   Map[ First, First @ $testNotebook ]
 ]
+
+$groupedNotebook = Notebook[ {
+  Cell[ CellGroupData[ {
+    Cell[ "Section", "Section" ],
+    Cell[ CellGroupData[ { Cell[ "inner $x^2$ math", "Text", CellID -> 55 ] }, Open ] ] }, Open ] ] } ];
+
+VerificationTest[
+  FreeQ[ convertLaTeXNotebook[ $groupedNotebook ], "inner $x^2$ math" ],
+  True
+]
+
+VerificationTest[
+  Cases[ convertLaTeXNotebook[ $groupedNotebook ], _CellGroupData, Infinity, Heads -> True ] // Length,
+  2
+]

@@ -11,6 +11,7 @@ Paclet for writing math papers in Wolfram notebooks: referencing palette, LaTeX 
 ## Conventions
 
 - Conversion functions have pure cores operating on `Notebook` expressions (headless-testable) with thin `NotebookGet`/`NotebookPut` wrappers.
+- In the `Package[]` format an **undeclared symbol is private to its own file** (`WolframInstitute`MathNotebook`<File>`PackagePrivate`x`). Calling such a helper from another file creates a distinct, definition-less symbol, so the call just stays unevaluated — **no message, no failure, the operation silently does nothing**. Every cross-file helper needs `PackageScope["name"]` in the file that defines it.
 - All four template stylesheets are generated from the same base cell list as `LaTeXBase.nb` and each chains to `Default.nb`; they must define identical style names (enforced by `Tests/StyleSheets.wlt`).
 - Palette buttons must be cold-kernel-safe: `Needs["WolframInstitute`MathNotebook`"]` + fully qualified symbols, `Method -> "Queued"`.
 
@@ -27,6 +28,7 @@ Paclet for writing math papers in Wolfram notebooks: referencing palette, LaTeX 
 - The `"Printout"` variant of a style wins over the bare style name **across the whole stylesheet chain**. Since `LaTeXBase` sets an explicit `FontSize` on every prose/math style's `"Printout"` variant, an override written only on the bare name changes the screen and leaves the PDF byte-identical. Always write both.
 - `CurrentValue[nb, {StyleDefinitions, style, option}] = value` is silently ignored. Build the private sheet (`Notebook[{Cell[StyleData[StyleDefinitions -> parent]], overrides...}, StyleDefinitions -> "PrivateStylesheetFormatting.nb"]`) and install it with `SetOptions`.
 - Duplicate `StyleData` cells for the same name and environment in one sheet are **both dropped**. Rewrite an override in place; never append a second cell.
+- The front end **drops `TaggingRules` from a private stylesheet notebook** — string, rule list or association alike — while adding `Visible` and `FrontEndVersion` of its own. To recognise a sheet you generated, mark it with a hidden cell (`Cell[StyleData["<marker>"], StyleMenuListing -> None, MenuSortingValue -> None]`); cells survive the round trip. Without a marker each install nests the previous sheet inside the new one and reset can no longer recover the real parent.
 - Reset = recover the parent with `FirstCase[..., Cell[StyleData[StyleDefinitions -> name_]] :> name]` and assign it back verbatim — it is a string from the menus but a `FrontEnd`FileName` from the palette.
 - `Magnification` never reaches print; it is not a font-size control.
 - Headless testing: `"MathNotebook/AMSArticle.nb"` resolves in the service front end, `FrontEnd`FileName[{<absolute path>}, ...]` does not — it falls back to `Default.nb` silently. Assert the sheet loaded before trusting a measurement.

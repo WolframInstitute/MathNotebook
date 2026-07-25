@@ -1,27 +1,45 @@
+> ⚠️ **Actively developed, experimental research code.** It undergoes frequent cleanings and refactors, and the API may change without notice.
+
 # MathNotebook
 
-A Wolfram Language paclet for writing mathematics papers in notebooks instead of LaTeX.
+Write mathematics papers in Wolfram notebooks — referencing palette, LaTeX journal stylesheets, and conversion between LaTeX source and typeset math.
 
-## Features
+## ✨ Usage
 
-- **Referencing palette** (Palettes ▸ MathNotebook): copy live, clickable references to equations, theorems, and sections; tag cells as citation anchors; insert citations; jump back after following a link.
-- **LaTeX journal stylesheets** (Format ▸ Stylesheet ▸ MathNotebook): `AMSArticle` (amsart, Palatino), `ArXivArticle` (article, Latin Modern), `SpringerJournal` and `RevTeXAPS` (Times), with LaTeX-style per-section theorem numbering, numbered equations, and hyperlink colors.
-- **LaTeX conversion**: convert `$...$` fragments and `equation`/`align` environments to native typeset math and back, losslessly (original TeX is preserved in cell tagging rules).
-- **MaTeX integration**: render display math through real LaTeX via [MaTeX](https://github.com/szhorvat/MaTeX), and convert back; one-click MaTeX installation.
-- **Font installation**: install Latin Modern and TeX Gyre OpenType fonts from a local TeX Live distribution.
-- **Tutorial notebook** with shortcuts and best practices.
-
-## Installation
+Install from the Wolfram Cloud:
 
 ```wolfram
-PacletInstall["<cloud-url>"]
+PacletInstall["https://www.wolframcloud.com/obj/hajek_pavel/MathNotebook.paclet", ForceVersionInstall -> True]
+Needs["WolframInstitute`MathNotebook`"]
 ```
 
-Restart the front end (or evaluate ``FrontEndExecute[FrontEnd`ResetMenusPacket[{Automatic, Automatic}]]``) after the first install so the palette and stylesheet menus appear.
+Restart the front end, then open **Palettes ▸ MathNotebook**.
 
-## Development
+Start with the **[Tutorial](https://www.wolframcloud.com/obj/hajek_pavel/MathNotebook/Tutorial.nb)**, or `OpenTutorial[]`.
 
-- `MathNotebook/` — paclet source (`Kernel/`, `FrontEnd/`, `Assets/`, `Tests/`).
-- `Scripts/BuildStyleSheets.wls`, `BuildPalette.wls`, `BuildTutorial.wls` — generate all `.nb` artifacts; edit the scripts, not the generated files.
-- `./run_tests.wls` — run the test suite.
-- `Referencing.nb`, `Infrageometry.nb`, `TikZ.nb` — the original prototypes this paclet grew from.
+## 🎨 Stylesheets
+
+The same sample document in each template — as a notebook, and as the LaTeX it imitates:
+
+| Stylesheet | LaTeX class | Type | Notebook | LaTeX |
+|---|---|---|---|---|
+| `AMSArticle` | [amsart](https://ctan.org/pkg/amscls) | Palatino | [sample](https://www.wolframcloud.com/obj/hajek_pavel/MathNotebook/Sample-AMSArticle.nb) | [tex](https://www.wolframcloud.com/obj/hajek_pavel/MathNotebook/Sample-AMSArticle.tex) · [pdf](https://www.wolframcloud.com/obj/hajek_pavel/MathNotebook/Sample-AMSArticle.pdf) |
+| `ArXivArticle` | article | Latin Modern | [sample](https://www.wolframcloud.com/obj/hajek_pavel/MathNotebook/Sample-ArXivArticle.nb) | [tex](https://www.wolframcloud.com/obj/hajek_pavel/MathNotebook/Sample-ArXivArticle.tex) · [pdf](https://www.wolframcloud.com/obj/hajek_pavel/MathNotebook/Sample-ArXivArticle.pdf) |
+| `SpringerJournal` | [svjour3](https://www.springernature.com/gp/authors/campaigns/latex-author-support) | Times | [sample](https://www.wolframcloud.com/obj/hajek_pavel/MathNotebook/Sample-SpringerJournal.nb) | [tex](https://www.wolframcloud.com/obj/hajek_pavel/MathNotebook/Sample-SpringerJournal.tex) |
+| `RevTeXAPS` | [revtex4-2](https://ctan.org/pkg/revtex) | Times | [sample](https://www.wolframcloud.com/obj/hajek_pavel/MathNotebook/Sample-RevTeXAPS.nb) | [tex](https://www.wolframcloud.com/obj/hajek_pavel/MathNotebook/Sample-RevTeXAPS.tex) · [pdf](https://www.wolframcloud.com/obj/hajek_pavel/MathNotebook/Sample-RevTeXAPS.pdf) |
+
+Generated from [`LaTeXBase`](https://www.wolframcloud.com/obj/hajek_pavel/MathNotebook/LaTeXBase.nb); sources and PDFs in [`LaTeX/`](LaTeX). [`svjour3`](https://www.springernature.com/gp/authors/campaigns/latex-author-support) comes from Springer rather than TeX Live, so that sample has no PDF until you install the class.
+
+## 🖱 Palette
+
+<img src="Images/Palette.png" alt="MathNotebook palette" width="215">
+
+What the buttons do is in the [Tutorial](https://www.wolframcloud.com/obj/hajek_pavel/MathNotebook/Tutorial.nb).
+
+## 📦 Requirements
+
+Referencing, stylesheets, and conversion need nothing installed. The MaTeX and font buttons need a TeX distribution — [TeX Live](https://tug.org/texlive/), [MacTeX](https://tug.org/mactex/), [MiKTeX](https://miktex.org/) — and [MaTeX](https://github.com/szhorvat/MaTeX) also needs [Ghostscript](https://www.ghostscript.com/); the fonts installed are [Latin Modern](https://ctan.org/pkg/lm) and [TeX Gyre](https://ctan.org/pkg/tex-gyre). Programs are found through `PATH` and font directories through `kpsewhich`, so the distribution may live anywhere; only macOS with TeX Live is tested.
+
+## 🙏 Credits
+
+The referencing scheme and the MaTeX integration are originally due to **Nik Murzin** ([@sw1sh](https://github.com/sw1sh)).

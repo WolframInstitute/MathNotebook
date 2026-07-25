@@ -3,24 +3,48 @@ Package["WolframInstitute`MathNotebook`"]
 PackageExport[ConvertToMaTeX]
 PackageExport[ConvertFromMaTeX]
 PackageExport[InstallMaTeX]
+PackageExport[OpenMaTeXPreferences]
 
 PackageScope["findExecutable"]
+PackageScope["executableDirectories"]
 PackageScope["mathTeX"]
 PackageScope["maTeXCellQ"]
 PackageScope["toMaTeXNotebook"]
 PackageScope["fromMaTeXNotebook"]
+PackageScope["userInitFile"]
+PackageScope["$maTeXPreferences"]
+PackageScope["$maTeXBaseFontSize"]
+
+$maTeXBaseFontSize = 14
 
 ConvertToMaTeX[] :=
-  ConvertToMaTeX[ InputNotebook[] ]
+  ( Needs[ "MaTeX`" ]; convertCells[ toMaTeXCell, InputNotebook[] ] )
 
 ConvertToMaTeX[ notebook_NotebookObject ] :=
   ( Needs[ "MaTeX`" ]; NotebookPut[ toMaTeXNotebook[ NotebookGet[ notebook ] ], notebook ] )
 
+ConvertToMaTeX[ cells : { __CellObject } ] :=
+  ( Needs[ "MaTeX`" ]; writeCells[ toMaTeXCell, cells ] )
+
 ConvertFromMaTeX[] :=
-  ConvertFromMaTeX[ InputNotebook[] ]
+  convertCells[ fromMaTeXCell, InputNotebook[] ]
 
 ConvertFromMaTeX[ notebook_NotebookObject ] :=
   NotebookPut[ fromMaTeXNotebook[ NotebookGet[ notebook ] ], notebook ]
+
+ConvertFromMaTeX[ cells : { __CellObject } ] :=
+  writeCells[ fromMaTeXCell, cells ]
+
+OpenMaTeXPreferences[] :=
+  With[ { file = userInitFile[] },
+    If[ ! FileExistsQ[ file ],
+      CreateDirectory[ DirectoryName[ file ], CreateIntermediateDirectories -> True ];
+      Export[ file, $maTeXPreferences, "Text" ] ];
+    NotebookOpen[ file ]
+  ]
+
+userInitFile[] :=
+  FileNameJoin[ { $UserBaseDirectory, "Kernel", "init.m" } ]
 
 InstallMaTeX[] :=
   (
@@ -32,17 +56,17 @@ InstallMaTeX[] :=
       "Ghostscript" -> findExecutable[ "gs" ] ]
   )
 
-toMaTeXNotebook[ Notebook[ cells_List, options___ ] ] :=
-  Notebook[ Map[ toMaTeXCell, cells ], options ]
+toMaTeXNotebook[ notebook_Notebook ] :=
+  mapCells[ toMaTeXCell, notebook ]
 
-fromMaTeXNotebook[ Notebook[ cells_List, options___ ] ] :=
-  Notebook[ Map[ fromMaTeXCell, cells ], options ]
+fromMaTeXNotebook[ notebook_Notebook ] :=
+  mapCells[ fromMaTeXCell, notebook ]
 
 toMaTeXCell[ cell : Cell[ _, style : "DisplayFormula" | "DisplayFormulaNumbered", options___ ] ] :=
   With[ { tex = mathTeX[ cell ] },
     If[ tex === $Failed,
       cell,
-      Cell[ BoxData[ ToBoxes @ MaTeX`MaTeX[ tex, "DisplayStyle" -> True, FontSize -> 14 ] ], style,
+      Cell[ BoxData[ ToBoxes @ MaTeX`MaTeX[ tex, "DisplayStyle" -> True, FontSize -> $maTeXBaseFontSize ] ], style,
         Sequence @@ retainedCellOptions[ { options } ],
         TaggingRules -> <| "MathNotebook" -> <| "SourceTeX" -> tex, "MaTeX" -> True |> |> ] ]
   ]
@@ -76,13 +100,52 @@ mathTeX[ cell_Cell ] :=
       boxesToTeX @ cellBoxes[ cell ] ]
   ]
 
+$maTeXPreferences = "\
+(* ::Package:: *)
+
+(** User initialization file **)
+
+(* MaTeX preferences: preamble, magnification, and the inline-TeX hook.
+   The hook is due to Nik Murzin, https://github.com/sw1sh; set $useMaTeXQ = True to enable it,
+   so that TeX typed into a notebook renders through LaTeX instead of the built-in parser. *)
+
+Needs[ \"MaTeX`\" ];
+
+$MaTeXPreamble = {
+  \"\\\\usepackage{amsfonts}\",
+  \"\\\\usepackage{amssymb}\",
+  \"\\\\usepackage{mathtools}\",
+  \"\\\\usepackage{tikz}\",
+  \"\\\\usepackage{tikz-cd}\",
+  \"\\\\usetikzlibrary{cd}\"
+};
+
+$useMaTeXMag = 2;
+$useMaTeXBaselineShift = 0;
+
+InputAssistant`TeXStringToBoxes // Unprotect;
+InputAssistant`TeXStringToBoxes[ s_String ] /; TrueQ[ $useMaTeXQ ] :=
+  AdjustmentBox[
+    ToBoxes @ MaTeX[ s, Magnification -> $useMaTeXMag, \"Preamble\" -> $MaTeXPreamble ],
+    BoxBaselineShift -> $useMaTeXBaselineShift
+  ];
+InputAssistant`TeXStringToBoxes // Protect;
+
+$useMaTeXQ = False;
+"
+
 latestMaTeXReleaseURL[] :=
   First @ Query[ "assets", All, "browser_download_url" ] @
     Import[ "https://api.github.com/repos/szhorvat/MaTeX/releases/latest", "RawJSON" ]
 
 findExecutable[ name_String ] :=
   SelectFirst[
-    Append[
-      FileNameJoin[ { #, name } ] & /@ { "/usr/local/bin", "/opt/homebrew/bin", "/Library/TeX/texbin", "/usr/bin" },
-      StringTrim @ RunProcess[ { "/bin/zsh", "-lc", "which " <> name }, "StandardOutput" ] ],
+    FileNameJoin /@ Tuples[ { executableDirectories[],
+      If[ $OperatingSystem === "Windows", { name <> ".exe", name }, { name } ] } ],
     FileExistsQ ]
+
+executableDirectories[] :=
+  Join[
+    StringSplit[ Environment[ "PATH" ], If[ $OperatingSystem === "Windows", ";", ":" ] ],
+    { "/usr/local/bin", "/opt/homebrew/bin", "/Library/TeX/texbin", "/usr/bin" },
+    FileNames[ "*", FileNames[ "/usr/local/texlive/*/bin" ] ] ]

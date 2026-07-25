@@ -14,24 +14,50 @@ PackageScope["cellBoxes"]
 PackageScope["retainedCellOptions"]
 PackageScope["convertLaTeXNotebook"]
 PackageScope["convertMathNotebook"]
+PackageScope["mapCells"]
+PackageScope["convertCells"]
+PackageScope["writeCells"]
 
 ConvertLaTeXCells[] :=
-  ConvertLaTeXCells[ InputNotebook[] ]
+  convertCells[ convertLaTeXCell, InputNotebook[] ]
 
 ConvertLaTeXCells[ notebook_NotebookObject ] :=
   NotebookPut[ convertLaTeXNotebook[ NotebookGet[ notebook ] ], notebook ]
 
+ConvertLaTeXCells[ cells : { __CellObject } ] :=
+  writeCells[ convertLaTeXCell, cells ]
+
 ConvertMathCells[] :=
-  ConvertMathCells[ InputNotebook[] ]
+  convertCells[ convertMathCell, InputNotebook[] ]
 
 ConvertMathCells[ notebook_NotebookObject ] :=
   NotebookPut[ convertMathNotebook[ NotebookGet[ notebook ] ], notebook ]
 
-convertLaTeXNotebook[ Notebook[ cells_List, options___ ] ] :=
-  Notebook[ Map[ convertLaTeXCell, cells ], options ]
+ConvertMathCells[ cells : { __CellObject } ] :=
+  writeCells[ convertMathCell, cells ]
 
-convertMathNotebook[ Notebook[ cells_List, options___ ] ] :=
-  Notebook[ Map[ convertMathCell, cells ], options ]
+convertLaTeXNotebook[ notebook_Notebook ] :=
+  mapCells[ convertLaTeXCell, notebook ]
+
+convertMathNotebook[ notebook_Notebook ] :=
+  mapCells[ convertMathCell, notebook ]
+
+convertCells[ cellTransform_, notebook_NotebookObject ] :=
+  Replace[ SelectedCells[ notebook ],
+    { {} :> NotebookPut[ mapCells[ cellTransform, NotebookGet[ notebook ] ], notebook ],
+      cells_List :> writeCells[ cellTransform, cells ] } ]
+
+writeCells[ cellTransform_, cells_List ] :=
+  Scan[ { cell } |-> NotebookWrite[ cell, cellTransform @ NotebookRead[ cell ], All ], cells ]
+
+mapCells[ cellTransform_, Notebook[ cells_List, options___ ] ] :=
+  Notebook[ Map[ mapCells[ cellTransform, # ] &, cells ], options ]
+
+mapCells[ cellTransform_, Cell[ CellGroupData[ cells_List, state___ ], options___ ] ] :=
+  Cell[ CellGroupData[ Map[ mapCells[ cellTransform, # ] &, cells ], state ], options ]
+
+mapCells[ cellTransform_, cell_Cell ] :=
+  cellTransform[ cell ]
 
 texToBoxes[ tex_String ] :=
   Replace[ Quiet @ ToExpression[ tex, TeXForm, HoldComplete ],

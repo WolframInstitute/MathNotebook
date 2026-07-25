@@ -2,23 +2,39 @@ repoDirectory = Replace[ $ScriptCommandLine,
   { { path_, ___ } :> DirectoryName[ ExpandFileName[ path ], 2 ], _ :> Environment[ "MATHNOTEBOOK_REPO" ] } ];
 tutorialPath = FileNameJoin[ { repoDirectory, "MathNotebook", "Assets", "MathNotebookTutorial.nb" } ];
 
-placeholder = Cell[ "Content to be written.", "Text" ];
 key[ text_String ] := StyleBox[ text, FontWeight -> "Bold" ];
 name[ text_String ] := StyleBox[ text, FontSlant -> "Italic" ];
+link[ label_String, url_String ] :=
+  ButtonBox[ label, BaseStyle -> "Hyperlink", ButtonData -> { URL[ url ], None }, ButtonNote -> url ];
 
 tutorialNotebook = Notebook[ {
   Cell[ "Writing Mathematics in Notebooks", "Title" ],
   Cell[ "MathNotebook Tutorial", "Author" ],
-  Cell[ "How to write a mathematics paper in a Wolfram notebook: referencing, journal stylesheets, LaTeX conversion, and MaTeX rendering.", "Abstract" ],
+  Cell[ "How to write a mathematics paper in a Wolfram notebook: journal stylesheets, live referencing, and conversion between LaTeX source and native typeset math. Whether the mathematics is written as LaTeX or as built-in typeset math is your choice throughout \[LongDash] the palette only moves a selection from one to the other.", "Abstract" ],
 
   Cell[ "Getting Started", "Section" ],
-  placeholder,
+  Cell[ TextData[ { "After installing the paclet, restart the front end so that ", name[ "Palettes \[RightArrow] MathNotebook" ], " and the stylesheet menu appear." } ], "Item" ],
+  Cell[ TextData[ { "Give a notebook a journal style with ", name[ "Format \[RightArrow] Stylesheet \[RightArrow] MathNotebook" ], ", or the palette's ", name[ "Apply stylesheet" ], " menu; ", name[ "Default" ], " in that menu takes it back." } ], "Item" ],
+  Cell[ TextData[ { "Style the opening cells ", name[ "Title" ], ", ", name[ "Author" ], ", ", name[ "Abstract" ], ", then write in ", name[ "Section" ], " and ", name[ "Text" ], " cells." } ], "Item" ],
+  Cell[ "Every palette button acts on the notebook you were last editing, and on its current selection.", "Item" ],
+  Cell[ TextData[ { "The journal stylesheets are light-only; applying one from the palette also sets the notebook to light mode, so printed and exported output matches the screen." } ], "Item" ],
 
   Cell[ "Referencing", "Section" ],
-  placeholder,
+  Cell[ TextData[ { "Select a numbered cell \[LongDash] an equation, a theorem, a section, a numbered item \[LongDash] and press ", name[ "Copy reference" ], ", then paste into your text." } ], "Item" ],
+  Cell[ "The pasted reference is a live button showing the current number, so reordering cells renumbers every reference to them.", "Item" ],
+  Cell[ TextData[ { "Clicking a reference jumps to its target; ", name[ "\[UpArrow] Go back" ], " returns to where you clicked from." } ], "Item" ],
+  Cell[ TextData[ { name[ "Tag cell" ], " names a cell, and ", name[ "Insert citation" ], " inserts a red bracketed link to that name \[LongDash] the two together give a bibliography: style each entry ", name[ "Reference" ], ", tag it, cite it." } ], "Item" ],
+  Cell[ TextData[ { "Existing tags are listed under ", name[ "Cell \[RightArrow] Cell Tags" ], "." } ], "Item" ],
+  Cell[ "The theorem below and the equation after it are practice targets: select either one and copy a reference to it.", "Item" ],
+  Cell[ "The exponential map is surjective onto the unit circle.", "Theorem" ],
+  Cell[ BoxData[ FormBox[ RowBox[ { SuperscriptBox[ "e", RowBox[ { "\[ImaginaryI]", "\[Pi]" } ] ], "+", "1", "=", "0" } ], TraditionalForm ] ], "DisplayFormulaNumbered" ],
 
   Cell[ "Stylesheets", "Section" ],
-  placeholder,
+  Cell[ TextData[ { "Four templates: ", name[ "AMSArticle" ], " (amsart, Palatino), ", name[ "ArXivArticle" ], " (article, Latin Modern), ", name[ "SpringerJournal" ], " and ", name[ "RevTeXAPS" ], " (Times)." } ], "Item" ],
+  Cell[ "All four define the same style names, so switching between them is instant and changes nothing but the typography.", "Item" ],
+  Cell[ "Theorem, Lemma, Proposition, Corollary, Conjecture, Claim, Definition, Example, Construction, Remark, Question, and Observation share a single counter that resets at each section, exactly as in LaTeX; numbered equations count continuously through the document.", "Item" ],
+  Cell[ TextData[ { "Insert environments from the palette's ", name[ "Insert environment" ], " menu, or with the ", name[ "Proof" ], ", ", name[ "Equation" ], ", and ", name[ "Equation (n)" ], " buttons." } ], "Item" ],
+  Cell[ TextData[ { "Latin Modern and TeX Gyre are LaTeX fonts, not system fonts: press ", name[ "Install LaTeX fonts" ], " once to copy them out of a local TeX distribution (", link[ "tug.org/texlive", "https://tug.org/texlive/" ], ") into your user font directory, then restart the front end. They are installed for the whole machine, not inside Mathematica, so any application can use them." } ], "Item" ],
 
   Cell[ "Math Input Shortcuts", "Section" ],
   Cell[ TextData[ { key[ "Ctrl+9" ], " inline math in text, ", key[ "Ctrl+0" ], " exits." } ], "Item" ],
@@ -37,13 +53,34 @@ tutorialNotebook = Notebook[ {
   Cell[ TextData[ { "Double-click a closed group's remaining bracket to reopen it; use Cell \[RightArrow] Delete All Output before sharing a notebook." } ], "Item" ],
 
   Cell[ "LaTeX Conversion", "Section" ],
-  placeholder,
+  Cell[ TextData[ { "Select the cells to convert, then press ", name[ "TeX \[Rule] math" ], " or ", name[ "Math \[Rule] TeX" ], ". With nothing selected the whole notebook is converted." } ], "Item" ],
+  Cell[ TextData[ { name[ "TeX \[Rule] math" ], " parses inline ", name[ "$\[Ellipsis]$" ], " and ", name[ "\\(\[Ellipsis]\\)" ], ", and displayed ", name[ "$$\[Ellipsis]$$" ], ", ", name[ "\\[\[Ellipsis]\\]" ], ", ", name[ "equation" ], ", and ", name[ "align" ], "; the starred forms stay unnumbered, the unstarred ones become numbered equations." } ], "Item" ],
+  Cell[ TextData[ { "An ", name[ "align" ], " environment becomes a grid aligned on its ", name[ "&" ], ", so it stays editable as one equation cell." } ], "Item" ],
+  Cell[ TextData[ { "Each converted cell keeps its original TeX, so ", name[ "Math \[Rule] TeX" ], " gives back what you typed rather than a re-serialization of the boxes. Anything the parser cannot read is left untouched." } ], "Item" ],
+  Cell[ TextData[ { "Input, Code, and Output cells are skipped, so ", name[ "$" ], " in code is safe. To bring in a LaTeX paper, paste it as Text cells and convert." } ], "Item" ],
 
   Cell[ "MaTeX", "Section" ],
-  placeholder,
+  Cell[ TextData[ { "MaTeX (", link[ "github.com/szhorvat/MaTeX", "https://github.com/szhorvat/MaTeX" ], ") is optional, and needs a TeX distribution and Ghostscript. It is used only by the MaTeX buttons; referencing, stylesheets, and LaTeX conversion do not." } ], "Item" ],
+  Cell[ TextData[ { "Use it when an equation has to come out of real LaTeX \[LongDash] macros, ", name[ "tikz-cd" ], " diagrams, exact journal metrics." } ], "Item" ],
+  Cell[ TextData[ { name[ "Install MaTeX" ], " installs the paclet and points it at the local ", name[ "pdflatex" ], " and ", name[ "gs" ], "." } ], "Item" ],
+  Cell[ TextData[ { name[ "Math \[Rule] MaTeX" ], " renders the selected display equations through LaTeX; ", name[ "MaTeX \[Rule] math" ], " restores editable typeset math from the TeX stored in each cell." } ], "Item" ],
+  Cell[ TextData[ { name[ "MaTeX preferences" ], " opens your ", name[ "init.m" ], " in the front end \[LongDash] deliberately not through the system handler for ", name[ ".m" ], " files. Set the preamble, the magnification, and ", name[ "$useMaTeXQ = True" ], " to route TeX typed into a notebook through LaTeX instead of the built-in parser." } ], "Item" ],
+  Cell[ "MaTeX cells are images: convert them back before editing, and keep rendering for last.", "Item" ],
 
   Cell[ "Best Practices", "Section" ],
-  placeholder
+  Cell[ "One environment per cell, inserted from the palette, keeps the styles and counters consistent.", "Item" ],
+  Cell[ "Tag cells as you write them; tagging a theorem after fifty pages means finding it again.", "Item" ],
+  Cell[ "Do not strip cell tagging rules: they hold the TeX source that makes the round trip lossless.", "Item" ],
+  Cell[ TextData[ { "Convert to LaTeX at submission time, not continuously \[LongDash] the notebook is the source." } ], "Item" ],
+  Cell[ TextData[ { "Before sharing: ", name[ "Cell \[RightArrow] Delete All Output" ], ", and convert MaTeX cells back to math so a coauthor can edit them." } ], "Item" ],
+
+  Cell[ "Credits", "Section" ],
+  Cell[ TextData[ { "The referencing scheme and the MaTeX integration are originally due to Nik Murzin, ",
+    link[ "github.com/sw1sh", "https://github.com/sw1sh" ], "; this paclet packages and extends that work." } ], "Text" ],
+  Cell[ TextData[ { "Nik Murzin, ", link[ "https://github.com/sw1sh", "https://github.com/sw1sh" ] } ], "Reference" ],
+  Cell[ TextData[ { "Szabolcs Horvat, MaTeX: LaTeX labels in Mathematica, ", link[ "https://github.com/szhorvat/MaTeX", "https://github.com/szhorvat/MaTeX" ] } ], "Reference" ],
+  Cell[ TextData[ { "TeX Live, ", link[ "https://tug.org/texlive/", "https://tug.org/texlive/" ], " \[LongDash] on macOS, MacTeX, ", link[ "https://tug.org/mactex/", "https://tug.org/mactex/" ] } ], "Reference" ],
+  Cell[ TextData[ { "Latin Modern, ", link[ "https://ctan.org/pkg/lm", "https://ctan.org/pkg/lm" ], " and TeX Gyre, ", link[ "https://ctan.org/pkg/tex-gyre", "https://ctan.org/pkg/tex-gyre" ] } ], "Reference" ]
   },
   StyleDefinitions -> FrontEnd`FileName[ { "MathNotebook" }, "AMSArticle.nb", CharacterEncoding -> "UTF-8" ],
   LightDark -> "Light"

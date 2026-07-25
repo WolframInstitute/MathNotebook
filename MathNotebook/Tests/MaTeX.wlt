@@ -40,3 +40,18 @@ VerificationTest[
     Notebook[ { Cell[ BoxData[ FormBox[ SuperscriptBox[ "x", "2" ], TraditionalForm ] ], "DisplayFormulaNumbered", CellID -> 7, ___ ] } ] ],
   True
 ]
+
+VerificationTest[
+  StringFreeQ[ userInitFile[], "Documents" ] && StringMatchQ[ userInitFile[], ___ ~~ "Kernel" ~~ $PathnameSeparator ~~ "init.m" ],
+  True
+]
+
+VerificationTest[
+  Head @ Quiet @ ToExpression[ $maTeXPreferences, InputForm, HoldComplete ],
+  HoldComplete
+]
+
+VerificationTest[
+  StringContainsQ[ $maTeXPreferences, "$MaTeXPreamble" ] && StringContainsQ[ $maTeXPreferences, "$useMaTeXQ = False" ],
+  True
+]
