@@ -1,5 +1,6 @@
 build/
 *.paclet
 .claude/
+.serena/
 .DS_Store
 ClaudePluginMarketplace/

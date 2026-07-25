@@ -11,7 +11,7 @@ Paclet for writing math papers in Wolfram notebooks: referencing palette, LaTeX 
 ## Conventions
 
 - Conversion functions have pure cores operating on `Notebook` expressions (headless-testable) with thin `NotebookGet`/`NotebookPut` wrappers.
-- All four template stylesheets chain to `LaTeXBase.nb` and must define identical style names (enforced by `Tests/StyleSheets.wlt`).
+- All four template stylesheets are generated from the same base cell list as `LaTeXBase.nb` and each chains to `Default.nb`; they must define identical style names (enforced by `Tests/StyleSheets.wlt`).
 - Palette buttons must be cold-kernel-safe: `Needs["WolframInstitute`MathNotebook`"]` + fully qualified symbols, `Method -> "Queued"`.
 
 ## Style overrides on a document
