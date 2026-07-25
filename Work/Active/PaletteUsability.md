@@ -55,7 +55,6 @@ The style names to touch are already partitioned in `Scripts/BuildStyleSheets.wl
 
 ## Tasks
 
-- [ ] T4 — `SetContentWidth` plus slider — exposing the native option if T1 found one, otherwise private style definitions.
 - [ ] T5 — Document all of it in the tutorial (`Scripts/BuildTutorial.wls`), in a new section on reading and writing comfortably; tests for the three functions.
 - [ ] T6 — Feedback round: Pavel writes with it on a real document; revise.
 
@@ -64,6 +63,7 @@ The style names to touch are already partitioned in `Scripts/BuildStyleSheets.wl
 - [x] T1 — Investigate the three mechanisms in a scratch notebook; write down what actually works in 15.0, especially whether a native centered-content-width option exists. (Session 1)
 - [x] T2 — Foldable groups with persisted state; rebuild the palette and its screenshot. (Session 2)
 - [x] T3 — `SetDocumentFontSize` / `SetMathFontSize` plus palette sliders, with a reset, and a decision recorded on MaTeX cells. (Session 3)
+- [x] T4 — `SetContentWidth` plus slider — exposing the native option if T1 found one, otherwise private style definitions. (Session 4)
 
 ## Progress
 
@@ -126,6 +126,25 @@ The style names to touch are already partitioned in `Scripts/BuildStyleSheets.wl
     The front end needs a restart before the new palette is served.
 - **Next:** T4 — `SetContentWidth` plus slider.
 
+### Session 4 — 2026-07-26 — T4
+
+- **Prompt:** `/next-session` on this item, plus mid-session feedback from Pavel — "the reference cell looks ugly, not showing the tag [...]. Also the font size is not changed in itemized, references, theorem etc. cells" — filed as `Work/Backlog/ViewAndReferenceDefects.md` rather than worked here.
+- **Did:** Added `SetContentWidth` to `MathNotebook/Kernel/View.wl` and a *Column width* slider to the palette's *Document view* group, so the three sliders now share one `viewSlider` and one static stand-in.
+  The width is the fraction of the page the content column occupies; each column style gets `CellMargins -> { { Scaled[ inset ] + dLeft, Scaled[ inset ] + dRight }, base vertical }` with `inset = (1 - width)/2`, on the bare style and its `"Printout"` variant.
+  The per-style offsets are read from the document's own stylesheet chain and measured from the smallest base margin, so no offset is negative and every style keeps its indent.
+  Verified on exported PDFs at 595 pt: ink columns `{ 73, 521 }` unmodified, `{ 163, 422 }` at width 0.6 — the left edge moving in by exactly `0.2 × 451.28` pt of printable width — `{ 87, 498 }` at 0.9, and `{ 73, 521 }` again after `ResetDocumentView`, with `StyleDefinitions` back to the bare `"MathNotebook/AMSArticle.nb"`, the tagging rules `Inherited`, and exactly one marker cell in the sheet (no nesting).
+  On screen the right text edge moves 855 → 623 px at 0.6 and back on reset, and the same holds on a document still on `Default.nb` (855 → 583 → 855), which the control has to support.
+  The generated margin cells read `{ 26 + Scaled[0.2], Scaled[0.2] }` for `Text`, `{ Scaled[0.2], 15 + Scaled[0.2] }` for `Section`, `{ 90 + Scaled[0.2], Scaled[0.2] }` for `Theorem` and `{ 41 + Scaled[0.2], Scaled[0.2] }` for `Item`.
+  Palette rebuilt with its screenshot: 715 px tall all open, 247 px all closed, 323 px with only *Document view* open. All 35 tests still pass, and 0.1.5 is built and installed so the slider is actually in the front end after a restart.
+- **Learned:**
+  - **`CellMargins` accepts `Scaled[fraction] + points` and the front end resolves the sum** — measured 14 wrapped lines for `Scaled[0.1]` against 23 for `Scaled[0.1] + 200`, and `Scaled[0.1] + Scaled[0.44]` laid out identically to `Scaled[0.54]`. This is what T1 left open, and it is the whole design: a symmetric `Scaled` inset centers the column while a per-style point offset keeps the section numbers and the theorem, proof and abstract dingbats, which are drawn to the left of their own cell margin, inside the page.
+  - **Reading `CurrentValue[ nb, { StyleDefinitions, style, option } ]` resolves through the whole chain**, even though assigning to it is ignored (T1). It returns `{ { 81, 10 }, { 4, 8 } }` for `Item` — a style no MathNotebook sheet declares — and works on a `Default.nb` document. So base geometry comes from the document's parent sheet at run time rather than from `LaTeXBase.nb`, which is what makes the control correct on all five sheets.
+  - **Offsets have to be measured from the smallest base margin, not from `Text`.** `Section` sits 26 pt *left* of `Text`, so anchoring on `Text` would make the section number's offset negative and push it off the page as the column widens. Anchoring on the minimum also fixes the slider's top end: 0.9 is both the default and the maximum, since the dingbats hang left of the anchor by their own width and zero inset would clip them.
+  - **T3's font-size mechanism is broken for most of the prose, and this task's reader is the fix.** Measured after `SetDocumentFontSize[ document, 20 ]`: `Text` 13 → 20, `Abstract` 12 → 18, `Title` 26 → 40, but `Theorem`, `Proof` and `Reference` stay at 13 and `Item` and `ItemNumbered` at 15. Two causes — a style declared `StyleData[ name, StyleDefinitions -> StyleData[ "Text" ] ]` carries no bare `FontSize` and does not inherit a child sheet's `Text` override, and the list styles are not in `LaTeXBase.nb` at all. This is exactly Pavel's report; it is T1 of the new item.
+  - **The generated palette `.nb` already carries a `TaggingRules` association** — all groups `True`, written by the exporting front end. Patching fold state for a measurement has to replace it, since a second copy of the option is ignored and the first wins; and `Get`ting the palette to patch it re-evaluates it, which is the trap that reported one window size for all three fold states. Both mistakes were made and caught here. WL's `RegularExpression` also needs `(?s)` to match across the association's line breaks.
+  - Ink-column measurements are exact in print (the 0.6 shift matched `0.2 × 451.28` pt to the pixel) but not on screen, where `Scaled` resolves against a `PageWidth` noticeably wider than the window: the right edge moved 232 px where the window width predicts 180. Use print for numbers, screen only for direction.
+- **Next:** T5 — document the three controls in the tutorial and add tests.
+
 ## Decisions
 
 | Date | Decision | Rationale |
@@ -144,3 +163,7 @@ The style names to touch are already partitioned in `Scripts/BuildStyleSheets.wl
 | 2026-07-26 | Applying a stylesheet from the palette also clears the stored sizes | the new sheet replaces the private one, so keeping the numbers would make the sliders report a size the document no longer has |
 | 2026-07-26 | No `Magnification` slider | the Spec warns against conflating the two and the front end already has a window zoom control; revisit if T6 asks for it |
 | 2026-07-26 | `ResetDocumentView` is a fourth exported function beside the three in the Spec | "any control returns to the stylesheet default" needs both a per-control reset (`Automatic`) and a one-click clear-all; T4's width joins the same reset |
+| 2026-07-26 | The width is a fraction of the page, realised as a symmetric `Scaled` inset plus a per-style point offset | `Scaled` resolves against `PageWidth`, so the column follows a window resize and still prints; the offsets keep the hanging section numbers and dingbats inside the page, which one margin pair for every style would not |
+| 2026-07-26 | Per-style base geometry is read from the document's own stylesheet chain, not from `LaTeXBase.nb` | reading `{ StyleDefinitions, style, CellMargins }` resolves through the chain, so the control covers the list styles the paclet never declares and a document still on `Default.nb` |
+| 2026-07-26 | Offsets are anchored on the smallest base margin, and the slider tops out at 0.9 rather than 1 | `Section` sits left of `Text`, so a `Text` anchor gives negative offsets; and the dingbats hang left of the anchor by their own width, so zero inset would clip them |
+| 2026-07-26 | Pavel's report of unchanged font size in itemized, reference and theorem cells is its own work item, not a revision of T3 | the reference label is a referencing defect and the font-size fix replaces T3's extraction with T4's chain reader, so it is a rewrite rather than a tweak; see `Work/Backlog/ViewAndReferenceDefects.md` |

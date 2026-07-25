@@ -8,9 +8,15 @@ $styleSheets = { "AMSArticle", "ArXivArticle", "SpringerJournal", "RevTeXAPS" };
 $buttonSize = { 200, 27 };
 $labelSize = { 182, 20 };
 $fontSizeRange = { 8, 28, 1 };
-$sliderLabelSize = { 66, 20 };
-$sliderSize = { 106, 18 };
-$sliderReadoutSize = { 22, 20 };
+(* The base sheet's own block spans all but 50 pt of the 451 pt printable width, so 0.9 is the
+   step whose printed column is closest to what the stylesheet already does — and it is the top of
+   the range, so the slider only ever narrows: every position leaves the section numbers and the
+   theorem dingbats, which hang to the left of their own cell margin, room to be drawn. *)
+$contentWidthRange = { 0.4, 0.9, 0.05 };
+$defaultContentWidth = 0.9;
+$sliderLabelSize = { 72, 20 };
+$sliderSize = { 92, 18 };
+$sliderReadoutSize = { 30, 20 };
 
 (* The neutral slider position is the base sheet's own Text size, so the sliders and
    SetDocumentFontSize agree on what "unchanged" means. *)
@@ -75,17 +81,17 @@ sliderRow[ label_String, control_, readout_ ] :=
 
 (* The slider reads and writes the focused document's own tagging rules, so it follows whichever
    paper is in front and needs no kernel to display. Only the release calls the setter. *)
-sizeSlider[ label_String, key_String, setter_Symbol ] :=
-  With[ { path = { TaggingRules, "MathNotebook", key }, default = $defaultFontSize },
+viewSlider[ label_String, key_String, setter_Symbol, range_List, default_ ] :=
+  With[ { path = { TaggingRules, "MathNotebook", key } },
     sliderRow[ label,
       Slider[
         Dynamic[ CurrentValue[ FrontEnd`InputNotebook[ ], path, default ],
           ( Needs[ "WolframInstitute`MathNotebook`" ]; setter[ InputNotebook[ ], # ] ) & ],
-        $fontSizeRange, ImageSize -> $sliderSize, ContinuousAction -> False ],
+        range, ImageSize -> $sliderSize, ContinuousAction -> False ],
       Dynamic[ CurrentValue[ FrontEnd`InputNotebook[ ], path, default ] ] ] ]
 
-staticSizeSlider[ label_String ] :=
-  sliderRow[ label, Slider[ $defaultFontSize, $fontSizeRange, ImageSize -> $sliderSize ], $defaultFontSize ]
+staticViewSlider[ label_String, range_List, default_ ] :=
+  sliderRow[ label, Slider[ default, range, ImageSize -> $sliderSize ], default ]
 
 (* Rasterize leaves a Dynamic unevaluated, so the screenshot needs a static stand-in for every
    dynamic item; dual pairs the live rendition with it. *)
@@ -121,10 +127,15 @@ $groups = {
         "Default" :> SetOptions[ InputNotebook[], StyleDefinitions -> "Default.nb", LightDark -> Automatic ] ],
       Appearance -> "PopupMenu", ImageSize -> $buttonSize ] } },
   { "View", "Document view", {
-    dual[ sizeSlider[ "Text size", "DocumentFontSize", WolframInstitute`MathNotebook`SetDocumentFontSize ],
-      staticSizeSlider[ "Text size" ] ],
-    dual[ sizeSlider[ "Math size", "MathFontSize", WolframInstitute`MathNotebook`SetMathFontSize ],
-      staticSizeSlider[ "Math size" ] ],
+    dual[ viewSlider[ "Text size", "DocumentFontSize", WolframInstitute`MathNotebook`SetDocumentFontSize,
+        $fontSizeRange, $defaultFontSize ],
+      staticViewSlider[ "Text size", $fontSizeRange, $defaultFontSize ] ],
+    dual[ viewSlider[ "Math size", "MathFontSize", WolframInstitute`MathNotebook`SetMathFontSize,
+        $fontSizeRange, $defaultFontSize ],
+      staticViewSlider[ "Math size", $fontSizeRange, $defaultFontSize ] ],
+    dual[ viewSlider[ "Column width", "ContentWidth", WolframInstitute`MathNotebook`SetContentWidth,
+        $contentWidthRange, $defaultContentWidth ],
+      staticViewSlider[ "Column width", $contentWidthRange, $defaultContentWidth ] ],
     kernelButton[ "Reset view", WolframInstitute`MathNotebook`ResetDocumentView[] ] } },
   { "Convert", "LaTeX \[LeftRightArrow] math (selection)", {
     kernelButton[ "TeX \[Rule] math", WolframInstitute`MathNotebook`ConvertLaTeXCells[] ],

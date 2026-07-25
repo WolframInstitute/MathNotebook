@@ -2,11 +2,16 @@ Package["WolframInstitute`MathNotebook`"]
 
 PackageExport[SetDocumentFontSize]
 PackageExport[SetMathFontSize]
+PackageExport[SetContentWidth]
 PackageExport[ResetDocumentView]
 
 PackageScope["$mathStyleNames"]
 PackageScope["$viewSettingKeys"]
+PackageScope["baseStyleCells"]
 PackageScope["baseFontSizes"]
+PackageScope["baseCellMargins"]
+PackageScope["columnStyleNames"]
+PackageScope["contentWidthCells"]
 PackageScope["documentFontSizeAnchor"]
 PackageScope["mathFontSizeAnchor"]
 PackageScope["viewSettings"]
@@ -30,6 +35,16 @@ SetMathFontSize[ notebook_NotebookObject, size : _?NumericQ | Automatic ] :=
   ( applyViewSettings[ notebook, <| "MathFontSize" -> size |> ];
     rescaleMaTeXCells[ notebook ] )
 
+SetContentWidth[ width : _?NumericQ | Automatic ] :=
+  SetContentWidth[ InputNotebook[], width ]
+
+(* The width is the fraction of the page the content column occupies, not a point width: the
+   Scaled margins it becomes are resolved against PageWidth, so the column follows a window
+   resize on screen and the printable width in print. It is rounded so the palette's readout
+   shows the slider step rather than its floating point residue. *)
+SetContentWidth[ notebook_NotebookObject, width : _?NumericQ | Automatic ] :=
+  applyViewSettings[ notebook, <| "ContentWidth" -> Replace[ width, size_?NumericQ :> Round[ size, 0.01 ] ] |> ]
+
 ResetDocumentView[] :=
   ResetDocumentView[ InputNotebook[] ]
 
@@ -37,7 +52,7 @@ ResetDocumentView[ notebook_NotebookObject ] :=
   ( applyViewSettings[ notebook, AssociationMap[ Automatic &, $viewSettingKeys ] ];
     rescaleMaTeXCells[ notebook ] )
 
-$viewSettingKeys = { "DocumentFontSize", "MathFontSize" }
+$viewSettingKeys = { "DocumentFontSize", "MathFontSize", "ContentWidth" }
 
 $mathStyleNames = { "DisplayFormula", "DisplayFormulaNumbered", "DisplayFormulaEquationNumber" }
 
@@ -74,15 +89,16 @@ viewStyleSheet[ parent_, settings_Association ] :=
     Join[
       { Cell[ StyleData[ StyleDefinitions -> parent ] ],
         Cell[ StyleData[ $viewStyleSheetMarker ], StyleMenuListing -> None, MenuSortingValue -> None ] },
-      viewStyleCells[ settings ] ],
+      viewStyleCells[ parent, settings ] ],
     StyleDefinitions -> "PrivateStylesheetFormatting.nb" ]
 
-viewStyleCells[ settings_Association ] :=
+viewStyleCells[ parent_, settings_Association ] :=
   Join[
     fontSizeCells[ Complement[ styleFontSizeNames[], $mathStyleNames ],
       Lookup[ settings, "DocumentFontSize", Automatic ], documentFontSizeAnchor[] ],
     fontSizeCells[ $mathStyleNames,
-      Lookup[ settings, "MathFontSize", Automatic ], mathFontSizeAnchor[] ] ]
+      Lookup[ settings, "MathFontSize", Automatic ], mathFontSizeAnchor[] ],
+    contentWidthCells[ parent, Lookup[ settings, "ContentWidth", Automatic ] ] ]
 
 fontSizeCells[ _, Automatic, _ ] :=
   { }
@@ -98,11 +114,56 @@ fontSizeCells[ styles_List, size_, anchor_ ] :=
       KeyValueMap[ { style, base } |-> Cell[ StyleData[ style, "Printout" ], FontSize -> Round[ base size / anchor ] ],
         KeyTake[ sizes[ "Printout" ], styles ] ] ] ]
 
+contentWidthCells[ _, Automatic ] :=
+  { }
+
+(* A symmetric Scaled inset is what centers the column: the front end resolves Scaled in
+   CellMargins against PageWidth, the window width on screen and the printable width in print.
+   Each style then keeps its own indent as a point offset added to that inset, which the front end
+   resolves too — the section numbers and the theorem and abstract dingbats are drawn in the left
+   margin, so one margin pair for every style would let them protrude past the column. The offsets
+   are measured from the smallest base margin, so none of them is negative and no dingbat can be
+   pushed off the page even at full width. *)
+contentWidthCells[ parent_, width_ ] :=
+  With[ { margins = baseCellMargins[ parent ] },
+    With[ { anchor = MapThread[ Min, Map[ First, Values @ margins ] ],
+        inset = Scaled[ N[ ( 1 - width ) / 2 ] ] },
+      Catenate @ KeyValueMap[
+        { style, base } |-> With[ { value = { inset + First[ base ] - anchor, Last @ base } },
+          { Cell[ StyleData[ style ], CellMargins -> value ],
+            Cell[ StyleData[ style, "Printout" ], CellMargins -> value ] } ],
+        margins ] ] ]
+
+(* The base geometry is read out of the document's own stylesheet chain rather than out of
+   LaTeXBase.nb: it is the one channel that resolves the list styles, which no MathNotebook sheet
+   declares, and that also fits a document still on Default.nb. Reading from the parent rather than
+   from the document keeps a second call from compounding its own override. *)
+baseCellMargins[ parent_ ] := baseCellMargins[ parent ] =
+  With[ { document = CreateDocument[ { }, Visible -> False, StyleDefinitions -> parent ] },
+    With[ { margins = Select[
+        AssociationMap[ CurrentValue[ document, { StyleDefinitions, #, CellMargins } ] &, columnStyleNames[] ],
+        MatchQ[ { { _?NumericQ, _?NumericQ }, { _?NumericQ, _?NumericQ } } ] ] },
+      NotebookClose[ document ];
+      margins ] ]
+
+(* The column styles are those the base sheet gives an explicit CellMargins — which leaves out the
+   character styles and the equation number, a CellFrameLabels label whose margins sit inside the
+   label — plus the list styles, which the templates style but the base sheet leaves to Default.nb. *)
+columnStyleNames[] := columnStyleNames[] =
+  Join[
+    Union @ Cases[ baseStyleCells[],
+      Cell[ StyleData[ style_String ] | StyleData[ style_String, StyleDefinitions -> _ ], options___ ] /;
+        ! FreeQ[ { options }, CellMargins ] :> style, { 1 } ],
+    { "Item", "ItemNumbered", "ItemParagraph" } ]
+
+baseStyleCells[] := baseStyleCells[] =
+  First @ Get @ FileNameJoin[ { PacletObject[ "WolframInstitute/MathNotebook" ][ "Location" ],
+    "FrontEnd", "StyleSheets", "MathNotebook", "LaTeXBase.nb" } ]
+
 (* The size hierarchy is read out of the paclet's own base stylesheet rather than restated here,
    so regenerating the stylesheets keeps the controls in step. *)
 baseFontSizes[] := baseFontSizes[] =
-  With[ { cells = First @ Get @ FileNameJoin[ { PacletObject[ "WolframInstitute/MathNotebook" ][ "Location" ],
-      "FrontEnd", "StyleSheets", "MathNotebook", "LaTeXBase.nb" } ] },
+  With[ { cells = baseStyleCells[] },
     <|
       "Screen" -> DeleteMissing @ Association @ Cases[ cells,
         Cell[ StyleData[ style_String ] | StyleData[ style_String, StyleDefinitions -> _ ], options___ ] :>

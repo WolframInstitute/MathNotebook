@@ -21,10 +21,11 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 
 ## Active
 
-- [Palette Usability & Document View Controls](Active/PaletteUsability.md) — next: **T4**, `SetContentWidth` plus slider
+- [Palette Usability & Document View Controls](Active/PaletteUsability.md) — next: **T5**, document the three view controls in the tutorial and add tests
 
 ## Backlog
 
+- [View and Reference Defects](Backlog/ViewAndReferenceDefects.md) — the text-size slider misses the list, reference and theorem styles; a `Reference` cell shows no label
 - [Update From Cloud Button](Backlog/SelfUpdate.md) — palette button that installs a newer paclet from its cloud URL
 - [Adopt WolframInstituteTools Practices](Backlog/WolframInstituteToolsPractices.md) — real documentation pages for the exported symbols, and their notebook tooling
 - [LaTeX Paper Import](Backlog/LaTeXPaperImport.md) — round-trip a real paper; figures carry their generating code
