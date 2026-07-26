@@ -61,7 +61,15 @@ mapCells[ cellTransform_, cell_Cell ] :=
 
 texToBoxes[ tex_String ] :=
   Replace[ Quiet @ ToExpression[ tex, TeXForm, HoldComplete ],
-    { HoldComplete[ expression_ ] :> MakeBoxes[ expression, TraditionalForm ], _ :> $Failed } ]
+    { HoldComplete[ $Failed ] :> presentationBoxes[ tex ],
+      HoldComplete[ expression_ ] :> MakeBoxes[ expression, TraditionalForm ],
+      _ :> presentationBoxes[ tex ] } ]
+
+presentationBoxes[ tex_String ] :=
+  If[ StringContainsQ[ tex, "\\ref" | "\\eqref" | "\\pageref" ],
+    $Failed,
+    Replace[ Quiet @ Convert`TeX`TeXToBoxes[ tex ],
+      { FormBox[ boxes_, TraditionalForm ] :> boxes, _ :> $Failed } ] ]
 
 boxesToTeX[ TemplateBox[ association_Association, "TeXAssistantTemplate", ___ ] ] :=
   association[ "input" ]

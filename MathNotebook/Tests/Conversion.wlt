@@ -11,6 +11,54 @@ VerificationTest[
   FractionBox[ "a", "b" ]
 ]
 
+(* Inline Math Converter Defects T1. texToBoxes reads the TeX as a single Wolfram *expression*,
+   and a comma-separated fragment never is one — "a, b" is two. Every such span answered $Failed
+   and was left in the cell as literal "$...$": on the specimen paper, all 35 of its 241
+   unconverted inline spans. The TeX importer's own box output is correct for exactly these, so
+   presentationBoxes is consulted when the expression parse fails. *)
+
+convertedQ[ tex_String ] :=
+  FreeQ[ texToBoxes[ tex ], $Failed | "$Failed" ]
+
+VerificationTest[ (* the sequence stays a sequence rather than collapsing to one expression *)
+  MatchQ[ texToBoxes[ "a, b" ], RowBox[ { _, ",", _ } ] ],
+  True
+]
+
+VerificationTest[ (* tuples, subscripted lists, a comma before a relation, a comma inside \{...\} *)
+  Map[ convertedQ,
+    { "(a, b)", "(V, E)", "\\mathcal{H} = (V, E)", "x_1, x_2", "p,q\\in M",
+      "\\{a, b\\}", "\\{ x_1, \\ldots, x_n \\}", "e = (v_1, v_2, \\dots, v_k)" } ],
+  ConstantArray[ True, 8 ]
+]
+
+VerificationTest[ (* both operands of a subscripted list survive, not just the first *)
+  Count[ texToBoxes[ "x_1, x_2" ], _SubscriptBox, Infinity ],
+  2
+]
+
+VerificationTest[ (* malformed TeX answers $Failed; it used to answer the *string* "$Failed",
+                     which renders in the notebook as the word "$Failed" *)
+  Map[ texToBoxes, { "\\frac{a", "%" } ],
+  { $Failed, $Failed }
+]
+
+VerificationTest[ (* the cell keeps no "$" at all, and stores the source for the return trip *)
+  splitInlineMath[ "A pair $(V, E)$ here." ],
+  { "A pair ",
+    Cell[ BoxData[ FormBox[ RowBox[ { "(", RowBox[ { StyleBox[ "V", "TI" ], ",", StyleBox[ "E", "TI" ] } ], ")" } ],
+      TraditionalForm ] ],
+      TaggingRules -> <| "MathNotebook" -> <| "SourceTeX" -> "(V, E)" |> |> ],
+    " here." }
+]
+
+VerificationTest[ (* the fallback must not disturb align's "&" columns or cases' rows *)
+  { Dimensions @ First @ alignBoxes[ "a&=b\\\\c&=d" ],
+    Dimensions @ FirstCase[ texToBoxes[ "\\begin{cases} a & x>0 \\\\ b & x<0 \\end{cases}" ],
+      GridBox[ rows_, ___ ] :> rows, { }, Infinity ] },
+  { { 2, 2 }, { 2, 2 } }
+]
+
 VerificationTest[
   boxesToTeX[ SuperscriptBox[ "x", "2" ] ],
   "x^2"

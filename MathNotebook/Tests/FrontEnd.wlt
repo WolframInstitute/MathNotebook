@@ -54,7 +54,25 @@ citationMeasurements[ parent_ ] :=
     styles
   ]
 
+(* Inline Math Converter Defects, requirement 4: assert what a converted cell *displays*. The
+   round trip reads back the stored "SourceTeX" rather than the boxes, so a cell that renders as a
+   blank still exports byte-identically — display fidelity has to be measured on its own. Ink area
+   is the measurement: a converted span carries less ink than the literal "$...$" it replaces (the
+   two delimiters are gone) and more than an empty box. *)
+
+inkArea[ cell_ ] :=
+  Total @ Flatten @ Unitize @ Subtract[ 255,
+    ImageData[ ColorConvert[ Rasterize[ cell, ImageResolution -> 72, LightDark -> "Light" ], "Grayscale" ], "Byte" ] ]
+
+inlineInk[ text_String ] := <|
+  "Converted" -> inkArea @ Cell[ TextData @ splitInlineMath[ text ], "Text" ],
+  "Literal" -> inkArea @ Cell[ text, "Text" ],
+  "Blank" -> inkArea @ Cell[ TextData @ { First @ StringSplit[ text, "$" ],
+    Cell[ BoxData[ FormBox[ "", TraditionalForm ] ] ], Last @ StringSplit[ text, "$" ] }, "Text" ]
+|>
+
 $measured = UsingFrontEnd @ <|
+  "InlineInk" -> AssociationMap[ inlineInk, { "A pair $(V, E)$ here.", "A list $x_1, x_2$ here." } ],
   "Sheets" -> AssociationMap[ viewMeasurements @ Get @ FileNameJoin[ { $sheetDirectory, # } ] &, $templates ],
   "Default" -> viewMeasurements[ "Default.nb" ],
   "SheetLoaded" -> AssociationMap[
@@ -124,4 +142,11 @@ VerificationTest[
 VerificationTest[
   KeyValueMap[ FreeQ[ citationButton[ #1, #2 ], _CounterBox ] &, $measured[ "Citations" ] ],
   { False, False, False, True, True, True }
+]
+
+(* Inline Math Converter Defects T1: a comma-bearing span really renders as mathematics — visible
+   ink, and the "$" delimiters gone. Blank < Converted < Literal on every specimen. *)
+VerificationTest[
+  Map[ #[ "Blank" ] < #[ "Converted" ] < #[ "Literal" ] &, $measured[ "InlineInk" ] ],
+  AssociationMap[ True &, { "A pair $(V, E)$ here.", "A list $x_1, x_2$ here." } ]
 ]
