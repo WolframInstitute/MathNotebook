@@ -36,7 +36,8 @@ PacletObject[
           "WolframInstitute`MathNotebook`SetMathFontSize",
           "WolframInstitute`MathNotebook`ResetDocumentView",
           "WolframInstitute`MathNotebook`InstallLaTeXFonts",
-          "WolframInstitute`MathNotebook`OpenTutorial"
+          "WolframInstitute`MathNotebook`OpenTutorial",
+          "WolframInstitute`MathNotebook`$MathNotebookCloudVersion"
         }
       },
       {"FrontEnd", "Root" -> "FrontEnd", "Prepend" -> True},

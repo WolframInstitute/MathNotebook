@@ -21,13 +21,12 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 
 ## Active
 
-*None.* Pick one up from the backlog with `/work` or by moving its file into `Active/`.
+- [Update From Cloud Button](Active/SelfUpdate.md) — T1 done (publish script owns the archive and the version marker; `$MathNotebookCloudVersion` reads it); next: **T2**, `UpdateMathNotebook[]` with its three outcomes and the post-install menu reset
 
 ## Backlog
 
 - [View and Reference Defects](Backlog/ViewAndReferenceDefects.md) — T1 done (sizes now reach every prose style); next: **T2**, render the `Reference` label from the cell's tag, then theorem citations by number, and the tutorial sentence T1 earned
 - [Conversion and MaTeX UX](Backlog/ConversionUX.md) — four near-identical conversion labels; what a MaTeX conversion should leave behind; whether per-selection LaTeX conversion survives whole-document export
-- [Update From Cloud Button](Backlog/SelfUpdate.md) — palette button that installs a newer paclet from its cloud URL
 - [Adopt WolframInstituteTools Practices](Backlog/WolframInstituteToolsPractices.md) — real documentation pages for the exported symbols, and their notebook tooling
 - [LaTeX Paper Import](Backlog/LaTeXPaperImport.md) — round-trip a real paper; figures carry their generating code
 - [Springer Journal Sample PDF](Backlog/SpringerJournalSample.md) — blocked on a manual `svjour3.cls` download

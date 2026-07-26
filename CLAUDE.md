@@ -49,6 +49,14 @@ Paclet for writing math papers in Wolfram notebooks: referencing palette, LaTeX 
 - `Magnification` never reaches print; it is not a font-size control.
 - Headless testing: neither `"MathNotebook/AMSArticle.nb"` nor `FrontEnd`FileName[...]` reliably resolves in the service front end — both fell back to `Default.nb` silently in a `wolframscript` run with the paclet installed. What always works is embedding the sheet: `StyleDefinitions -> Get[<absolute path to AMSArticle.nb>]`. Assert the sheet loaded (`CurrentValue[nb, {StyleDefinitions, "Title", FontSize}]` is 26, not 45) before trusting any measurement.
 
+## Publishing
+
+- `Scripts/PublishPaclet.wls` owns publishing: it stages `PacletInfo.wl` + `Kernel/` + `FrontEnd/` + `Assets/` + `Tests/`, archives, uploads to `MathNotebook.paclet`, and only then writes the version marker `MathNotebook-version.txt` — archive first, so a failed upload never leaves the marker promising a version that is not there. The generic `publish-paclet`/`build-paclet` recipe copies only `Kernel/` and `Tests/` and would ship a paclet with no palette and no stylesheets; do not use it here.
+- The cloud URLs live once, as `PackageScope` symbols in `Kernel/Update.wl`; the script reads them off the loaded paclet and aborts if they are not strings (a `PackageScope` symbol referenced from outside silently exists with no value — the trap in *Conventions*). `MATHNOTEBOOK_PACLET_URL` / `MATHNOTEBOOK_VERSION_URL` override both for a staging dry run.
+- `$CloudBase` is `None` in `wolframscript`, so `CloudConnect[]` fails there with `invbase` — set it to `https://www.wolframcloud.com` first. The MCP kernel is already connected.
+- `URLRead[request, {"StatusCode", "Body"}]` returns an **Association**, not a list; match it with `KeyValuePattern`.
+- A cloud object read back **immediately** after `CloudExport` came back unreachable once and read correctly a minute later (the cloud serves `cache-control: public, max-age=60`). Do not treat a single failed read right after publishing as a broken marker.
+
 ## Build & test
 
 - Tests: `./run_tests.wls` or `TestReport` over `MathNotebook/Tests/*.wlt` after `PacletDirectoryLoad`.

@@ -21,7 +21,8 @@ Done when `PacletInstall` from the README works on a machine that has never seen
 - Tutorial reviewed by Pavel — it is nine sections of LLM-written prose making claims about his design, and those claims should be his before they go out.
 - Palette reviewed on a real document (see `PaletteUsability`); a release before that is a release of an interface known to be uncomfortable.
 - `run_tests.wls` green, paclet built and installed from a clean archive, front end menus reset.
-- `publish-paclet`, then verify the README's `PacletInstall` line on a fresh kernel.
+- `Scripts/PublishPaclet.wls` — it publishes the archive and the version marker in one step, and unlike the generic `publish-paclet` recipe it ships `FrontEnd/` and `Assets/`.
+  Then verify the README's `PacletInstall` line on a fresh kernel.
 - Version bumped in `MathNotebook/PacletInfo.wl` and, per the global convention, in the marketplace repo's `.claude-plugin/marketplace.json` with `description`/`keywords` synced; both repos committed and pushed.
 - `Scripts/DeployPreviews.wls` re-run so the published previews match the released paclet.
 

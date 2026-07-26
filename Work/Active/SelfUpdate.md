@@ -46,20 +46,34 @@ The marker can be a one-line cloud object (`…/MathNotebook-version.txt`) writt
 
 ## Tasks
 
-- [ ] T1 — Publish the version marker from the publish script; `$MathNotebookCloudVersion` reads it.
 - [ ] T2 — `UpdateMathNotebook[]` with the three outcomes, plus the post-install menu reset and palette reopen; decide the kernel-restart question.
 - [ ] T3 — Palette button in Setup; rebuild palette and screenshot; document in the tutorial.
 - [ ] T4 — Test the real path: install an older version, update from the button, confirm the new stylesheets and buttons are live.
 
 ### Done
 
-(completed tasks move here with the session that closed them)
+- [x] T1 — Publish the version marker from the publish script; `$MathNotebookCloudVersion` reads it. *(Session 1)*
 
 ## Progress
 
-(no sessions yet)
+### Session 1 — 2026-07-26 — T1
+
+- **Prompt:** "automatic update" — start the Update From Cloud Button item.
+- **Did:** Added `Scripts/PublishPaclet.wls` and `MathNotebook/Kernel/Update.wl`.
+  The script stages `PacletInfo.wl` + `Kernel/` + `FrontEnd/` + `Assets/` + `Tests/` (dropping `.DS_Store`), archives, uploads the archive, and *then* writes the marker, so a failed archive upload cannot leave the marker ahead of what is deployed.
+  The kernel side exports `$MathNotebookCloudVersion`, backed by `cloudVersion[url]`, `versionStringQ` and the two `PackageScope` URLs the script reads back — one source of truth for where the paclet lives.
+  Verified end to end against a staging URL pair (`MATHNOTEBOOK_PACLET_URL` / `MATHNOTEBOOK_VERSION_URL` → `…/MathNotebook/Staging/`): the archive published public and fetched 200, the marker read back as `0.1.8`, and both staging objects were deleted afterwards.
+  `Tests/Update.wlt` (4 tests) covers the version predicate, the unreachable branch and the live symbol; the whole suite is green at 51 tests.
+  `Release.md` now names this script for its publish step, since the generic `publish-paclet` recipe copies only `Kernel/` and `Tests/` and would ship a paclet with no palette and no stylesheets.
+- **Learned:** `URLRead[request, {"StatusCode", "Body"}]` returns an Association, not a list — the first `cloudVersion` matched neither branch and reported everything as unreachable.
+  `$CloudBase` is `None` under `wolframscript`, so `CloudConnect[]` dies with `invbase` until it is set.
+  A pattern argument that already has a value is not a `_Symbol` — passing the URL symbols to a helper matched nothing and the call sat there unevaluated, the same silent failure mode as the `PackageScope` trap.
+  A marker read immediately after `CloudExport` came back unreachable once and correct a minute later; the cloud serves `cache-control: public, max-age=60`, so one failed read right after publishing is not a broken marker.
+- **Next:** T2 — `UpdateMathNotebook[]` with the three outcomes, the post-install menu reset and palette reopen, and the kernel-restart decision.
 
 ## Decisions
 
 | Date | Decision | Rationale |
 |---|---|---|
+| 2026-07-26 | Publishing moves into the repo as `Scripts/PublishPaclet.wls`, not the `publish-paclet` skill. | The marker has to go up in the same step as the archive, and the generic recipe also omits `FrontEnd/` and `Assets/`. |
+| 2026-07-26 | The real marker is **not** published yet — only the staging pair was, and it was deleted. | Publishing the marker before the archive would have the button announce 0.1.8 while the README's `PacletInstall` URL is still dead; the first real run belongs to `Release.md` T3. |
