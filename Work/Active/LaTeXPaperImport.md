@@ -49,15 +49,18 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
 
 ## Tasks
 
-- [ ] T2 — Sectioning and theorem environments, both directions, with tests.
-- [ ] T3 — `\label`/`\ref`/`\eqref` ↔ cell tags and reference buttons.
+- [ ] T3 — `\label`/`\ref`/`\eqref` ↔ cell tags and reference buttons. Both specimens' labels are already carried verbatim in each structural cell's `"Trailing"` tagging rule, so this task is about *reading* them, not about not losing them.
 - [ ] T4 — Citations and bibliography ↔ `Citation`/`Reference` cells.
 - [ ] T5 — Figures: preserve TikZ, add generating Wolfram code with rendered output, for one real figure of the paper.
-- [ ] T6 — Make the paper a round-trip test fixture under `MathNotebook/Tests/`. Since `InlineMathConverterDefects` T2 a paragraph with embedded display math converts to several cells, so the fixture has to record the *join* as well as the cells: the pieces of a split paragraph rejoin with a single `"\n"`, and riffling everything with `"\n\n"` inserts blank lines the source did not have.
+- [ ] T6 — Make both papers round-trip test fixtures under `MathNotebook/Tests/`. T2 already gets a byte-identical round trip on each; the fixture pins it.
+- [ ] T7 — Display math and nested environments *inside* a theorem-like environment body. T2 deliberately runs only the inline converter there, since an environment has to stay one cell; on `hodgepaper.tex` that leaves 53 `equation`/`align` blocks and two nested `sublemma*` as literal source inside otherwise converted cells.
+- [ ] T8 — Front matter: `\title`, `\author`, `\date`, `\maketitle`, `abstract` → the `Title`/`Author`/`Date`/`Abstract` styles the stylesheets define, and lists (`itemize`, `enumerate`, `description`) → the `Item` family.
+- [ ] T9 — Numbering. The Spec's "numbering must match" is measurably violated: the causal-graphs paper declares `\newtheorem{defn}{Definition}[subsection]` and numbers per subsection, while the imported notebook renders `Axiom 3.2`, `Definition 3.5` — per section, from the stylesheet's counters.
 
 ### Done
 
 - [x] T1 — Baseline: unzip the paper, convert with today's pipeline, convert back, diff against the source, and write the gap report into this item's Progress. *(Session 1)*
+- [x] T2 — Sectioning and theorem environments, both directions, with tests. *(Session 2)*
 
 ## Progress
 
@@ -87,7 +90,45 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
   - A byte-identical round trip is a much weaker signal than it looks. Defect 3 above is invisible to it, because the exporter reads back the stored `"SourceTeX"` rather than the boxes, so a cell that renders as a blank still exports perfectly. Round-trip fidelity and display fidelity have to be measured separately.
 - **Next:** the converter defects above, then T2 — sectioning and theorem environments.
 
+### Session 2 — 2026-07-26 — T2
+
+- **Prompt:** `/next-session` continued — keep working the items, now that the three converter defects are fixed and this one is unblocked.
+- **Did:** Built the document layer, `Kernel/Document.wl`, and the API the Spec asks for: `ImportLaTeXDocument["paper.tex"]` and `ExportLaTeXDocument[notebook]`.
+
+  **Both papers round-trip byte-identically, with their structure converted.**
+
+  | | causal graphs | hodgepaper |
+  |---|---|---|
+  | source | 496 lines | 1745 lines |
+  | cells | 109 | 172 |
+  | sectioning | 8 `Section`, 11 `Subsection` | 6 `Section` |
+  | environments | 20 `Definition`, 10 `Theorem` (Axiom), 2 `Construction` | 15 `Definition`, 12 `Proof`, 11 `Remark`, 10 `Lemma`, 8 `Example`, 7 `Theorem`, 5 `Proposition` |
+  | round trip | identical | identical |
+
+  T1's baseline was byte-identical too, but only because *nothing* was converted; this is byte-identical with 32 and 68 environments respectively turned into real cells.
+
+  **The environment map is read out of the preamble, not from a table of English names.**
+  T1 measured that the specimen declares its own — `defn`, `axiom`, `thm`, `constr` — so a fixed table would have matched none of them.
+  All three `\newtheorem` forms are read, including the starred one and the shared-counter `\newtheorem{cor}[thm]{Corollary}`; the amsthm defaults (the twelve style names, lowercased, plus `proof`) are the fallback.
+
+  **`Axiom` is not one of the twelve, and is not left as text.**
+  It is written as a `Theorem` — which numbers it with them — carrying a `CellDingbat` that says `Axiom`.
+  Verified on the page, not just in the boxes: the imported notebook exports to a **7-page PDF whose text contains `Axiom 3.2`, `Definition 3.5`, `Construction 4.1`** — 10, 20 and 2 of them, every environment in the paper numbered.
+
+  **What makes the round trip exact** is that every cell records the whitespace that followed it in the source, under a `"Separator"` tagging rule, and the export is then a plain `StringJoin`.
+  Riffling with `"\n\n"` instead was 7 diff lines on the first paper and 38 on the second: the papers separate blocks with two newlines in most places, three in two of them, one before a `\section` that follows `\tableofcontents` directly, and one around a display equation lifted out of a paragraph.
+  Indentation is recorded the same way — the opening `\begin`, the body, and the closing `\end` each keep their own, which is what the second paper's tab-indented `\end{proof}` needed.
+- **Learned:**
+  - **A string pattern will not take a back-reference to a named `Alternatives`.** `"\\begin{" ~~ name : (a|b|c) ~~ "}" ~~ … ~~ "\\end{" ~~ name ~~ "}"` answers `StringExpression::invld` — it does not simply fail to match, it is not a valid pattern. One rule per environment name, with the name written literally into both delimiters, is the way; and it is also what keeps `\begin{figure}` from being matched.
+  - **Anchor structural delimiters to `StartOfLine`.** Without it `%\begin{example}` is matched inside its own comment, and the commented-out block becomes a live cell — which `hodgepaper.tex` has, twice. `StartOfLine` also gives the indentation for free.
+  - **`First @ StringCases[s, rule, default]` puts the default inside `StringCases`**, where it is read as the match count. Three separate bugs in this session, each silent: the function returns unevaluated and the caller's `Module` destructuring then leaves symbolic values everywhere. Write `First[ StringCases[...], default ]`.
+  - Calling `mergeStrings` from a second file cost twenty minutes — it is the `PackageScope` trap `CLAUDE.md` documents, and it presents as *content silently vanishing*: 86 of 171 cells disappeared and the export halved in length, with no message.
+  - The document layer composes `splitDisplayMath` and `splitInlineMath` rather than `convertLaTeXCell`, because that function trims the whitespace around a display equation it lifts out and here the whitespace is exactly what must survive. The Spec's "`convertLaTeXCell` stays the math primitive" is honoured one level down.
+- **Next:** T3 — `\label`/`\ref`/`\eqref`. Every label is already sitting in a `"Trailing"` tagging rule waiting to be read.
+
 ## Decisions
 
 | Date | Decision | Rationale |
 |---|---|---|
+| 2026-07-26 | An environment whose printed name is none of the twelve stylesheet styles is written as `Theorem` with a `CellDingbat` naming it, rather than left as literal text | the specimen paper's `Axiom` is ten of its thirty-two environments; leaving them as text would drop a third of the structure, and the dingbat both numbers with the theorems and prints the right word |
+| 2026-07-26 | Every cell carries the source whitespace that followed it | it is the difference between a round trip that is exact and one that is approximately right, and the item's whole point is fidelity; it also means the exporter needs no rules about blocking |

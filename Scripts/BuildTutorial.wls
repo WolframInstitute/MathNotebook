@@ -82,6 +82,7 @@ tutorialNotebook = Notebook[ {
   Cell[ TextData[ { "An ", name[ "align" ], " environment becomes a grid aligned on its ", name[ "&" ], ", so it stays editable as one equation cell." } ], "Item" ],
   Cell[ TextData[ { "Each converted cell keeps its original TeX, so ", name[ "Math \[Rule] TeX" ], " gives back what you typed rather than a re-serialization of the boxes. Anything the parser cannot read is left untouched." } ], "Item" ],
   Cell[ TextData[ { "Input, Code, and Output cells are skipped, so ", name[ "$" ], " in code is safe. To bring in a LaTeX paper, paste it as Text cells and convert." } ], "Item" ],
+  Cell[ TextData[ { name[ "ImportLaTeXDocument[\"paper.tex\"]" ], " reads a whole paper instead: ", name[ "\\section" ], " and the theorem-like environments the preamble declares become cells of the matching style, and ", name[ "ExportLaTeXDocument" ], " writes it back out. Lists, figures and front matter are carried verbatim, so what it does not convert it also does not damage." } ], "Item" ],
 
   Cell[ "MaTeX", "Section" ],
   Cell[ TextData[ { "MaTeX (", link[ "github.com/szhorvat/MaTeX", "https://github.com/szhorvat/MaTeX" ], ") is optional, and needs a TeX distribution and Ghostscript. It is used only by the MaTeX buttons; referencing, stylesheets, and LaTeX conversion do not." } ], "Item" ],
