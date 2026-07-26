@@ -18,6 +18,9 @@ tutorialNotebook = Notebook[ {
   Cell[ TextData[ { "Style the opening cells ", name[ "Title" ], ", ", name[ "Author" ], ", ", name[ "Abstract" ], ", then write in ", name[ "Section" ], " and ", name[ "Text" ], " cells." } ], "Item" ],
   Cell[ "Every palette button acts on the notebook you were last editing, and on its current selection.", "Item" ],
   Cell[ TextData[ { "The journal stylesheets are light-only; applying one from the palette also sets the notebook to light mode, so printed and exported output matches the screen." } ], "Item" ],
+  Cell[ TextData[ { name[ "Update from cloud" ], ", in the palette's ", name[ "Setup" ], " group, asks the Wolfram Cloud which version is published and installs it only when it is newer than the one you have \[LongDash] so checking costs a line of text, not a download. It then rebuilds the front end menus and reopens the palette, which makes the new palette, stylesheets and tutorial live immediately." } ], "Item" ],
+  Cell[ TextData[ { "It always says which of three things happened: updated, with the old and new version numbers; already current; or the cloud could not be reached. Kernel code from the new version loads after ", name[ "Evaluation \[RightArrow] Quit Kernel" ], " \[LongDash] the button will not quit the kernel out from under your session." } ], "Item" ],
+  Cell[ TextData[ { "A copy loaded from a development directory shadows anything installed from the cloud, so the button reports that and downloads nothing. The same check from code: ", name[ "UpdateMathNotebook[]" ], "." } ], "Item" ],
 
   Cell[ "Referencing", "Section" ],
   Cell[ TextData[ { "Select a numbered cell \[LongDash] an equation, a theorem, a section, a numbered item \[LongDash] and press ", name[ "Copy reference" ], ", then paste into your text." } ], "Item" ],

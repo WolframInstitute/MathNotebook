@@ -46,13 +46,13 @@ The marker can be a one-line cloud object (`…/MathNotebook-version.txt`) writt
 
 ## Tasks
 
-- [ ] T3 — Palette button in Setup; rebuild palette and screenshot; document in the tutorial.
 - [ ] T4 — Test the real path: install an older version, update from the button, confirm the new stylesheets and buttons are live.
 
 ### Done
 
 - [x] T1 — Publish the version marker from the publish script; `$MathNotebookCloudVersion` reads it. *(Session 1)*
 - [x] T2 — `UpdateMathNotebook[]` with the three outcomes, plus the post-install menu reset and palette reopen; decide the kernel-restart question. *(Session 2)*
+- [x] T3 — Palette button in Setup; rebuild palette and screenshot; document in the tutorial. *(Session 3)*
 
 ## Progress
 
@@ -85,6 +85,17 @@ The marker can be a one-line cloud object (`…/MathNotebook-version.txt`) writt
   Do not call `cloudVersion` twice in one probe: two reads of the same marker seconds apart disagreed — the cloud's own `max-age=60` means a freshly rewritten marker serves the old body, the new body, or nothing depending on the moment. Read once, bind, then use.
   `Notebooks[]` throws `FrontEndObject::notavail` under `wolframscript`, so `reopenPalette` cannot be exercised headless; it is front-end-only by construction, as are `MessageDialog` and `FrontEndExecute`. T4 covers the live path.
 - **Next:** T3 — the palette button in Setup, rebuild and screenshot the palette, document it in the tutorial.
+
+### Session 3 — 2026-07-26 — T3
+
+- **Prompt:** `/next-session` — work the next task; three tasks this run, committing and pushing after each.
+- **Did:** `Update from cloud` is now the middle button of the palette's Setup group, between `Install LaTeX fonts` and `Tutorial`, built by the same cold-kernel-safe `kernelButton` as every other button — `Needs` plus the fully qualified `UpdateMathNotebook[]`, `Method -> "Queued"`.
+  Rebuilt `FrontEnd/Palettes/MathNotebook.nb` and `Images/Palette.png` from `Scripts/BuildPalette.wls`; the button needs no `dual` stand-in because it is static, so it shows in the screenshot as it does in the palette.
+  The tutorial's *Getting Started* section gained three items: what the button does and why the check is cheap (a marker read, not a download), the three outcomes and the kernel-restart caveat, and the development-install refusal plus the `UpdateMathNotebook[]` call.
+  Suite green at 61.
+- **Learned:** Nothing new fought back — the Setup group is plain `kernelButton`s, so the addition was one line and a rebuild.
+  Worth recording that the raster is honest here only because the button is static; anything `Dynamic` still needs its `dual` partner or the screenshot shows a placeholder.
+- **Next:** T4 — the live path: install an older version, update from the button, confirm the new stylesheets and buttons are live.
 
 ## Decisions
 

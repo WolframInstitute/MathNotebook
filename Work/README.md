@@ -21,7 +21,7 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 
 ## Active
 
-- [Update From Cloud Button](Active/SelfUpdate.md) — T2 done (`UpdateMathNotebook[]` decides and reports all four outcomes, resets the menus and reopens the palette); next: **T3**, the palette button in Setup, plus screenshot and tutorial
+- [Update From Cloud Button](Active/SelfUpdate.md) — T3 done (`Update from cloud` sits in the palette's Setup group, screenshot and tutorial rebuilt); next: **T4**, the live path — install an older version and update from the button
 
 ## Backlog
 

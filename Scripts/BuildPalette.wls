@@ -140,6 +140,7 @@ $groups = {
     kernelButton[ "Install MaTeX", WolframInstitute`MathNotebook`InstallMaTeX[] ] } },
   { "Setup", "Setup", {
     kernelButton[ "Install LaTeX fonts", WolframInstitute`MathNotebook`InstallLaTeXFonts[] ],
+    kernelButton[ "Update from cloud", WolframInstitute`MathNotebook`UpdateMathNotebook[] ],
     kernelButton[ "Tutorial", WolframInstitute`MathNotebook`OpenTutorial[] ] } }
 };
 
