@@ -40,6 +40,40 @@ VerificationTest[
   { First @ citationButton[ "ollivier" ] }
 ]
 
+(* A citation to a numbered environment reads as its number, resolved at the target by the
+   front end, not as the raw tag. *)
+VerificationTest[
+  citationButton[ "myThm", "Theorem" ],
+  ButtonBox[
+    RowBox[ { "Theorem ", CounterBox[ "Section", "myThm" ], ".", CounterBox[ "Theorem", "myThm" ] } ],
+    BaseStyle -> "Citation", ButtonData -> "myThm" ]
+]
+
+VerificationTest[
+  citationButton[ "euler", "DisplayFormulaNumbered" ],
+  ButtonBox[ RowBox[ { "(", CounterBox[ "DisplayFormulaNumbered", "euler" ], ")" } ],
+    BaseStyle -> "Citation", ButtonData -> "euler" ]
+]
+
+VerificationTest[
+  citationButton[ "prelims", "Subsection" ],
+  ButtonBox[
+    RowBox[ { "Section ", CounterBox[ "Section", "prelims" ], ".", CounterBox[ "Subsection", "prelims" ] } ],
+    BaseStyle -> "Citation", ButtonData -> "prelims" ]
+]
+
+(* Every numbered environment cites by number ... *)
+VerificationTest[
+  Union @ Map[ MatchQ[ citationButton[ "t", # ], ButtonBox[ _RowBox, __ ] ] &, Keys @ $referenceLabelSpec ],
+  { True }
+]
+
+(* ... and every other target, a bibliography entry or a tag with no cell, keeps the tag. *)
+VerificationTest[
+  { citationButton[ "ollivier", "Reference" ], citationButton[ "ollivier", "Text" ], citationButton[ "ollivier", None ] },
+  ConstantArray[ citationButton[ "ollivier" ], 3 ]
+]
+
 VerificationTest[
   labelReferenceCells @ Notebook[ { Cell[ "Ollivier, Ricci curvature", "Reference", CellTags -> "ollivier" ] } ],
   Notebook[ { Cell[ "Ollivier, Ricci curvature", "Reference", CellTags -> "ollivier",

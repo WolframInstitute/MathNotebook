@@ -21,7 +21,7 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 
 ## Active
 
-- [View and Reference Defects](Active/ViewAndReferenceDefects.md) — T2 done (a tagged `Reference` cell shows `[tag]`, and the citation to it reads the same); next: **T3**, make a citation to a theorem show `Theorem 1.1` rather than its tag
+- [View and Reference Defects](Active/ViewAndReferenceDefects.md) — T3 done (a citation to a numbered environment reads `Theorem 1.1` and renumbers itself); next: **T4**, tests for all of it, then Pavel re-checks on the document that produced the report
 
 ## Backlog
 

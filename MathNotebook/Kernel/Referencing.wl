@@ -34,7 +34,9 @@ TagSelectedCell[] :=
 
 InsertCitation[] :=
   With[ { tag = InputString[ "Citation tag:" ] },
-    If[ StringQ[ tag ], NotebookWrite[ InputNotebook[], citationButton[ tag ] ] ]
+    If[ StringQ[ tag ],
+      With[ { notebook = InputNotebook[] },
+        NotebookWrite[ notebook, citationButton[ tag, citationTargetStyle[ notebook, tag ] ] ] ] ]
   ]
 
 LabelReferences[ notebook_NotebookObject ] :=
@@ -50,6 +52,23 @@ referenceLabel[ tag_String ] :=
 
 citationButton[ tag_String ] :=
   ButtonBox[ referenceLabel[ tag ], BaseStyle -> "Citation", ButtonData -> tag ]
+
+(* A citation to a numbered environment reads as its number. CounterBox[counter, tag] resolves
+   against the tagged cell rather than the citation's own position, in the front end and with no
+   kernel, so the number follows the target when cells move; an unknown tag renders as XXX.
+   referenceButton cannot use it — a CellID is not a tag — hence the two renderings of one spec. *)
+citationButton[ tag_String, style_ ] :=
+  Replace[ Lookup[ $referenceLabelSpec, style, None ], {
+    { prefix_, counters_, suffix_ } :>
+      ButtonBox[
+        RowBox @ DeleteCases[ Flatten @ { prefix, Riffle[ Map[ CounterBox[ #, tag ] &, counters ], "." ], suffix }, "" ],
+        BaseStyle -> "Citation", ButtonData -> tag ],
+    _ :> citationButton[ tag ] } ]
+
+citationTargetStyle[ notebook_NotebookObject, tag_String ] :=
+  Replace[ Cells[ notebook, CellTags -> tag ], {
+    { cell_, ___ } :> First @ Flatten @ { CurrentValue[ cell, CellStyle ] },
+    _ :> None } ]
 
 referenceDingbat[ tags_ ] :=
   Replace[ First[ Flatten @ { tags }, None ],

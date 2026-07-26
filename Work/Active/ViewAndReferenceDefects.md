@@ -52,7 +52,6 @@ Done when a text-size change moves every prose style on screen and in print on a
 
 ## Tasks
 
-- [ ] T3 — Investigate whether a target theorem's resolved counter value is readable at insert time, then make a citation to a numbered environment display `Theorem 1.1` rather than its tag.
 - [ ] T4 — Tests for all of it, then Pavel re-checks on the document that produced the report.
 - [ ] T5 — Add the sentence the tutorial's *Reading and Writing Comfortably* section has been missing since `PaletteUsability` T5 deliberately withheld it: the text slider now reaches the theorem, proof, reference and list styles, which T1 above made true.
 
@@ -60,6 +59,7 @@ Done when a text-size change moves every prose style on screen and in print on a
 
 - [x] T1 — Rebuild the font-size setters on resolved per-style sizes read from the document's own chain; assert every prose style moves, screen and print, on all five sheets. (landed during `PaletteUsability` T6's feedback round, 2026-07-26)
 - [x] T2 — Render the `Reference` label from the cell's `CellTags` at the beginning of the cell; make `InsertCitation` and the bibliography entry agree. *(Session 5)*
+- [x] T3 — Investigate whether a target theorem's resolved counter value is readable at insert time, then make a citation to a numbered environment display `Theorem 1.1` rather than its tag. *(Session 6)*
 
 ## Progress
 
@@ -91,6 +91,26 @@ Done when a text-size change moves every prose style on screen and in print on a
   A `Reference` cell's options are plain rules, so `FilterRules[..., Except[CellDingbat]]` plus a freshly computed dingbat is enough to make relabelling idempotent — no separate "is there already a label" branch.
 - **Next:** T3 — whether a target theorem's resolved counter is readable at insert time, so a citation can show `Theorem 1.1`.
 
+### Session 6 — 2026-07-26 — T3
+
+- **Prompt:** `/next-session`.
+- **Did:** The investigation the task asked for came out better than either option the Spec anticipated.
+  The counter *is* readable at insert time — `CurrentValue[cell, {"CounterValue", "Theorem"}]` returns 1, 2, … on a tagged theorem cell — but baking that number in would go stale, so it is not what shipped.
+  The front end has a native tagged counter, `CounterBox[counter, tag]`, which resolves against the **tagged cell** rather than the box's own position; it needs no kernel, no `Dynamic` and no renumbering pass.
+  `citationButton[tag, style]` is a new overload that builds the citation from the existing `$referenceLabelSpec` entry for the target's style — prefix, counters riffled with `.`, suffix — as `CounterBox`es inside the same red `Citation` button, and falls through to the old `[tag]` for any style with no spec entry.
+  `citationTargetStyle[notebook, tag]` resolves the target's style from `Cells[notebook, CellTags -> tag]` at insert time, answering `None` when no cell carries the tag, and `InsertCitation` now routes through the pair.
+  Verified live on an `AMSArticle` document: citations render `Theorem 1.1`, `Lemma 2.1`, `(1)`, `Section 1`, `[ollivier]`, and after inserting a section above the target the theorem citation renumbered itself to `2.1` with nothing re-run.
+  The PDF export carries the same numbers, so print needed no separate treatment.
+  Five tests in `Referencing.wlt` covering the theorem, equation and subsection renderings, that *every* key of `$referenceLabelSpec` cites by number, and that a `Reference`, a plain `Text` and an absent target all keep the tag; suite green at 73.
+- **Learned:**
+  - **`CounterBox[counter, tag]` is the front end's cross-reference primitive** and it is exactly what this task needed: pure front-end, correct in print, and self-renumbering.
+    Note this is the opposite of the `CellDingbat` finding in T2 — a `CounterBox` in a *dingbat* reads the owning cell's counter, and a `CounterBox` with a *tag* reads a distant cell's, while `Dynamic` + `EvaluationCell[]` reads neither.
+  - `referenceButton` (`CopyCellReference`) cannot be folded into this: it is keyed on a `CellID`, and `CounterBox`'s second argument is a cell **tag**, not an ID. The two renderings of one `$referenceLabelSpec` are irreducible.
+  - An unknown tag renders as `XXX.XXX` if a `CounterBox` is written for it, so resolving the style at insert time is what keeps a forward citation readable: with no cell carrying the tag the fallback writes `[tag]` instead.
+  - **`Rasterize` on a single cell strips document context** — every counter in it reads 0, tagged ones read `XXX`. A counter can only be seen by rendering the whole notebook (`Export[file, notebookObject]`).
+  - `NotebookWrite` of a whole `Cell[TextData[...]]` splits a `ButtonBox[RowBox[...]]` into one button per run; writing the bare `ButtonBox` at a selection point, which is what `InsertCitation` does, leaves it intact. Both render identically, but only the inline path round-trips.
+- **Next:** T4 — tests for all of it, then Pavel re-checks on the document that produced the report.
+
 ## Decisions
 
 | Date | Decision | Rationale |
@@ -98,4 +118,5 @@ Done when a text-size change moves every prose style on screen and in print on a
 | 2026-07-26 | Filed as its own item rather than folded into `PaletteUsability` T6 | the reference label is a referencing defect, not a view control, and the font-size fix rewrites T3's mechanism rather than revising it |
 | 2026-07-26 | The `Reference` label is the cell's own custom tag, shown at the beginning of the cell — not an auto-incremented `[1]` | Pavel's call in the T6 feedback round; it also makes the bibliography entry agree with what `InsertCitation` already writes into the body |
 | 2026-07-26 | A citation to a *numbered environment* shows its resolved number (`Theorem 1.1`), while a citation to a bibliography entry keeps showing its tag | Pavel's call; a paper cross-references theorems by number and literature by label, so the two targets get different renderings from the same button |
+| 2026-07-26 | A numbered citation is a `CounterBox[counter, tag]`, not a number captured at insert time nor a `Dynamic` | the counter is readable at insert time but would go stale; the tagged `CounterBox` is the front end's own cross-reference, so the number follows the target with no kernel and no renumbering pass, in print as on screen |
 | 2026-07-26 | T1 was implemented during `PaletteUsability` T6 rather than in its own session | Pavel reported the defect a second time while driving the palette, so the fix was the direct revision his feedback round called for; the chain reader T4 had already built made it a contained change |
