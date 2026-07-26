@@ -21,11 +21,10 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 
 ## Active
 
-- [Update From Cloud Button](Active/SelfUpdate.md) — T3 done (`Update from cloud` sits in the palette's Setup group, screenshot and tutorial rebuilt); next: **T4**, the live path — install an older version and update from the button
+- [View and Reference Defects](Active/ViewAndReferenceDefects.md) — T1 done (sizes now reach every prose style); next: **T2**, render the `Reference` label from the cell's tag, then theorem citations by number, and the tutorial sentence T1 earned
 
 ## Backlog
 
-- [View and Reference Defects](Backlog/ViewAndReferenceDefects.md) — T1 done (sizes now reach every prose style); next: **T2**, render the `Reference` label from the cell's tag, then theorem citations by number, and the tutorial sentence T1 earned
 - [Conversion and MaTeX UX](Backlog/ConversionUX.md) — four near-identical conversion labels; what a MaTeX conversion should leave behind; whether per-selection LaTeX conversion survives whole-document export
 - [Adopt WolframInstituteTools Practices](Backlog/WolframInstituteToolsPractices.md) — real documentation pages for the exported symbols, and their notebook tooling
 - [LaTeX Paper Import](Backlog/LaTeXPaperImport.md) — round-trip a real paper; figures carry their generating code

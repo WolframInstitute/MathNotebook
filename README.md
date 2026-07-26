@@ -17,6 +17,8 @@ Restart the front end, then open **Palettes ▸ MathNotebook**.
 
 Start with the **[Tutorial](https://www.wolframcloud.com/obj/hajek_pavel/MathNotebook/Tutorial.nb)**, or `OpenTutorial[]`.
 
+After that, **Setup ▸ Update from cloud** in the palette — or `UpdateMathNotebook[]` — checks the published version and installs it only when it is newer, then rebuilds the menus and reopens the palette so the new palette and stylesheets are live without a restart.
+
 ## 🎨 Stylesheets
 
 The same sample document in each template — as a notebook, and as the LaTeX it imitates:

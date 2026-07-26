@@ -46,13 +46,14 @@ The marker can be a one-line cloud object (`…/MathNotebook-version.txt`) writt
 
 ## Tasks
 
-- [ ] T4 — Test the real path: install an older version, update from the button, confirm the new stylesheets and buttons are live.
+*(all tasks complete)*
 
 ### Done
 
 - [x] T1 — Publish the version marker from the publish script; `$MathNotebookCloudVersion` reads it. *(Session 1)*
 - [x] T2 — `UpdateMathNotebook[]` with the three outcomes, plus the post-install menu reset and palette reopen; decide the kernel-restart question. *(Session 2)*
 - [x] T3 — Palette button in Setup; rebuild palette and screenshot; document in the tutorial. *(Session 3)*
+- [x] T4 — Test the real path: install an older version, update from the button, confirm the new stylesheets and buttons are live. *(Session 4)*
 
 ## Progress
 
@@ -97,6 +98,23 @@ The marker can be a one-line cloud object (`…/MathNotebook-version.txt`) writt
   Worth recording that the raster is honest here only because the button is static; anything `Dynamic` still needs its `dual` partner or the screenshot shows a placeholder.
 - **Next:** T4 — the live path: install an older version, update from the button, confirm the new stylesheets and buttons are live.
 
+### Session 4 — 2026-07-26 — T4
+
+- **Prompt:** `/next-session`, continued — and "build the paclet and reinstall and redeploy".
+- **Did:** Ran the update for real, against the real cloud URLs rather than a staging pair.
+  Built and force-installed 0.1.8 from the working tree so the *installed* copy carried the T3 button, bumped `PacletInfo.wl` to 0.1.9, and published archive + marker with `Scripts/PublishPaclet.wls`.
+  With 0.1.8 installed and 0.1.9 in the cloud, a probe read the marker once, got `updateAction -> "Install"`, and drove `installUpdate` inside `UsingFrontEnd` with the 0.1.8 palette open: the message came back `0.1.8 → 0.1.9`, the open palette was closed and reopened from the 0.1.9 directory, `PacletObject` resolved to 0.1.9, and `updateAction` then said `"Current"`.
+  All seven front-end files — palette, five stylesheets, tutorial asset — are present under the new install, the new palette carries the Update button and the new tutorial the sentence describing it, which is the check that the archive really shipped `FrontEnd/` and `Assets/`.
+  Separately settled whether the stylesheets are *live*: with MathNotebook fully uninstalled, `FrontEnd`FileName[{"MathNotebook"}, "AMSArticle.nb"]` resolves Title at 45 (`Default.nb`); after installing from the cloud and running `ResetMenusPacket` **in the same front end session** it is 26.
+  The development refusal was exercised live too — `PacletDirectoryLoad` of the repo, and the action is `"Development"` with the path in the message.
+  Finally redeployed the previews so the published Tutorial matches the shipped one, and added the update sentence to the README.
+  Suite green at 61.
+- **Learned:** `UpdateMathNotebook[]` is not as untestable as Session 2 concluded: `Notebooks[]`, `NotebookOpen` and `FrontEndExecute` all work inside `UsingFrontEnd`, so `reopenPalette` and the menu reset are drivable from `wolframscript`. Only the `MessageDialog` wrapper stays manual.
+  A file-private helper is reachable as `Symbol["WolframInstitute`MathNotebook`Update`PackagePrivate`installUpdate"]`, so exercising the install path cost no widening of scope.
+  `ResetMenusPacket` genuinely makes a fresh paclet's stylesheets resolve by name in the running front end — the older CLAUDE.md claim that the service front end never picks them up was wrong, and is corrected.
+  Running a `Scripts/*.wls` with `-code` + `Get` instead of `-file` silently mis-resolves the repo root, because `$ScriptCommandLine` is non-empty but meaningless there; `DeployPreviews.wls` published four samples with `$Failed` stylesheets before I caught it. It now sets `$CloudBase` itself so `-file` always suffices.
+- **Next:** none — the item is complete.
+
 ## Decisions
 
 | Date | Decision | Rationale |
@@ -105,3 +123,4 @@ The marker can be a one-line cloud object (`…/MathNotebook-version.txt`) writt
 | 2026-07-26 | The button never quits the kernel; it says the kernel must be restarted and stops there. | The button's own evaluation runs in that kernel, so `Quit[]` would abort the menu reset, the palette reopen and the message it is in the middle of producing — and the user's session state is theirs to discard, not the updater's. Everything that *can* be made live without a restart (menus, palette, stylesheets, tutorial) already is. |
 | 2026-07-26 | A development install shadowing the cloud one is refused by **location**, not by asking the user. | `PacletObject` already resolves to whichever copy wins, so its `"Location"` is exactly the shadowing question; installing underneath a `PacletDirectoryLoad` would download a paclet that never loads. |
 | 2026-07-26 | The real marker is **not** published yet — only the staging pair was, and it was deleted. | Publishing the marker before the archive would have the button announce 0.1.8 while the README's `PacletInstall` URL is still dead; the first real run belongs to `Release.md` T3. |
+| 2026-07-26 | Superseded: 0.1.9 archive **and** marker are published at the real URLs. | T4 cannot test the real path against a staging pair — "install an older version and update from the button" needs the button's own URL to serve a newer paclet. `Release.md` T3 is now a review-and-announce step, not the first publish. |

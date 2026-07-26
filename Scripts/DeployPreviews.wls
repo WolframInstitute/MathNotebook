@@ -7,6 +7,9 @@ tutorialPath = Replace[ Environment[ "MATHNOTEBOOK_TUTORIAL" ],
 
 $styleSheets = { "AMSArticle", "ArXivArticle", "SpringerJournal", "RevTeXAPS" };
 
+If[ $CloudBase === None, $CloudBase = "https://www.wolframcloud.com" ];
+If[ ! $CloudConnected, CloudConnect[] ];
+
 styleSheet[ name_String ] :=
   Get @ FileNameJoin[ { styleSheetDirectory, name <> ".nb" } ];
 
