@@ -49,11 +49,12 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
 
 ## Tasks
 
-- [ ] T6 — Make both papers round-trip test fixtures under `MathNotebook/Tests/`. T2 already gets a byte-identical round trip on each; the fixture pins it.
 - [ ] T7 — Display math and nested environments *inside* a theorem-like environment body. T2 deliberately runs only the inline converter there, since an environment has to stay one cell; on `hodgepaper.tex` that leaves 53 `equation`/`align` blocks and two nested `sublemma*` as literal source inside otherwise converted cells.
 - [ ] T8 — Front matter: `\title`, `\author`, `\date`, `\maketitle`, `abstract` → the `Title`/`Author`/`Date`/`Abstract` styles the stylesheets define, and lists (`itemize`, `enumerate`, `description`) → the `Item` family.
 - [ ] T9 — Numbering. The Spec's "numbering must match" is measurably violated: the causal-graphs paper declares `\newtheorem{defn}{Definition}[subsection]` and numbers per subsection, while the imported notebook renders `Axiom 3.2`, `Definition 3.5` — per section, from the stylesheet's counters.
 - [ ] T10 — `thebibliography` written into the `.tex` ↔ `Reference` cells, and a report when a declared `.bib` is missing. T4 does the `.bib` route, which both specimens use; an in-source bibliography needs a per-item source and separator on each cell inside one environment wrapper, which is the same design problem as T7.
+- [ ] T11 — An imported paper opens with its environments live. `latexToNotebook` sets no `StyleDefinitions` at all, so a fresh import lands on `Default.nb`, where the twelve environment styles do not exist and a reference reads `2.0`. Two halves: a fifth stylesheet that is `Default.nb` plus the environments — same base cell list, Default's typography, contributing only the environment/`Caption`/`Reference`/`Citation` styles and their counters — and `ImportLaTeXDocument` choosing a sheet from the source's `\documentclass` (`amsart` → `AMSArticle`, `revtex` → `RevTeXAPS`, else the new one). What must *not* be done is writing `CounterIncrements`/`CellDingbat` onto each cell to survive any sheet: per-cell options beat the sheet, so swapping sheets to retarget a journal would stop working, and that is the paclet's whole point. *(Pavel's question, Session 6)*
+- [ ] T12 — `FrontEnd.wlt`'s T2 display-ink test compares two measurement scales and fails at HEAD. `Starred` (7742) comes from a whole-notebook PNG render and `Literal` (2440) from a single-cell `Rasterize`, so `Starred < Literal` cannot hold; the clause beside it, `Starred < Unstarred` (56959), is sound and passes. Measure both sides the same way, or drop the clause — `Formula > 0` already says the formula renders. *(Found in Session 6, pre-existing)*
 
 ### Done
 
@@ -62,6 +63,7 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
 - [x] T3 — `\label`/`\ref`/`\eqref` ↔ cell tags and reference buttons. *(Session 3)*
 - [x] T4 — Citations and bibliography ↔ `Citation`/`Reference` cells. *(Session 4)*
 - [x] T5 — Figures: preserve TikZ, add generating Wolfram code with rendered output, for one real figure of the paper. *(Session 5)*
+- [x] T6 — Make both papers round-trip test fixtures under `MathNotebook/Tests/`. T2 already gets a byte-identical round trip on each; the fixture pins it. *(Session 6)*
 
 ## Progress
 
@@ -244,6 +246,46 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
   - `pkill -f wolframscript` is not safe on this machine: Pavel had three long-running scripts of his own going, and a broad kill reached whatever was running. Scope a kill to the script name.
 - **Next:** T6 — make both papers round-trip test fixtures under `MathNotebook/Tests/`.
 
+### Session 6 — 2026-07-26 — T6
+
+- **Prompt:** `/next-session` continued.
+- **Did:** Both papers are round-trip fixtures — `MathNotebook/Tests/Specimens.wlt`, ten tests, five per paper, and the suite is 157.
+
+  | | causal graphs | hodgepaper |
+  |---|---|---|
+  | cells | 130 | 172 |
+  | source bytes | 36656 | 142877 |
+  | tagged cells | 39 | 60 |
+  | citation and reference buttons | 14 | 197 |
+  | counters | 25 | 222 |
+  | literal `\ref` left in the prose | 0 | 72 |
+  | literal `equation`/`align` left | 0 | 55 |
+  | export is the source | yes | yes |
+  | written file is the source | yes | yes |
+
+  **Neither paper is in the repo, and that was Pavel's call.**
+  One is an unpublished draft with two co-authors and not on arXiv, the other a published paper of his, and neither is the paclet's to redistribute — and `PublishPaclet.wls` stages `Tests/`, so anything put there ships.
+  So the fixture *finds* its specimens instead of carrying them: `MATHNOTEBOOK_SPECIMENS`, else the parent of `PacletObject["WolframInstitute/MathNotebook"]["Location"]`, which is the repo root exactly when the paclet is loaded from the working tree.
+  A paper it cannot find gets no tests at all rather than green ones, and a printed notice names what was missing — verified by pointing the variable at an empty directory: 0 passed, 0 failed, notice shown.
+  Installed from an archive, the file finds nothing and asserts nothing.
+
+  **The byte round trip and the structure census are independent detectors, and the fixture needs both.**
+  Two complementary bites prove it: dropping `figureRules[]` from `structureRules` fails three of the causal paper's five tests — cells and styles, tags and counters, and what is still literal — while **the round trip stays byte-identical**, because the figure source is carried verbatim either way.
+  Forcing `cellSeparator` to `"\n\n"` fails exactly the other four — both papers' round trips — and leaves every census test passing.
+  So a converter can regress with the bytes intact, which is the same lesson as T5's save-and-reopen one level up: fidelity is not a proxy for correctness.
+
+  Five tests per paper rather than one census each, so a failure names the half that moved: the pure core's round trip, the same thing through `ExportLaTeXDocument` and a real file (`Export` could add or drop a byte the core never sees), cells and styles, tags/citations/counters, and the literal remainder.
+  The remainder counts read only cell *content*, never options, so a figure's verbatim `\includegraphics` in its tagging rules is not mistaken for LaTeX left in the prose.
+  Hodgepaper's two non-zero remainders are the open gaps and not defects: 72 references whose target is not a converted cell, which is T3's rule, and 55 `equation`/`align` blocks inside theorem bodies, which is T7.
+- **Learned:**
+  - **`$InputFileName` inside a `.wlt` is the driving script, not the `.wlt`.** Under `TestReport[file]` it reads `run_tests.wls`, so `DirectoryName[$InputFileName, 3]` points three levels above the wrong file and a test cannot locate repo files that way. `PacletObject[...]["Location"]` is the idiom that works, and `FrontEnd.wlt` and `StyleSheets.wlt` already use it.
+  - **`VerificationTest` inside `If` and `Do` works under `TestReport`**, and a test that is never reached simply does not appear in the report — which is what makes an optional fixture honest instead of vacuously green.
+  - **`hodgepaper.tex` has CRLF line endings** (1746 of them), and `Import[..., "Text"]` normalizes them away, so `Bytes` reads 142877 for a 144624-byte file. Every round-trip claim in this item is against the *imported text*; re-exporting that paper is faithful to the document and rewrites its line endings.
+  - **An ink area from a whole-notebook render and one from a single-cell `Rasterize` are not on the same scale.** `FrontEnd.wlt`'s T2 test compares them — `Starred` 7742 from a rendered notebook against `Literal` 2440 from a rasterized cell — and now fails on that clause; the sound one beside it, `Starred` 7742 `< Unstarred` 56959, both whole-notebook, passes. Pre-existing at HEAD and unrelated to this session (`FrontEnd.wlt` fails the same way run on its own), so it is T12 rather than a fix here.
+  - A file-private helper read from a probe is the trap `CLAUDE.md` records, seen from the outside this time: `Length[notebookCellList[cells]]` answered **1** and `Cases` answered `{}`, because the unevaluated expression has one argument. Every count in the first census was wrong and nothing said so.
+  - Serena's `replace_content` inserts `\n` in a replacement **verbatim**, as backslash-n, not as a newline — it silently collapsed two lines of `Document.wl` into one broken line, and the bite check that followed reported nine failures that meant nothing. Restore from git and use a single-line edit.
+- **Next:** T7 — display math and nested environments inside a theorem-like environment body.
+
 ## Decisions
 
 | Date | Decision | Rationale |
@@ -256,4 +298,6 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
 | 2026-07-26 | A figure's caption is a `Caption` cell the notebook owns and writes back; the rest of the environment's source rides verbatim in a tagging rule | the caption is prose and an author will edit it, so it has to reach the `.tex`; the picture's markup is not prose and translating it is out of scope, so returning it untouched is both the honest and the lossless choice |
 | 2026-07-26 | The generating code and its output live only in the notebook — the exporter writes the original `\includegraphics` back | writing a picture out means rasterizing the code into a new file and rewriting the source to point at it, which is a build step and not a converter; the paper stays compilable either way |
 | 2026-07-26 | A figure is numbered by the `Caption` counter straight through the document, not per section | both specimens are `article` and declare no `\numberwithin{figure}{section}`; per-section figure numbering belongs with T9, which is about numbering generally |
+| 2026-07-26 | Neither specimen paper is committed; `Tests/Specimens.wlt` finds them beside the loaded paclet or in `MATHNOTEBOOK_SPECIMENS`, and emits no tests for a paper it cannot find | Pavel's call — the causal-graphs paper is an unpublished draft with two co-authors and not on arXiv, and `PublishPaclet.wls` stages `Tests/`, so committing it would ship it in every published paclet; the cost is that a fresh clone pins nothing, which the printed notice makes visible rather than silent |
+| 2026-07-26 | The fixture pins a structure census beside the byte round trip, five tests per paper | two complementary bites showed each detector misses what the other catches — dropping the figure rules leaves the bytes identical, forcing the separators leaves the census intact — and a census that moves is then the record of what a later task changed |
 | 2026-07-26 | Every cell carries the source whitespace that followed it | it is the difference between a round trip that is exact and one that is approximately right, and the item's whole point is fidelity; it also means the exporter needs no rules about blocking |
