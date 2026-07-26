@@ -22,14 +22,14 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 ## Active
 
 - [View and Reference Defects](Active/ViewAndReferenceDefects.md) — all implementation done (T1–T5: the text slider reaches every prose style, a tagged `Reference` shows its label, a citation to a theorem reads `Theorem 1.1`, front-end tests for all of it, tutorial updated); next: **T6**, Pavel re-checks on the document that produced the report — the Spec's last gate, and not something a session can close
-
+- [LaTeX Paper Import](Active/LaTeXPaperImport.md) — T1 done (baseline measured: the round trip is byte-identical, no structure converts, and three converter defects fell out); next: **T2**, sectioning and theorem environments — but the converter defects come first
 - [Cross-Platform TeX and Font Support](Active/CrossPlatformTeX.md) — T1 done (the suite no longer assumes macOS or a TeX install, and a machine with no TeX gets a message telling it what to do); next: **T2**, Linux end to end — needs a Linux machine
 
 ## Backlog
 
+- [Inline Math Converter Defects](Backlog/InlineMathConverterDefects.md) — a comma makes the TeX parser fail, `equation*` is not recognised, and `$E$` renders blank; all measured on a real paper
 - [Conversion and MaTeX UX](Backlog/ConversionUX.md) — four near-identical conversion labels; what a MaTeX conversion should leave behind; whether per-selection LaTeX conversion survives whole-document export
 - [Adopt WolframInstituteTools Practices](Backlog/WolframInstituteToolsPractices.md) — real documentation pages for the exported symbols, and their notebook tooling
-- [LaTeX Paper Import](Backlog/LaTeXPaperImport.md) — round-trip a real paper; figures carry their generating code
 - [Complex Systems Stylesheet and Submission Buttons](Backlog/JournalSubmission.md) — a fifth template from the journal's own class file, and a "publish to Complex Systems / arXiv" bundle
 - [Springer Journal Sample PDF](Backlog/SpringerJournalSample.md) — blocked on a manual `svjour3.cls` download
 - [First Public Release](Backlog/Release.md) — tutorial and palette review, then publish; the README's install URL is dead until then
