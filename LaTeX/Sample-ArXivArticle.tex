@@ -1,0 +1,77 @@
+% LaTeX counterpart of the ArXivArticle stylesheet sample.
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb,amsthm}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{definition}[theorem]{Definition}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\title{A Sample Article}
+\author{MathNotebook}
+\date{Set with the \texttt{article} class, in Latin Modern.}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+The same document as the ArXivArticle notebook sample, typeset in LaTeX, so the
+two can be compared side by side: title block, sectioning, theorem environments
+numbered per section, displayed equations, and a bibliography.
+\end{abstract}
+
+\section{Statement}
+
+\begin{definition}
+A graph is a pair $(V,E)$ with $E$ a set of unordered pairs of distinct elements of $V$.
+\end{definition}
+
+\begin{theorem}
+The theorem environments share one counter, so this theorem follows the definition
+above and both reset at the next section.
+\end{theorem}
+
+\begin{equation}
+  \sum_{v \in V} \deg(v) = 2\lvert E \rvert
+\end{equation}
+
+\begin{proof}
+Summing degrees counts every edge twice.
+\end{proof}
+
+\section{Displayed mathematics}
+
+An unnumbered display, for an aside:
+\[
+  \chi(G) \le \Delta(G) + 1
+\]
+
+Inline mathematics sits in text at the surrounding size, as in $e^{i\pi} = -1$, and a
+numbered display is referenced by the live number the palette copies, as in~\eqref{eq:forms}.
+
+A numbered display, aligned as an \texttt{align} environment converts:
+\begin{align}
+  \partial \omega &= 0 \label{eq:forms} \\
+  \omega \wedge \omega &= -\, \omega \wedge \omega
+\end{align}
+
+\section{Subsections}
+
+\subsection{A subsection}
+Subsection and subsubsection headings are numbered within their parent and reset with it.
+
+\subsubsection{A subsubsection}
+
+\begin{remark}
+Remark, Question, and Observation are set like this one --- italic label, upright body.
+\end{remark}
+
+\begin{thebibliography}{9}
+\bibitem{matex} S.~Horvat, \emph{MaTeX: LaTeX labels in Mathematica}, \texttt{https://github.com/szhorvat/MaTeX}
+\bibitem{ollivier} Y.~Ollivier, \emph{Ricci curvature of Markov chains on metric spaces}, \texttt{https://arxiv.org/abs/0810.5625}
+\end{thebibliography}
+
+\end{document}

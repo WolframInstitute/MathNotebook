@@ -4,3 +4,7 @@ build/
 .serena/
 .DS_Store
 ClaudePluginMarketplace/
+
+# Scratch documents kept in the working tree, not part of the paclet
+Axiomatic_Relativity_from_Causal_Graphs.zip
+hodgepaper.tex
