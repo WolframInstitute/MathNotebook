@@ -47,12 +47,12 @@ Done when all three convert correctly, each has a test, and the tutorial's claim
 
 ## Tasks
 
-- [ ] T2 — Starred environments, `equation*` and `align*`; reconcile the tutorial sentence with whatever lands.
 - [ ] T3 — Protected single letters; sweep the alphabet and assert every one displays itself.
 
 ### Done
 
 - [x] T1 — Comma-bearing fragments; test with tuples, subscripted lists, and a comma inside `\{…\}`. *(Session 1)*
+- [x] T2 — Starred environments, `equation*` and `align*`; reconcile the tutorial sentence with whatever lands. *(Session 2)*
 
 ## Progress
 
@@ -86,8 +86,55 @@ Done when all three convert correctly, each has a test, and the tutorial's claim
   - Rasterized ink area is a workable headless display assertion, and the three-way `Blank < Converted < Literal` inequality is comfortably separated (390 / 575 / 703 on `$(V, E)$`) rather than marginal. This is the measurement T3 needs, since a blank `$E$` is precisely an ink-area-zero defect.
 - **Next:** T2 — `equation*` and `align*`. Note that `displayParse` *does* already list `equation*` and `align*`, and `displayTeXQ` matches them, so the Spec's "not recognised at all" needs re-measuring before anything is changed.
 
+### Session 2 — 2026-07-26 — T2
+
+- **Prompt:** `/next-session` — work the next task, then keep going through the work items.
+- **Did:** Re-measured the Spec's second defect, found it filed against the wrong cause, and fixed the cause that is actually there.
+
+  **`equation*` was never unrecognised.**
+  Session 1's closing note was right to demand a re-measure.
+  `displayParse` has listed `equation*` and `align*` since the feature shipped, and a cell that is *entirely* one starred environment has always converted to `DisplayFormula`, unnumbered, exactly as the tutorial says.
+  Measured on all six supported forms before touching anything.
+
+  **What the specimen paper actually hits is that display math inside a paragraph is never split out.**
+  Its two display equations sit in the middle of a 903-character paragraph with prose on the lines above and below and no blank line anywhere — which is simply how LaTeX is written.
+  `convertLaTeXCell` only ever asked whether the *whole cell* was one display environment; if not, the cell went to the inline path and the environment stayed as literal text.
+  Starred or not made no difference: `\begin{equation}` embedded the same way was missed identically.
+
+  **And the Spec's one reassurance was wrong too.**
+  `$$…$$` inside a paragraph did *not* split out correctly — `splitInlineMath` read it as inline math and left a stray `$` on each side of the formula.
+  `\[…\]` inside a paragraph was passed through untouched.
+
+  **The fix.**
+  One delimiter table (`$displayDelimiters`) now generates both the anchored whole-cell rules (`displayParse`) and unanchored split rules (`splitDisplayMath`), so the two can no longer disagree about which environments exist.
+  `convertLaTeXCell` splits the text on display spans first, converts each span to its own `DisplayFormula`/`DisplayFormulaNumbered` cell, and runs the prose between them through the old inline path — so it can now answer with several cells, and `mapCells` flattens them back into the notebook.
+  `displayTeXQ` and `displayCell` are gone: a whole-cell display is just a split that yielded exactly one part, and the failure case (span left as its own source string) collapses back to the original cell through `mergeStrings`.
+  Cell options go to the first of the new cells only — a duplicated `CellID` is not an option, it is two cells claiming one identity.
+
+  **On the specimen paper: 0 of 2 display equations converted → 2 of 2.**
+  105 paragraphs become 109 cells, the one paragraph holding both equations splitting into five.
+  Nothing else in the paper moved.
+
+  **Round-trip fidelity survives, with a caveat the import item needs.**
+  Every one of the 105 paragraphs still comes back byte-identically — but only after the five pieces of the split paragraph are rejoined, and the join is exactly `"\n"`, the newline that separated them in the source.
+  So the content is verbatim and the *blocking* is what changed: a joiner that riffles cells with `"\n\n"` will insert a blank line the source did not have, which in LaTeX means an indented new paragraph.
+  `LaTeXPaperImport` T6 has to record the join, not just the cells.
+
+  **Tests.** Seven in `Tests/Conversion.wlt` — the specimen paragraph shape, all six environments starred and unstarred in mid-paragraph position, `$$…$$` leaving no `$` behind, the verbatim `"\n"` rejoin, the single `CellID`, an unreadable span leaving the paragraph whole, and `splitDisplayMath` itself — plus two starred whole-cell rows added to `$testNotebook`, and two in `Tests/FrontEnd.wlt`.
+  All 105 tests pass.
+  Reintroducing the defect (anchoring `splitDisplayMath` back to the whole string) fails 4 of `Conversion.wlt` and both of `FrontEnd.wlt` and no pre-existing test, so the new ones bite and nothing old was weakened.
+
+  **The tutorial sentence is true and stays**, with a new Item beside it saying that a display environment written inside a paragraph is lifted into its own cell.
+- **Learned:**
+  - A single rasterized cell cannot see an equation number. `DisplayFormula` and `DisplayFormulaNumbered` on the same body both measured 243 units of ink, because the number is a `CounterBox` and a lone cell has no document to resolve one in — the same trap `CLAUDE.md` records for `Referencing`. Rendering the whole notebook with `Export[file, notebookObject]` separates them cleanly: 1268 starred against 1368 unstarred, the number being the entire difference. That is the only way to assert "unnumbered" as a *display* fact rather than as a style name.
+  - `Map[ Apply[ { a, b, c } |-> … ] ]` is needed to build patterns from a table of tuples; `Map[ { a, b, c } |-> … ]` passes the whole list as one argument and the `Function::fpct` failure surfaces later as `StringExpression::invld`, far from its cause.
+  - `Shortest` is what makes an unanchored environment rule safe. Two `equation*` blocks in one paragraph would otherwise match as one span running from the first `\begin` to the last `\end`, swallowing the prose between them.
+  - Do not `git checkout <file>` to undo a scripted "reintroduce the defect" patch — it reverts the session's real work in the same stroke. Patch and un-patch the same way, or stash.
+- **Next:** T3 — protected single letters (`E`, `I`), sweeping the alphabet with the ink measurement.
+
 ## Decisions
 
 | Date | Decision | Rationale |
 |---|---|---|
 | 2026-07-26 | Filed apart from `LaTeXPaperImport` rather than as tasks inside it | these are defects in shipped `TeX → math` behaviour that anyone converting a paper hits today, independent of whether the importer is ever built; the import item depends on them but does not contain them |
+| 2026-07-26 | A paragraph with embedded display math converts to several cells, rather than staying one cell with the formula inline | a display equation is a display cell — that is what the style is for, and what the exporter, the numbering and the stylesheets all expect. The cost is that the source's paragraph blocking is no longer one-to-one with cells; the content is still verbatim, and the join that restores it is a single newline |

@@ -6,6 +6,7 @@ PackageExport[ConvertMathCells]
 PackageScope["texToBoxes"]
 PackageScope["boxesToTeX"]
 PackageScope["splitInlineMath"]
+PackageScope["splitDisplayMath"]
 PackageScope["alignBoxes"]
 PackageScope["displayParse"]
 PackageScope["displayBodyBoxes"]
@@ -51,10 +52,10 @@ writeCells[ cellTransform_, cells_List ] :=
   Scan[ { cell } |-> NotebookWrite[ cell, cellTransform @ NotebookRead[ cell ], All ], cells ]
 
 mapCells[ cellTransform_, Notebook[ cells_List, options___ ] ] :=
-  Notebook[ Map[ mapCells[ cellTransform, # ] &, cells ], options ]
+  Notebook[ Flatten @ Map[ mapCells[ cellTransform, # ] &, cells ], options ]
 
 mapCells[ cellTransform_, Cell[ CellGroupData[ cells_List, state___ ], options___ ] ] :=
-  Cell[ CellGroupData[ Map[ mapCells[ cellTransform, # ] &, cells ], state ], options ]
+  Cell[ CellGroupData[ Flatten @ Map[ mapCells[ cellTransform, # ] &, cells ], state ], options ]
 
 mapCells[ cellTransform_, cell_Cell ] :=
   cellTransform[ cell ]
@@ -94,15 +95,34 @@ alignBoxes[ body_String ] :=
       StringSplit[ body, "\\\\" ] ],
     GridBoxAlignment -> { "Columns" -> { { Right, Left } } } ]
 
+$displayDelimiters = {
+  { "$$", "$$", False, "Single" },
+  { "\\[", "\\]", False, "Single" },
+  { "\\begin{equation*}", "\\end{equation*}", False, "Single" },
+  { "\\begin{equation}", "\\end{equation}", True, "Single" },
+  { "\\begin{align*}", "\\end{align*}", False, "Align" },
+  { "\\begin{align}", "\\end{align}", True, "Align" } }
+
 displayParse[ trimmed_String ] :=
   First[ StringCases[ trimmed,
-    { StartOfString ~~ "$$" ~~ body__ ~~ "$$" ~~ EndOfString :> { body, False, "Single" },
-      StartOfString ~~ "\\[" ~~ body__ ~~ "\\]" ~~ EndOfString :> { body, False, "Single" },
-      StartOfString ~~ "\\begin{equation*}" ~~ body__ ~~ "\\end{equation*}" ~~ EndOfString :> { body, False, "Single" },
-      StartOfString ~~ "\\begin{equation}" ~~ body__ ~~ "\\end{equation}" ~~ EndOfString :> { body, True, "Single" },
-      StartOfString ~~ "\\begin{align*}" ~~ body__ ~~ "\\end{align*}" ~~ EndOfString :> { body, False, "Align" },
-      StartOfString ~~ "\\begin{align}" ~~ body__ ~~ "\\end{align}" ~~ EndOfString :> { body, True, "Align" } } ],
+    Map[ Apply[ { open, close, numbered, kind } |->
+        ( StartOfString ~~ open ~~ Shortest[ body__ ] ~~ close ~~ EndOfString :> { body, numbered, kind } ) ],
+      $displayDelimiters ] ],
     $Failed ]
+
+splitDisplayMath[ text_String ] :=
+  StringSplit[ text,
+    Map[ Apply[ { open, close, numbered, kind } |->
+        ( span : ( open ~~ Shortest[ body__ ] ~~ close ) :> displaySpanCell[ span, body, numbered, kind ] ) ],
+      $displayDelimiters ] ]
+
+displaySpanCell[ span_String, body_String, numbered_, "Single" ] :=
+  Replace[ texToBoxes[ StringTrim[ body ] ],
+    { $Failed -> span,
+      boxes_ :> displayFormulaCell[ boxes, numbered, span ] } ]
+
+displaySpanCell[ span_String, body_String, numbered_, "Align" ] :=
+  displayFormulaCell[ alignBoxes[ StringTrim[ body ] ], numbered, span ]
 
 displayBodyBoxes[ tex_String ] :=
   First[ StringCases[ StringTrim[ tex ],
@@ -110,44 +130,40 @@ displayBodyBoxes[ tex_String ] :=
       alignBoxes[ StringTrim[ body ] ] ],
     Replace[ texToBoxes[ tex ], $Failed -> tex ] ]
 
-displayTeXQ[ text_String ] :=
-  StringMatchQ[ StringTrim[ text ],
-    ( "$$" ~~ __ ~~ "$$" ) | ( "\\[" ~~ __ ~~ "\\]" ) | ( "\\begin{equation" ~~ __ ) | ( "\\begin{align" ~~ __ ) ]
-
-displayCell[ original_String ] :=
-  Replace[ displayParse[ StringTrim[ original ] ],
-    { { body_, numbered_, "Single" } :>
-        Replace[ texToBoxes[ StringTrim[ body ] ],
-          { $Failed -> $Failed,
-            boxes_ :> displayFormulaCell[ boxes, numbered, original ] } ],
-      { body_, numbered_, "Align" } :>
-        displayFormulaCell[ alignBoxes[ StringTrim[ body ] ], numbered, original ],
-      $Failed -> $Failed } ]
-
 displayFormulaCell[ boxes_, numbered_, sourceTeX_String ] :=
   Cell[ BoxData[ FormBox[ boxes, TraditionalForm ] ],
     If[ TrueQ[ numbered ], "DisplayFormulaNumbered", "DisplayFormula" ],
     TaggingRules -> <| "MathNotebook" -> <| "SourceTeX" -> sourceTeX |> |> ]
 
 convertLaTeXCell[ cell : Cell[ text_String, style_String /; StringFreeQ[ style, "Input" | "Code" | "Output" | "Program" | "Message" | "Print" ], options___ ] ] :=
-  Which[
-    displayTeXQ[ text ],
-      Replace[ displayCell[ text ],
-        { $Failed -> cell,
-          Cell[ content_, newStyle_, tagging___ ] :> Cell[ content, newStyle, tagging, options ] } ],
-    StringContainsQ[ text, "$" | "\\(" ],
-      Replace[ splitInlineMath[ text ],
-        { { unchanged_String } :> cell,
-          parts_List :> Cell[ TextData[ parts ], style, options ] } ],
-    True,
-      cell
-  ]
+  Replace[
+    Replace[ mergeStrings @ splitDisplayMath[ text ],
+      { { _String } :> inlineTextCell[ cell, text, style, { options } ],
+        parts_List :> MapIndexed[
+          { part, position } |-> convertedPartCell[ part, style, If[ position === { 1 }, { options }, { } ] ],
+          DeleteCases[ Replace[ parts, chunk_String :> StringTrim[ chunk ], { 1 } ], "" ] ] } ],
+    { single_Cell } :> single ]
 
 convertLaTeXCell[ Cell[ TextData[ parts_ ], style_String, options___ ] ] :=
   Cell[ TextData[ Flatten @ Map[ Replace[ part_String :> splitInlineMath[ part ] ], Flatten @ { parts } ] ], style, options ]
 
 convertLaTeXCell[ cell_ ] :=
   cell
+
+inlineTextCell[ cell_Cell, text_String, style_String, options_List ] :=
+  If[ StringContainsQ[ text, "$" | "\\(" ],
+    Replace[ splitInlineMath[ text ],
+      { { _String } :> cell,
+        parts_List :> Cell[ TextData[ parts ], style, Sequence @@ options ] } ],
+    cell ]
+
+convertedPartCell[ Cell[ content_, displayStyle_String, tagging___ ], _, options_List ] :=
+  Cell[ content, displayStyle, tagging, Sequence @@ options ]
+
+convertedPartCell[ text_String, style_String, options_List ] :=
+  Replace[ splitInlineMath[ text ],
+    { { unchanged_String } :> Cell[ unchanged, style, Sequence @@ options ],
+      parts_List :> Cell[ TextData[ parts ], style, Sequence @@ options ] } ]
 
 convertMathCell[ cell : Cell[ _, "DisplayFormula" | "DisplayFormulaNumbered", options___ ] ] :=
   Replace[ displayTeXString[ cell ],

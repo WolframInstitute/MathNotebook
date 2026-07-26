@@ -53,7 +53,7 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
 - [ ] T3 — `\label`/`\ref`/`\eqref` ↔ cell tags and reference buttons.
 - [ ] T4 — Citations and bibliography ↔ `Citation`/`Reference` cells.
 - [ ] T5 — Figures: preserve TikZ, add generating Wolfram code with rendered output, for one real figure of the paper.
-- [ ] T6 — Make the paper a round-trip test fixture under `MathNotebook/Tests/`.
+- [ ] T6 — Make the paper a round-trip test fixture under `MathNotebook/Tests/`. Since `InlineMathConverterDefects` T2 a paragraph with embedded display math converts to several cells, so the fixture has to record the *join* as well as the cells: the pieces of a split paragraph rejoin with a single `"\n"`, and riffling everything with `"\n\n"` inserts blank lines the source did not have.
 
 ### Done
 

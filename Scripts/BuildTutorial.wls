@@ -78,6 +78,7 @@ tutorialNotebook = Notebook[ {
   Cell[ "LaTeX Conversion", "Section" ],
   Cell[ TextData[ { "Select the cells to convert, then press ", name[ "TeX \[Rule] math" ], " or ", name[ "Math \[Rule] TeX" ], ". With nothing selected the whole notebook is converted." } ], "Item" ],
   Cell[ TextData[ { name[ "TeX \[Rule] math" ], " parses inline ", name[ "$\[Ellipsis]$" ], " and ", name[ "\\(\[Ellipsis]\\)" ], ", and displayed ", name[ "$$\[Ellipsis]$$" ], ", ", name[ "\\[\[Ellipsis]\\]" ], ", ", name[ "equation" ], ", and ", name[ "align" ], "; the starred forms stay unnumbered, the unstarred ones become numbered equations." } ], "Item" ],
+  Cell[ TextData[ { "A display environment written inside a paragraph, with prose on the lines around it, is lifted out into its own equation cell and the prose stays in Text cells on either side." } ], "Item" ],
   Cell[ TextData[ { "An ", name[ "align" ], " environment becomes a grid aligned on its ", name[ "&" ], ", so it stays editable as one equation cell." } ], "Item" ],
   Cell[ TextData[ { "Each converted cell keeps its original TeX, so ", name[ "Math \[Rule] TeX" ], " gives back what you typed rather than a re-serialization of the boxes. Anything the parser cannot read is left untouched." } ], "Item" ],
   Cell[ TextData[ { "Input, Code, and Output cells are skipped, so ", name[ "$" ], " in code is safe. To bring in a LaTeX paper, paste it as Text cells and convert." } ], "Item" ],

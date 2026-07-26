@@ -60,9 +60,12 @@ citationMeasurements[ parent_ ] :=
    is the measurement: a converted span carries less ink than the literal "$...$" it replaces (the
    two delimiters are gone) and more than an empty box. *)
 
-inkArea[ cell_ ] :=
+inkOf[ image_ ] :=
   Total @ Flatten @ Unitize @ Subtract[ 255,
-    ImageData[ ColorConvert[ Rasterize[ cell, ImageResolution -> 72, LightDark -> "Light" ], "Grayscale" ], "Byte" ] ]
+    ImageData[ ColorConvert[ image, "Grayscale" ], "Byte" ] ]
+
+inkArea[ cell_ ] :=
+  inkOf @ Rasterize[ cell, ImageResolution -> 72, LightDark -> "Light" ]
 
 inlineInk[ text_String ] := <|
   "Converted" -> inkArea @ Cell[ TextData @ splitInlineMath[ text ], "Text" ],
@@ -71,8 +74,33 @@ inlineInk[ text_String ] := <|
     Cell[ BoxData[ FormBox[ "", TraditionalForm ] ] ], Last @ StringSplit[ text, "$" ] }, "Text" ]
 |>
 
+(* T2: the same assertion one level up. A display environment glued into a paragraph is now split
+   into its own cell, so what has to be shown is that the formula really renders and that the
+   starred form really is unnumbered. The equation number is a CounterBox and a single rasterized
+   cell has no document context to resolve one — both starred and unstarred measured 243 that way —
+   so the numbering half renders the whole notebook. *)
+
+$displayParagraph = "The cone at $p$ is:\n\\begin{equation*}\n  x^2 + y^2 = z^2\n\\end{equation*}\nand that is all.";
+
+notebookInk[ text_String ] :=
+  Module[ { notebook, file },
+    notebook = NotebookPut[ convertLaTeXNotebook @ Notebook[ { Cell[ text, "Text" ] } ], Visible -> False ];
+    file = Export[ FileNameJoin[ { $TemporaryDirectory, "MathNotebookDisplayInk.png" } ], notebook, ImageResolution -> 72 ];
+    NotebookClose[ notebook ];
+    inkOf @ Import[ file ]
+  ]
+
+displayInk[ text_String ] := <|
+  "Starred" -> notebookInk[ text ],
+  "Unstarred" -> notebookInk @ StringReplace[ text, "equation*" -> "equation" ],
+  "Literal" -> inkArea @ Cell[ text, "Text" ],
+  "Formula" -> inkArea @ FirstCase[
+    First @ convertLaTeXNotebook @ Notebook[ { Cell[ text, "Text" ] } ], Cell[ _, "DisplayFormula", ___ ] ]
+|>
+
 $measured = UsingFrontEnd @ <|
   "InlineInk" -> AssociationMap[ inlineInk, { "A pair $(V, E)$ here.", "A list $x_1, x_2$ here." } ],
+  "DisplayInk" -> displayInk[ $displayParagraph ],
   "Sheets" -> AssociationMap[ viewMeasurements @ Get @ FileNameJoin[ { $sheetDirectory, # } ] &, $templates ],
   "Default" -> viewMeasurements[ "Default.nb" ],
   "SheetLoaded" -> AssociationMap[
@@ -149,4 +177,19 @@ VerificationTest[
 VerificationTest[
   Map[ #[ "Blank" ] < #[ "Converted" ] < #[ "Literal" ] &, $measured[ "InlineInk" ] ],
   AssociationMap[ True &, { "A pair $(V, E)$ here.", "A list $x_1, x_2$ here." } ]
+]
+
+(* T2: the split formula carries ink, and the paragraph as a whole carries less than the literal
+   LaTeX it replaces — the backslashes are gone. *)
+VerificationTest[
+  { $measured[ "DisplayInk", "Formula" ] > 0,
+    $measured[ "DisplayInk", "Starred" ] < $measured[ "DisplayInk", "Literal" ] },
+  { True, True }
+]
+
+(* ... and "equation*" really is unnumbered on the page: the identical document written with
+   "equation" carries strictly more ink, and the equation number is the only difference. *)
+VerificationTest[
+  $measured[ "DisplayInk", "Starred" ] < $measured[ "DisplayInk", "Unstarred" ],
+  True
 ]
