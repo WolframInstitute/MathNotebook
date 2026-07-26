@@ -31,18 +31,30 @@ Done when `InstallLaTeXFonts` and `InstallMaTeX` are known to work on Windows an
 
 ## Tasks
 
-- [ ] T1 — Make `Tests/Fonts.wlt` platform-neutral and add a no-TeX-present path with a clear message.
 - [ ] T2 — Linux: verify end to end, add `fc-cache` if needed.
 - [ ] T3 — Windows: verify the font store question, decide on registry vs manual install, verify `findExecutable` with MiKTeX and TeX Live.
 - [ ] T4 — Update the README's platform sentence to whatever T2 and T3 established.
 
 ### Done
 
-(completed tasks move here with the session that closed them)
+- [x] T1 — Make `Tests/Fonts.wlt` platform-neutral and add a no-TeX-present path with a clear message. *(Session 1)*
 
 ## Progress
 
-(no sessions yet)
+### Session 1 — 2026-07-26 — T1
+
+- **Prompt:** work the backlog autonomously overnight, committing after each task.
+- **Did:** `Tests/Fonts.wlt` asserted that the TeX font directories *exist*, so the suite failed on any machine without a TeX install and asserted nothing about the platform branches.
+  It is now 10 tests that pass with or without TeX: shape unconditionally (`texmfDirectories`, `texliveFontDirectories` are `{___String}`), contents only where a missing TeX makes the claim vacuous, `texPresentQ[] || texliveFontDirectories[] === {}` on any platform, `userFontDirectory[]` an absolute path under `$HomeDirectory` on whichever branch is running, and `findExecutable` answering a path or `Missing` for a name no platform has.
+  The no-TeX path also needed code. `findExecutable` answers `Missing["NotFound"]`, which `RunProcess` cannot take, so `texmfDirectories[]` returned unevaluated junk rather than `{}`; it now guards on the lookup.
+  `InstallLaTeXFonts` reported "Installed 0 fonts into ..." for a machine with no TeX at all, which reads like a successful run — the Spec's "cheerful" case.
+  It now has three outcomes through a pure `fontInstallMessage[texPresent, count, target]`: no TeX at all, a TeX with no OpenType trees, and a real install; the first two name the packages or distributions to install and neither says "Installed".
+  It also no longer creates the user font directory when it has nothing to put in it.
+  Verified all three against the real exported function with the lookups stubbed: no TeX gives the distribution message with no stray directory and no messages raised, a TeX with no font trees gives the packages message, and this machine still reports "Installed 111 fonts into ~/Library/Fonts". Suite 89.
+- **Learned:**
+  - `Internal`InheritedBlock[{fe}, fe[x_String] := ...]` where `fe` is a *variable* holding the symbol does not do what it looks like: `InheritedBlock` is `HoldAll`, so it localises `fe` itself, while the `SetDelayed` resolves through `fe`'s own value and attaches the definition to the real symbol — which is therefore **not** restored on exit. The stub leaked into the rest of the script and silently invalidated the second case. Stub through the real symbol, or use a fresh kernel per case.
+  - A stub whose pattern is more general than the real definition never fires: `fe[_] := Missing[...]` sits behind the existing `findExecutable[name_String]`. Match the existing pattern exactly to replace it.
+- **Next:** T2, Linux end to end — which needs a Linux machine and cannot be done from here.
 
 ## Decisions
 

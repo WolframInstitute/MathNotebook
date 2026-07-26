@@ -23,6 +23,8 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 
 - [View and Reference Defects](Active/ViewAndReferenceDefects.md) — all implementation done (T1–T5: the text slider reaches every prose style, a tagged `Reference` shows its label, a citation to a theorem reads `Theorem 1.1`, front-end tests for all of it, tutorial updated); next: **T6**, Pavel re-checks on the document that produced the report — the Spec's last gate, and not something a session can close
 
+- [Cross-Platform TeX and Font Support](Active/CrossPlatformTeX.md) — T1 done (the suite no longer assumes macOS or a TeX install, and a machine with no TeX gets a message telling it what to do); next: **T2**, Linux end to end — needs a Linux machine
+
 ## Backlog
 
 - [Conversion and MaTeX UX](Backlog/ConversionUX.md) — four near-identical conversion labels; what a MaTeX conversion should leave behind; whether per-selection LaTeX conversion survives whole-document export
@@ -33,4 +35,3 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 - [First Public Release](Backlog/Release.md) — tutorial and palette review, then publish; the README's install URL is dead until then
 - [Repo Organization](Backlog/RepoOrganization.md) — root cleanup, and the `Wiki/` yes-or-no decision
 - [Stylesheet Font Fidelity](Backlog/StylesheetFontFidelity.md) — TeX Gyre vs system fonts; why `ArXivArticle` substitutes in the browser
-- [Cross-Platform TeX and Font Support](Backlog/CrossPlatformTeX.md) — the Windows and Linux branches have never run
