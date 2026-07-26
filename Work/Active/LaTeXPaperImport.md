@@ -49,18 +49,19 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
 
 ## Tasks
 
-- [ ] T4 — Citations and bibliography ↔ `Citation`/`Reference` cells.
 - [ ] T5 — Figures: preserve TikZ, add generating Wolfram code with rendered output, for one real figure of the paper.
 - [ ] T6 — Make both papers round-trip test fixtures under `MathNotebook/Tests/`. T2 already gets a byte-identical round trip on each; the fixture pins it.
 - [ ] T7 — Display math and nested environments *inside* a theorem-like environment body. T2 deliberately runs only the inline converter there, since an environment has to stay one cell; on `hodgepaper.tex` that leaves 53 `equation`/`align` blocks and two nested `sublemma*` as literal source inside otherwise converted cells.
 - [ ] T8 — Front matter: `\title`, `\author`, `\date`, `\maketitle`, `abstract` → the `Title`/`Author`/`Date`/`Abstract` styles the stylesheets define, and lists (`itemize`, `enumerate`, `description`) → the `Item` family.
 - [ ] T9 — Numbering. The Spec's "numbering must match" is measurably violated: the causal-graphs paper declares `\newtheorem{defn}{Definition}[subsection]` and numbers per subsection, while the imported notebook renders `Axiom 3.2`, `Definition 3.5` — per section, from the stylesheet's counters.
+- [ ] T10 — `thebibliography` written into the `.tex` ↔ `Reference` cells, and a report when a declared `.bib` is missing. T4 does the `.bib` route, which both specimens use; an in-source bibliography needs a per-item source and separator on each cell inside one environment wrapper, which is the same design problem as T7.
 
 ### Done
 
 - [x] T1 — Baseline: unzip the paper, convert with today's pipeline, convert back, diff against the source, and write the gap report into this item's Progress. *(Session 1)*
 - [x] T2 — Sectioning and theorem environments, both directions, with tests. *(Session 2)*
 - [x] T3 — `\label`/`\ref`/`\eqref` ↔ cell tags and reference buttons. *(Session 3)*
+- [x] T4 — Citations and bibliography ↔ `Citation`/`Reference` cells. *(Session 4)*
 
 ## Progress
 
@@ -156,10 +157,48 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
   - LaTeX's `~` survives into the notebook as a literal tilde, so imported prose reads `Definition~3.15` on the page. Turning it into a non-breaking space would improve the rendering and would have to be recorded to keep the round trip; not done, and worth a task if the rendering matters.
 - **Next:** T4 — citations and bibliography.
 
+### Session 4 — 2026-07-26 — T4
+
+- **Prompt:** `/next-session` continued.
+- **Did:** `\cite` → `Citation` buttons and the `.bib` → `Reference` cells, both directions, with the round trip still exact on both papers.
+
+  | | causal graphs | hodgepaper |
+  |---|---|---|
+  | `\cite` → buttons | 9 of 9 | 78 of 80 |
+  | bibliography | 14 `Reference` cells | none — no `.bib` shipped |
+  | round trip | identical | identical |
+
+  **A citation converts unconditionally, unlike a reference.**
+  T3 left a `\ref` as literal source when no cell carried the key, because a `CounterBox` on an unknown tag renders the front end's `XXX`.
+  A citation's label is literal text — `referenceLabel`'s `[key]`, the same string a `Reference` cell's dingbat shows — so it is right whether or not the paper has a bibliography, which is the whole of hodgepaper's 78.
+  The two hodgepaper citations left as source are both inside an environment's optional title (`\begin{lemma}[{\cite[Lemma~11.1]{Cieliebak2015},\cite{triplepaper}}]`), which T2 stores verbatim and never renders.
+
+  **The verbatim brace content rides along as the `ButtonData`**, which is both what `NotebookLocate` navigates by and what the exporter writes back, so `\cite{first, second}` and `\cite{first,second}` come back as themselves.
+  An optional argument is rendered after the keys, and the exporter counts the keys to tell `[a, b]` (two keys) from `[a, note]` (one key and a note) — the same shape of recovery as T3's parenthesised `\eqref`.
+
+  **The bibliography is the one block of a paper whose content is not in the `.tex` at all.**
+  The source says `\bibliography{references}` and the entries live in a `.bib`, so the commands become the `Reference` cells of the entries the paper cites and the **last** cell of the block carries the commands verbatim while the rest carry a `"Suppressed"` rule and emit nothing.
+  Only the cited keys become cells — three of the specimen's seventeen entries are never cited — in the order of the `.bib` rather than the order the bibliography style would sort them.
+  Where the `.bib` is missing the rule is not built at all, so hodgepaper is byte-for-byte what it was before this session.
+
+  **Verified on the page.** The imported causal paper renders as an **8-page PDF** (7 before this session) whose last page is the bibliography, each entry under its own `[key]` dingbat, with `Jürgen Ehlers` and `1587–1609` drawn as characters, `[marzke1959measurement, marzke1964gravitation]` as one two-key citation label, no `XXX`, no literal `\cite`, and no uncited key.
+
+  **Tests.** Five in `Tests/Document.wlt` and one in `Tests/FrontEnd.wlt`; 137 pass.
+  Reintroducing three separate defects — dropping the suppression, splitting `.bib` fields on every comma, and converting no citations — fails 2, 2, and 12+2 respectively.
+- **Learned:**
+  - **A `.bib` field cannot be found by a string pattern.** A value holds both the comma that separates fields and the braces that end the entry (`title={A first paper, with a comma}`), so the split has to be at the commas standing at brace depth zero, and the entry has to end at the brace where the running depth first reaches −1. `Accumulate` over the brace characters gives both in one pass.
+  - **Six of the Wolfram named characters an accent table wants do not exist**: `\[NAcute]`, `\[SAcute]`, `\[ZAcute]`, `\[IBar]`, `\[OBar]`, `\[UBar]` print as their own literal name, while their neighbours (`\[CAcute]`, `\[ABar]`, every hacek and cedilla tried) are real. A table like this has to be swept in the kernel, not assumed from the pattern of the names that do work.
+  - **In a string pattern `~~` binds loosest and `:` binds tightest**, so `optional : ( … ) | "" ~~ rest` is `StringExpression[Pattern[optional, Alternatives[…, ""]], rest]` and not, as it reads, an `Alternatives` over the whole pattern. I assumed the opposite and would have "fixed" the T2 environment rule.
+  - **A defect-reintroduction check is worthless until you confirm the patch landed.** One of my three `perl` edits silently matched nothing, and the suite came back green — which reads exactly like "the test does not bite". Print the changed line before believing the result.
+- **Next:** T5 — figures: preserve TikZ, add generating Wolfram code with rendered output. Two things this session deliberately left: a missing `.bib` is dropped silently rather than reported (the Spec's "say what it could not handle"), and `thebibliography` written into the `.tex` is not imported — neither specimen has one, and it needs its own per-item separator design, so it is filed as T10.
+
 ## Decisions
 
 | Date | Decision | Rationale |
 |---|---|---|
 | 2026-07-26 | `\ref` imports as a bare counter chain, with no `"Theorem "`-style prefix, unlike `citationButton` | LaTeX authors write the word themselves (`Theorem~\ref{...}`); the palette's citation button is for a citation, where the word is wanted, and an import is not that |
 | 2026-07-26 | An environment whose printed name is none of the twelve stylesheet styles is written as `Theorem` with a `CellDingbat` naming it, rather than left as literal text | the specimen paper's `Axiom` is ten of its thirty-two environments; leaving them as text would drop a third of the structure, and the dingbat both numbers with the theorems and prints the right word |
+| 2026-07-26 | `\cite` converts unconditionally, where `\ref` converts only when a cell carries the key | a citation's label is literal text and reads correctly with no bibliography to point at, whereas an unresolvable `CounterBox` renders the front end's `XXX`; it is what makes hodgepaper's 78 citations convert with no `.bib` at all |
+| 2026-07-26 | A `.bib` bibliography's `Reference` cells emit nothing into the `.tex`; the block's last cell re-emits the `\bibliography` commands verbatim | the entries are not in the `.tex` and the `.bib` stays the source of truth, so editing an entry in the notebook does not reach the source — the alternative was to write a bibliography style engine and lose the exact round trip |
+| 2026-07-26 | Only the cited entries become cells, in the order of the `.bib` | LaTeX prints only the cited ones (three of seventeen here are never cited); emulating the style's sort order is a bibliography style engine, which is out of scope |
 | 2026-07-26 | Every cell carries the source whitespace that followed it | it is the difference between a round trip that is exact and one that is approximately right, and the item's whole point is fidelity; it also means the exporter needs no rules about blocking |

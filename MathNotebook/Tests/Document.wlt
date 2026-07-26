@@ -150,3 +150,84 @@ VerificationTest[ (* the tag is the origin of the exported \label, not a mirror 
     "\\section{First} \\label{sec:renamed}" ],
   True
 ]
+
+(* LaTeXPaperImport T4. \cite becomes a Citation button labelled with the key in brackets — the same
+   rendering referenceLabel gives a Reference cell's dingbat, so a citation reads as the entry it
+   points at — and the \bibliography commands become the Reference cells of the entries the paper
+   cites. Those entries are in the .bib and not in the .tex, so the last cell of the block carries
+   the commands verbatim and the rest emit nothing at all. *)
+
+$bib = "@article{first,\n  title={A first paper, with a comma},\n  author={Ehlers, J{\\\"u}rgen and Pirani, Felix},\n  journal={A Journal},\n  volume={44},\n  number={6},\n  pages={1587--1609},\n  year={2012},\n  publisher={Springer}\n}\n\n@book{second,\n  title={A second},\n  author={Andr{\\'e}ka, Hajnal},\n  year=2019\n}\n\n@misc{uncited,\n  title={Never cited},\n  year={1999}\n}\n"
+
+$entries = bibliographyDatabase[ $bib ]
+
+(* A value holds both the comma the fields are separated by and the braces the entry ends with, so
+   the split is at the commas standing at brace depth zero. A TeX accent becomes the character it
+   prints and -- becomes the dash, neither of which the return trip can notice: the .tex gets its
+   \bibliography command back, not the entry. *)
+VerificationTest[
+  { Keys @ $entries,
+    $entries[ "first" ][ "title" ], $entries[ "first" ][ "pages" ], $entries[ "first" ][ "author" ],
+    $entries[ "second" ][ "author" ], $entries[ "second" ][ "year" ], $entries[ "second" ][ "Type" ] },
+  { { "first", "second", "uncited" },
+    "A first paper, with a comma", "1587\[Dash]1609", "Ehlers, J\[UDoubleDot]rgen and Pirani, Felix",
+    "Andr\[EAcute]ka, Hajnal", "2019", "book" }
+]
+
+$citeSource = "\\documentclass{article}\n\\begin{document}\n\nProse citing \\cite{first}, then \\cite{first, second} and \\cite{first,second}, then \\cite[Theorem~1.1]{second}.\n\n\\bibliographystyle{alphaurl}\n\\bibliography{refs}\n\n\\end{document}\n"
+
+$citeNotebook = latexToNotebook[ $citeSource, $entries ]
+
+(* Only the cited keys become cells, as LaTeX prints only those, and they come in the order of the
+   .bib. Each is tagged with its key and dingbatted with it, which is what a citation navigates to. *)
+VerificationTest[
+  Cases[ First @ $citeNotebook, Cell[ _, style_String, options___ ] :>
+    { style, Lookup[ { options }, CellTags, None ] } ],
+  { { "Text", None }, { "Reference", "first" }, { "Reference", "second" } }
+]
+
+(* Every entry but the last emits nothing, and the last carries the commands the .tex actually has —
+   which is why the fields are formatted for reading and not to be parsed back. *)
+VerificationTest[
+  Cases[ First @ $citeNotebook, Cell[ _, "Reference", ___ ] ],
+  { Cell[ "J\[UDoubleDot]rgen Ehlers, Felix Pirani, A first paper, with a comma, A Journal, 44(6), 1587\[Dash]1609, Springer, 2012.",
+      "Reference", TaggingRules -> <| "MathNotebook" -> <| "Suppressed" -> "True", "Separator" -> "" |> |>,
+      CellTags -> "first", CellDingbat -> Cell[ TextData[ "[first]" ] ] ],
+    Cell[ "Hajnal Andr\[EAcute]ka, A second, 2019.", "Reference",
+      TaggingRules -> <| "MathNotebook" -> <| "Suppressed" -> "",
+        "BibliographyTeX" -> "\\bibliographystyle{alphaurl}\n\\bibliography{refs}", "Separator" -> "\n\n" |> |>,
+      CellTags -> "second", CellDingbat -> Cell[ TextData[ "[second]" ] ] ] }
+]
+
+(* The label is the key in brackets, the verbatim brace content rides along as the ButtonData — both
+   the navigation target and what the exporter writes back — and an optional argument follows the
+   keys, which is why the exporter counts them to tell \cite{a, b} from \cite[note]{a}. *)
+VerificationTest[
+  Cases[ First @ $citeNotebook, _ButtonBox, Infinity ],
+  { ButtonBox[ RowBox @ { "[", "first", "]" }, BaseStyle -> "Citation", ButtonData -> "first" ],
+    ButtonBox[ RowBox @ { "[", "first", ", ", "second", "]" }, BaseStyle -> "Citation",
+      ButtonData -> "first, second" ],
+    ButtonBox[ RowBox @ { "[", "first", ", ", "second", "]" }, BaseStyle -> "Citation",
+      ButtonData -> "first,second" ],
+    ButtonBox[ RowBox @ { "[", "second", ", ", "Theorem~1.1" , "]" }, BaseStyle -> "Citation",
+      ButtonData -> "second" ] }
+]
+
+(* Out and back, with the two spellings of a two-key citation kept apart, and the bibliography
+   commands emitted once by the last Reference cell while the entries themselves emit nothing. *)
+VerificationTest[
+  { notebookToLaTeX[ $citeNotebook ] === $citeSource,
+    Length @ StringCases[ notebookToLaTeX[ $citeNotebook ], "\\bibliography" ],
+    StringContainsQ[ notebookToLaTeX[ $citeNotebook ], "Andr" ] },
+  { True, 2, False }
+]
+
+(* A paper whose .bib is not there is left exactly as it was before T4: the commands stay one Text
+   cell, and the citations still convert, because a citation label is literal text and is right with
+   no bibliography to point at — where a \ref would have rendered the front end's XXX. *)
+VerificationTest[
+  { Map[ #[[ 2 ]] &, First @ latexToNotebook[ $citeSource ] ],
+    Length @ Cases[ First @ latexToNotebook[ $citeSource ], _ButtonBox, Infinity ],
+    notebookToLaTeX @ latexToNotebook[ $citeSource ] === $citeSource },
+  { { "Text", "Text" }, 4, True }
+]

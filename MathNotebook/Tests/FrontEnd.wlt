@@ -124,9 +124,12 @@ letterInk[ ] := <|
 $importedSource = "\\documentclass{article}\n\\newtheorem{defn}{Definition}[section]\n\\begin{document}\n\n\\section{First} \\label{sec:one}\n\n\\section{Second} \\label{sec:two}\n\n\\begin{defn} \\label{def:one}\nA body.\n\\end{defn}\n\nSee Section~\\ref{sec:two} and Definition~\\ref{def:one}.\n\n\\end{document}\n";
 
 importedText[ source_String ] :=
+  importedText @ latexToNotebook[ source ]
+
+importedText[ imported_Notebook ] :=
   Module[ { notebook, file },
     notebook = NotebookPut[
-      Append[ latexToNotebook[ source ],
+      Append[ imported,
         StyleDefinitions -> Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ] ],
       Visible -> False ];
     file = Export[ FileNameJoin[ { $TemporaryDirectory, "MathNotebookImported.pdf" } ], notebook ];
@@ -134,8 +137,18 @@ importedText[ source_String ] :=
     Import[ file, "Plaintext" ]
   ]
 
+(* LaTeXPaperImport T4: a bibliography read out of a .bib has to reach the page. Its Reference cells
+   emit nothing into the .tex, so nothing in the round trip can tell whether they render at all —
+   only the rendered document can. The entry's label is its own [key] dingbat, written into the cell
+   because a dingbat cannot read the tags of the cell it labels. *)
+
+$bibliographySource = "\\documentclass{article}\n\\begin{document}\n\nProse citing \\cite{ehlers} and \\cite[Theorem~1.1]{andreka}.\n\n\\bibliography{refs}\n\n\\end{document}\n";
+
+$bibliographyBib = "@article{ehlers,\n  title={The geometry of free fall},\n  author={Ehlers, J{\\\"u}rgen},\n  year={2012}\n}\n\n@article{andreka,\n  title={A logic road},\n  author={Andr{\\'e}ka, Hajnal},\n  year={2012}\n}\n";
+
 $measured = UsingFrontEnd @ <|
   "Imported" -> importedText[ $importedSource ],
+  "Bibliography" -> importedText @ latexToNotebook[ $bibliographySource, bibliographyDatabase[ $bibliographyBib ] ],
   "InlineInk" -> AssociationMap[ inlineInk, { "A pair $(V, E)$ here.", "A list $x_1, x_2$ here." } ],
   "DisplayInk" -> displayInk[ $displayParagraph ],
   "LetterInk" -> letterInk[ ],
@@ -245,6 +258,18 @@ VerificationTest[
     StringContainsQ[ $measured[ "Imported" ], "Definition~2.1" ],
     StringContainsQ[ $measured[ "Imported" ], "XXX" ] },
   { True, True, False }
+]
+
+(* LaTeXPaperImport T4: the bibliography is on the page, each entry under its own [key] dingbat and
+   its TeX accent drawn as the character it prints; the citation in the prose reads as the same
+   label, and the \bibliography command itself is nowhere to be seen. *)
+VerificationTest[
+  { StringContainsQ[ $measured[ "Bibliography" ], "[ehlers] J" ],
+    StringContainsQ[ $measured[ "Bibliography" ], "rgen Ehlers, The geometry of free fall, 2012." ],
+    StringContainsQ[ $measured[ "Bibliography" ], "[andreka, Theorem~1.1]" ],
+    StringContainsQ[ $measured[ "Bibliography" ], "\\bibliography" ],
+    StringContainsQ[ $measured[ "Bibliography" ], "XXX" ] },
+  { True, True, True, False, False }
 ]
 
 (* ... and the two the kernel has opinions about draw the italic letter, not the constant. *)

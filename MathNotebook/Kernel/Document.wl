@@ -8,9 +8,12 @@ PackageScope["notebookToLaTeX"]
 PackageScope["theoremEnvironments"]
 PackageScope["environmentCell"]
 PackageScope["documentTagging"]
+PackageScope["bibliographyDatabase"]
+PackageScope["citationBox"]
 
 ImportLaTeXDocument[ file_String ] :=
-  latexToNotebook @ Import[ file, "Text" ]
+  With[ { source = Import[ file, "Text" ] },
+    latexToNotebook[ source, bibliographyEntries[ source, file ] ] ]
 
 ExportLaTeXDocument[ notebook_Notebook ] :=
   notebookToLaTeX[ notebook ]
@@ -22,9 +25,12 @@ ExportLaTeXDocument[ notebook_NotebookObject, rest___ ] :=
   ExportLaTeXDocument[ NotebookGet[ notebook ], rest ]
 
 latexToNotebook[ source_String ] :=
+  latexToNotebook[ source, <| |> ]
+
+latexToNotebook[ source_String, entries_Association ] :=
   Module[ { preamble, body, postamble, pieces, cells },
     { preamble, body, postamble } = documentParts[ source ];
-    pieces = documentPieces[ body, theoremEnvironments[ preamble ] ];
+    pieces = documentPieces[ body, theoremEnvironments[ preamble ], citedEntries[ body, entries ] ];
     cells = Map[ labelledCell, withSeparators[ pieces ] ];
     Notebook[ Map[ referenceCell[ #, labelStyles[ cells ] ] &, cells ],
       TaggingRules -> <| "MathNotebook" -> <|
@@ -36,7 +42,8 @@ latexToNotebook[ source_String ] :=
 notebookToLaTeX[ notebook : Notebook[ cells_List, ___ ] ] :=
   With[ { tagging = documentTagging[ notebook ] },
     tagging[ "Preamble" ] <> tagging[ "BodyPrefix" ] <>
-      StringJoin @ Map[ cell |-> cellToLaTeX[ cell ] <> cellSeparator[ cell ], notebookCellList[ cells ] ] <>
+      StringJoin @ Map[ cell |-> cellToLaTeX[ cell ] <> cellSeparator[ cell ],
+        Select[ notebookCellList[ cells ], cellTagging[ #, "Suppressed" ] === "" & ] ] <>
       tagging[ "Postamble" ] ]
 
 (* Which source environment names this document uses, and what each is printed as. The amsthm
@@ -64,9 +71,9 @@ documentParts[ source_String ] :=
    StringJoin and the blocking survives exactly: the paper separates blocks with two newlines in
    most places and three in two of them, and a display equation lifted out of a paragraph rejoins
    with one. Riffling everything with "\n\n" was seven diff lines on the specimen. *)
-documentPieces[ body_String, environments_Association ] :=
+documentPieces[ body_String, environments_Association, entries_Association ] :=
   Flatten @ Map[ Replace[ text_String :> paragraphPieces[ text ] ],
-    StringSplit[ body, structureRules[ environments ] ] ]
+    StringSplit[ body, structureRules[ environments, entries ] ] ]
 
 withSeparators[ pieces_List ] :=
   Cases[
@@ -92,8 +99,9 @@ cellSeparator[ cell_Cell ] :=
    pattern will not take a back-reference to a named Alternatives, and answers
    StringExpression::invld rather than failing to match. Only declared names are matched, so
    \begin{figure} and \begin{itemize} pass through as text. *)
-structureRules[ environments_Association ] :=
+structureRules[ environments_Association, entries_Association ] :=
   Join[
+    bibliographyRules[ entries ],
     Map[ Apply[ { command, style } |->
         ( StartOfLine ~~ indent : ( " " | "\t" ) ... ~~ command ~~ "{" ~~ Shortest[ title___ ] ~~ "}" ~~
             trailing : Except[ "\n" ] ... :> sectionCell[ style, indent, title, trailing ] ) ],
@@ -136,6 +144,165 @@ environmentDingbat[ printed_String ] :=
     { CellDingbat -> Cell[ TextData[ { printed <> " ", CounterBox[ "Section" ], ".", CounterBox[ "Theorem" ], "." } ],
         FontWeight -> "Bold" ] } ]
 
+(* The bibliography is the one block of a paper whose content is not in the .tex at all: the source
+   says \bibliography{refs} or \printbibliography and the entries live in a .bib. So the commands
+   become the Reference cells of the entries the paper actually cites, and the last of them carries
+   the commands verbatim while the rest emit nothing — the .tex gets its two lines back and the
+   notebook shows a bibliography. The rule exists only when entries were found, so a paper whose
+   .bib is missing is left exactly as it was before. *)
+bibliographyRules[ entries_Association ] :=
+  If[ entries === <| |>,
+    { },
+    { StartOfLine ~~ block : ( $bibliographyCommand ~~ ( "\n" ~~ $bibliographyCommand ) ... ) :>
+        bibliographyCells[ entries, block ] } ]
+
+$bibliographyCommand =
+  ( " " | "\t" ) ... ~~ ( "\\bibliographystyle" | "\\printbibliography" | "\\bibliography" ) ~~ Except[ "\n" ] ...
+
+bibliographyCells[ entries_Association, block_String ] :=
+  MapAt[ retagged[ #, <| "Suppressed" -> "", "BibliographyTeX" -> block |> ] &,
+    KeyValueMap[ bibliographyCell, entries ], -1 ]
+
+bibliographyCell[ key_String, entry_Association ] :=
+  Cell[ inlineContent @ bibliographyText[ entry ], "Reference", CellTags -> key,
+    Sequence @@ referenceDingbat[ key ],
+    TaggingRules -> <| "MathNotebook" -> <| "Suppressed" -> "True" |> |> ]
+
+(* No bibliography style is emulated: the fields are riffled in a fixed order, and the entries come
+   in the order of the .bib rather than in the order the style would sort them. What matters for
+   reading is that the dingbat is referenceLabel's [key], so an entry and the citation pointing at it
+   read alike. *)
+bibliographyText[ entry_Association ] :=
+  StringRiffle[
+    DeleteCases[ {
+      bibliographyAuthors @ Lookup[ entry, "author", "" ],
+      Lookup[ entry, "title", "" ],
+      Lookup[ entry, "journal", Lookup[ entry, "booktitle", "" ] ],
+      bibliographyVolume[ entry ],
+      Lookup[ entry, "pages", "" ],
+      Lookup[ entry, "publisher", Lookup[ entry, "organization", "" ] ],
+      Lookup[ entry, "year", "" ],
+      Lookup[ entry, "url", "" ] }, "" ], ", " ] <> "."
+
+bibliographyAuthors[ authors_String ] :=
+  StringRiffle[ Map[ bibliographyName, StringSplit[ authors, " and " ] ], ", " ]
+
+bibliographyName[ name_String ] :=
+  Replace[ StringTrim /@ StringSplit[ name, "," ],
+    { { last_, first_ } :> first <> " " <> last, _ :> StringTrim[ name ] } ]
+
+bibliographyVolume[ entry_Association ] :=
+  Replace[ Lookup[ entry, "volume", "" ],
+    { "" -> "", volume_ :> volume <> Replace[ Lookup[ entry, "number", "" ], { "" -> "", number_ :> "(" <> number <> ")" } ] } ]
+
+bibliographyEntries[ source_String, file_String ] :=
+  Association @ Map[ Normal @ bibliographyDatabase @ Import[ #, "Text" ] &,
+    Select[ bibliographyFiles[ source, file ], FileExistsQ ] ]
+
+bibliographyFiles[ source_String, file_String ] :=
+  Map[ bibliographyFile[ #, file ] &,
+    Flatten @ StringCases[ source,
+      StartOfLine ~~ ( " " | "\t" ) ... ~~ ( "\\bibliography{" | "\\addbibresource{" ) ~~
+        names : Except[ "}" ] .. ~~ "}" :> StringTrim /@ StringSplit[ names, "," ] ] ]
+
+bibliographyFile[ name_String, file_String ] :=
+  FileNameJoin @ { DirectoryName @ AbsoluteFileName @ file,
+    StringReplace[ name, "\\jobname" -> FileBaseName[ file ] ] <>
+      If[ FileExtension[ name ] === "", ".bib", "" ] }
+
+(* Only the cited keys become cells, as LaTeX prints only those; three of the specimen's seventeen
+   entries are never cited. KeySelect rather than KeyTake so the order stays the .bib's. *)
+citedEntries[ body_String, entries_Association ] :=
+  With[ { cited = Flatten @ StringCases[ body, $citation :> StringTrim /@ StringSplit[ keys, "," ] ] },
+    KeySelect[ entries, MemberQ[ cited, # ] & ] ]
+
+(* A .bib entry's fields are separated by the commas at brace depth zero, and the entry ends at the
+   brace that closes it — a value may hold both, so neither can be found by a string pattern. *)
+bibliographyDatabase[ source_String ] :=
+  Association @ Map[ bibliographyEntry, StringSplit[ source, StartOfLine ~~ "@" ] ]
+
+bibliographyEntry[ chunk_String ] :=
+  Replace[
+    StringCases[ chunk,
+      StartOfString ~~ type : LetterCharacter .. ~~ WhitespaceCharacter ... ~~ "{" ~~ body___ ~~ EndOfString :>
+        { ToLowerCase[ type ], body }, 1 ],
+    { { { type_, body_ } } :> bibliographyFields[ type, body ], _ :> Nothing } ]
+
+bibliographyFields[ type_String, body_String ] :=
+  With[ { parts = bibliographySplit[ body ] },
+    StringTrim[ First @ parts ] ->
+      Join[ <| "Type" -> type |>, Association @ Map[ bibliographyField, Rest @ parts ] ] ]
+
+bibliographySplit[ body_String ] :=
+  Module[ { characters = Characters[ body ], depths, limit, cuts },
+    depths = Accumulate @ Replace[ characters, { "{" -> 1, "}" -> -1, _ -> 0 }, { 1 } ];
+    limit = First[ FirstPosition[ depths, -1 ], Length[ characters ] + 1 ];
+    cuts = Select[ Range[ limit - 1 ], characters[[ # ]] === "," && depths[[ # ]] === 0 & ];
+    Map[ Apply[ { from, to } |-> StringJoin @@ Take[ characters, { from + 1, to - 1 } ] ],
+      Partition[ Join[ { 0 }, cuts, { limit } ], 2, 1 ] ]
+  ]
+
+bibliographyField[ text_String ] :=
+  Replace[
+    StringCases[ text,
+      StartOfString ~~ WhitespaceCharacter ... ~~ name : ( LetterCharacter | "-" ) .. ~~
+        WhitespaceCharacter ... ~~ "=" ~~ value___ ~~ EndOfString :>
+          ( ToLowerCase[ name ] -> bibliographyValue @ StringTrim[ value ] ), 1 ],
+    { { field_ } :> field, _ :> Nothing } ]
+
+(* The delimiters of a value go, and a TeX accent becomes the character it prints. That translation
+   costs nothing on the return trip — a Reference cell comes from the .bib and the .tex gets its
+   \bibliography command back verbatim — and without it the specimen's bibliography reads
+   J{\"u}rgen. An accent the table does not have is left as source rather than silently flattened
+   to the bare letter. *)
+bibliographyValue[ value_String ] :=
+  StringReplace[ bibliographyDelimited[ value ],
+    Join[ $bibliographyAccents, { "---" -> "\[LongDash]", "--" -> "\[Dash]" } ] ]
+
+bibliographyDelimited[ value_String ] :=
+  If[ StringStartsQ[ value, "{" ] && bibliographyBalancedQ[ value ],
+    StringTake[ value, { 2, -2 } ],
+    StringTrim[ value, "\"" ] ]
+
+bibliographyBalancedQ[ value_String ] :=
+  First[ FirstPosition[
+      Accumulate @ Replace[ Characters[ value ], { "{" -> 1, "}" -> -1, _ -> 0 }, { 1 } ], 0 ], 0 ] ===
+    StringLength[ value ]
+
+(* Longest form first, so {\"u} is matched before \"u; and a bare \c or \v would collide with a
+   control word of the same name, so a letter accent is only recognised braced. *)
+$bibliographyAccents =
+  Flatten @ KeyValueMap[ { accent, table } |->
+      KeyValueMap[ { letter, character } |->
+          Join[
+            { ( "{\\" <> accent <> "{" <> letter <> "}}" ) -> character,
+              ( "{\\" <> accent <> letter <> "}" ) -> character,
+              ( "\\" <> accent <> "{" <> letter <> "}" ) -> character },
+            If[ StringMatchQ[ accent, LetterCharacter ], { }, { ( "\\" <> accent <> letter ) -> character } ] ],
+        table ],
+    <|
+      "\"" -> <| "a" -> "\[ADoubleDot]", "e" -> "\[EDoubleDot]", "i" -> "\[IDoubleDot]",
+        "o" -> "\[ODoubleDot]", "u" -> "\[UDoubleDot]", "y" -> "\[YDoubleDot]",
+        "A" -> "\[CapitalADoubleDot]", "E" -> "\[CapitalEDoubleDot]", "I" -> "\[CapitalIDoubleDot]",
+        "O" -> "\[CapitalODoubleDot]", "U" -> "\[CapitalUDoubleDot]" |>,
+      "'" -> <| "a" -> "\[AAcute]", "c" -> "\[CAcute]", "e" -> "\[EAcute]", "i" -> "\[IAcute]",
+        "o" -> "\[OAcute]", "u" -> "\[UAcute]", "y" -> "\[YAcute]",
+        "A" -> "\[CapitalAAcute]", "E" -> "\[CapitalEAcute]", "I" -> "\[CapitalIAcute]",
+        "O" -> "\[CapitalOAcute]", "U" -> "\[CapitalUAcute]" |>,
+      "`" -> <| "a" -> "\[AGrave]", "e" -> "\[EGrave]", "i" -> "\[IGrave]", "o" -> "\[OGrave]",
+        "u" -> "\[UGrave]", "A" -> "\[CapitalAGrave]", "E" -> "\[CapitalEGrave]",
+        "O" -> "\[CapitalOGrave]", "U" -> "\[CapitalUGrave]" |>,
+      "^" -> <| "a" -> "\[AHat]", "e" -> "\[EHat]", "i" -> "\[IHat]", "o" -> "\[OHat]",
+        "u" -> "\[UHat]", "A" -> "\[CapitalAHat]", "E" -> "\[CapitalEHat]", "O" -> "\[CapitalOHat]" |>,
+      "~" -> <| "a" -> "\[ATilde]", "n" -> "\[NTilde]", "o" -> "\[OTilde]",
+        "A" -> "\[CapitalATilde]", "N" -> "\[CapitalNTilde]", "O" -> "\[CapitalOTilde]" |>,
+      "c" -> <| "c" -> "\[CCedilla]", "C" -> "\[CapitalCCedilla]" |>,
+      "v" -> <| "c" -> "\[CHacek]", "d" -> "\[DHacek]", "e" -> "\[EHacek]", "n" -> "\[NHacek]",
+        "r" -> "\[RHacek]", "s" -> "\[SHacek]", "t" -> "\[THacek]", "z" -> "\[ZHacek]",
+        "C" -> "\[CapitalCHacek]", "R" -> "\[CapitalRHacek]", "S" -> "\[CapitalSHacek]",
+        "Z" -> "\[CapitalZHacek]" |>
+    |> ]
+
 (* Only the leading whitespace goes: a trailing space at the end of a source line is invisible in a
    cell but is a diff line on the way out, and several of the paper's paragraphs carry one. A
    paragraph break is a blank line, so the delimiter needs two newlines — splitting on one would
@@ -164,7 +331,38 @@ textPieces[ chunk_String ] :=
         separatorMark @ First[ StringCases[ chunk, space : WhitespaceCharacter .. ~~ EndOfString :> space, 1 ], "" ] } ] ]
 
 inlineContent[ text_String ] :=
-  Replace[ splitInlineMath[ text ], { { unchanged_String } :> unchanged, parts_List :> TextData[ parts ] } ]
+  Replace[
+    mergeStrings @ Flatten @ Replace[ splitInlineMath[ text ], part_String :> citationSplit[ part ], { 1 } ],
+    { { unchanged_String } :> unchanged, parts_List :> TextData[ parts ] } ]
+
+(* One pattern for what a citation is, used both to split the prose and to decide which .bib entries
+   the paper cites, so the two halves cannot disagree. *)
+$citation =
+  "\\cite" ~~ optional : ( "[" ~~ Except[ "]" ] ... ~~ "]" ) | "" ~~ "{" ~~ keys : Except[ "}" ] .. ~~ "}"
+
+citationSplit[ text_String ] :=
+  StringSplit[ text, $citation :> citationBox[ optional, keys ] ]
+
+(* \cite becomes a Citation button labelled with the key in brackets — referenceLabel's rendering, so
+   a citation reads exactly as the dingbat of the entry it points at. Unlike \ref this is
+   unconditional: the label is literal text and is right even in a paper with no bibliography, where
+   a CounterBox would render the front end's XXX. The verbatim brace content rides along as the
+   ButtonData, which is both what NotebookLocate navigates by and what the exporter writes back, so
+   \cite{a, b} returns with its own spacing; the optional argument is the item before the closing
+   bracket, and how many keys there are is what tells the two apart. *)
+citationBox[ optional_String, keys_String ] :=
+  ButtonBox[
+    RowBox @ Flatten @ { "[", Riffle[ StringTrim /@ StringSplit[ keys, "," ], ", " ],
+      If[ optional === "", { }, { ", ", StringTake[ optional, { 2, -2 } ] } ], "]" },
+    BaseStyle -> "Citation", ButtonData -> keys ]
+
+citationTeX[ RowBox[ parts_List ], keys_String ] :=
+  "\\cite" <>
+    If[ Length[ parts ] > 2 Length[ StringSplit[ keys, "," ] ] + 1, "[" <> parts[[ -2 ]] <> "]", "" ] <>
+    "{" <> keys <> "}"
+
+citationTeX[ label_String, keys_String ] :=
+  "\\cite{" <> keys <> "}"
 
 notebookCellList[ cells_List ] :=
   Flatten @ Replace[ cells, Cell[ CellGroupData[ inner_List, ___ ], ___ ] :> notebookCellList[ inner ], { 1 } ]
@@ -230,9 +428,19 @@ referenceCounters[ style_String ] :=
 referenceTeX[ ButtonBox[ boxes_, ___, ButtonData -> key_String, ___ ] ] /; ! FreeQ[ boxes, _CounterBox ] :=
   If[ MatchQ[ boxes, RowBox[ { "(", ___, ")" } ] ], "\\eqref{", "\\ref{" ] <> key <> "}"
 
+(* A Citation button with no counter in it is a citation: a cross-reference always resolves through
+   one, and a citation never does — the bibliography is not numbered. *)
+referenceTeX[ ButtonBox[ boxes_, ___, ButtonData -> key_String, ___ ] ] /; FreeQ[ boxes, _CounterBox ] :=
+  citationTeX[ boxes, key ]
+
 cellToLaTeX[ cell : Cell[ _, "Section" | "Subsection" | "Subsubsection", ___ ] ] :=
   cellTagging[ cell, "Indent" ] <> "\\" <> ToLowerCase[ cell[[ 2 ]] ] <> "{" <> cellTeXText[ cell ] <> "}" <>
     cellTrailing[ cell ]
+
+(* The Reference cells of a .bib bibliography are not in the .tex; the commands that pulled them in
+   are, and the last cell of the block carries them. *)
+cellToLaTeX[ cell_Cell ] /; cellTagging[ cell, "BibliographyTeX" ] =!= "" :=
+  cellTagging[ cell, "BibliographyTeX" ]
 
 cellToLaTeX[ cell_Cell ] /; cellTagging[ cell, "Environment" ] =!= "" :=
   With[ { name = cellTagging[ cell, "Environment" ] },
