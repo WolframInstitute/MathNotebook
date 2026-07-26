@@ -164,6 +164,25 @@ The style names to touch are already partitioned in `Scripts/BuildStyleSheets.wl
   - The tutorial deliberately does not claim that the text slider scales the theorem, proof, reference or list styles, because it does not yet — that is T1 of `ViewAndReferenceDefects`. The section is accurate as written and needs one more sentence once that item lands.
 - **Next:** T6 — Pavel writes with it on a real document; revise.
 
+### Session 6 — 2026-07-26 — T6 (feedback round open)
+
+- **Prompt:** `/next-session` on this item, then six numbered feedback points from Pavel as he drove the palette.
+- **Did:** Prepared the round, then revised against the one point that was fully determined.
+  Found and removed a stale **0.1.0** install that was still shipping the *pre-fold* flat palette — with two versions installed there was no guarantee which palette the front end served, so any feedback before this was against an unknown build.
+  Added `Scripts/BuildViewProbe.wls`, generating `Work/Active/PaletteUsability-T6.nb`: a one-screen `AMSArticle` probe holding every style the three controls touch, in stylesheet order, so a size or width change is readable straight down the page and the styles that do *not* follow are equally visible.
+  Fixed Pavel's point 2 (**text size does not reach itemized, reference or theorem cells**) by replacing `baseFontSizes[]`, which extracted sizes from `LaTeXBase.nb`, with `baseFontSizes[ parent ]`, a chain reader memoized per parent sheet exactly parallel to T4's `baseCellMargins`.
+  Verified on an `AMSArticle` document after `SetDocumentFontSize[ document, 20 ]`: `Theorem`, `Proof` and `Reference` 13 → 20 and `Item`/`ItemNumbered` 15 → 23, all five of which previously did not move at all; `Text` 13 → 20, `Title` 26 → 40, `Abstract` 12 → 18 unchanged in behaviour; the `"Printout"` variants scale too; `ResetDocumentView` restores every base size exactly and leaves the tagging rules `Inherited`.
+  Suite is 51 tests including a regression test that asserts a screen cell is written for each of the five styles.
+  Disproved the cheap fix for point 1 by measurement before writing any of it, and filed points 3, 5 and 6.
+- **Learned:**
+  - **`{ style, "Printout" }` in a `StyleDefinitions` path resolves the print environment through the whole chain**, while `StyleData[ style, "Printout" ]` in the same position silently returns the *screen* value — which would have written every printout override at its screen size and been invisible until a PDF was compared. This is what made point 2's fix possible at all.
+  - **`Scaled` cell margins are relative and cannot be made absolute by arithmetic.** `Scaled[0.5] + (-width/2)` is exactly the shape that ought to cancel `PageWidth` out, and it does stay perfectly centered — ink midpoints 305 and 412 on 612 pt and 842 pt paper — but the block width goes 290 → 594. `PageWidth -> w` in a style *is* absolute (identical ink on both papers) and left-aligns; the two mechanisms combined collapsed the block to 73 pt and were not centered. So point 1 is a genuine design change, not a tweak, and it needs Pavel's call between absolute-left-aligned and absolute-centered-via-a-screen-only-`Dynamic`.
+  - **A private sheet whose parent is an embedded notebook lets unoverridden styles fall through to `Default.nb`.** In the verification run the math styles read `DisplayFormula` 14 and `DisplayFormulaEquationNumber` `-1 + Inherited` — Default's values — after a *prose* size change, which reads exactly like the prose control leaking into mathematics. It is a harness artifact of `Cell[StyleData[StyleDefinitions -> Get[path]]]`, the only form that loads a paclet sheet headlessly; prose/math independence is covered by a kernel test instead of by that number. Two earlier measurements were nearly reported as defects because of it.
+  - **The `PackageScope` trap caught the new tests again**, third session running: `styleFontSizeNames` has no declaration, so the test's direct call stayed unevaluated and `Intersection` errored on an unevaluated head. Rewrote both new tests through `viewStyleCells` rather than widen the package surface.
+  - **The chain reader costs the suite its kernel-only property.** One test passes a real sheet name and now needs a front end, failing on `FrontEndObject::notavail` messages alone with a correct value; stubbing `baseFontSizes[ "AMSArticle.nb" ]` restores it.
+  - Pavel's point 6 settles a question `ViewAndReferenceDefects` T2 had left open: the `Reference` label is the cell's **custom tag**, not an auto-incremented `[1]`.
+- **Next:** T6 stays open. Four of the six points need Pavel's decision before code: absolute width form (1), palette light/dark diagnosis (4), and the two filed items (3 → `ConversionUX`, 5+6 → `ViewAndReferenceDefects`).
+
 ## Decisions
 
 | Date | Decision | Rationale |

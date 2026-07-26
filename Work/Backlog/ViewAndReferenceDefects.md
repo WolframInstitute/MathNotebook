@@ -24,9 +24,16 @@ The style list then has to be the paper's structural styles rather than "whateve
 The `Reference` style is a bare hanging-indent paragraph — `CellMargins -> { { 90, 10 }, { 3, 3 } }`, `ParagraphIndent -> -24` — with no `CellDingbat`, no counter and no use of the cell's own `CellTags`.
 So a tagged reference displays nothing where `[1]` belongs, and the hanging indent pulls the first line 24 pt left of the block with nothing in the gap, which is what reads as broken.
 `InsertCitation` meanwhile writes `[tag]` into the body as a `Citation` button, so the citation shows a label the bibliography entry does not.
-Decide whether the label comes from the cell's `CellTags` (matching what `InsertCitation` links to, so `[Ollivier]`) or from an auto-incremented counter (matching LaTeX's `\bibitem` numbering, so `[1]`), then render it as a dingbat so it is never typed by hand.
+Pavel settled the rule on 2026-07-26: the label is the cell's **custom tag**, rendered at the beginning of the reference cell — not an auto-incremented counter.
 
-Done when a text-size change moves every prose style on screen and in print on all four templates plus `Default.nb`, a tagged `Reference` cell shows its label without the author typing it, and Pavel confirms both on the document that produced the report.
+**A citation to a theorem shows the tag, not the number.**
+Pavel, 2026-07-26: "Could insert citation for theorems etc. actually show the actualized name like Theorem 1.1 instead of the custom tag?"
+`InsertCitation` writes the raw `CellTags` string into the `Citation` button for every target, so a cross-reference to a theorem reads `[myThm]` where a paper wants `Theorem 1.1`.
+The environments already number themselves — `theoremStyleCells` builds the dingbat from `CounterBox[ "Section" ]` and `CounterBox[ "Theorem" ]` — so the number exists in the front end but is not readable from the tag.
+This needs investigation before it is designed: whether a target cell's resolved counter value can be queried at insert time, and if it can only be resolved at display time, whether the citation must become a `CounterBox`-bearing button that renumbers itself when cells move.
+A citation to a bibliography entry keeps showing the tag (that is item 6); this applies to the numbered environments.
+
+Done when a text-size change moves every prose style on screen and in print on all four templates plus `Default.nb`, a tagged `Reference` cell shows its tag as its label without the author typing it, a citation to a theorem shows its number, and Pavel confirms on the document that produced the report.
 
 ### Requirements
 
@@ -45,20 +52,33 @@ Done when a text-size change moves every prose style on screen and in print on a
 
 ## Tasks
 
-- [ ] T1 — Rebuild the font-size setters on resolved per-style sizes read from the document's own chain; assert every prose style moves, screen and print, on all five sheets.
-- [ ] T2 — Decide the `Reference` label rule and implement it as a dingbat; make `InsertCitation` and the bibliography entry agree.
-- [ ] T3 — Tests for both, then Pavel re-checks on the document that produced the report.
+- [ ] T2 — Render the `Reference` label from the cell's `CellTags` at the beginning of the cell; make `InsertCitation` and the bibliography entry agree.
+- [ ] T3 — Investigate whether a target theorem's resolved counter value is readable at insert time, then make a citation to a numbered environment display `Theorem 1.1` rather than its tag.
+- [ ] T4 — Tests for all of it, then Pavel re-checks on the document that produced the report.
 
 ### Done
 
-(completed tasks move here with the session that closed them)
+- [x] T1 — Rebuild the font-size setters on resolved per-style sizes read from the document's own chain; assert every prose style moves, screen and print, on all five sheets. (landed during `PaletteUsability` T6's feedback round, 2026-07-26)
 
 ## Progress
 
-(no sessions yet)
+### T1 — 2026-07-26 — landed under `PaletteUsability` T6
+
+- **Did:** Replaced `View.wl`'s `baseFontSizes[]` — which extracted sizes from `LaTeXBase.nb` — with `baseFontSizes[ parent ]`, a chain reader memoized per parent sheet, exactly parallel to T4's `baseCellMargins`.
+  Verified on an `AMSArticle` document after `SetDocumentFontSize[ document, 20 ]`: `Theorem`, `Proof` and `Reference` 13 → 20 and `Item`/`ItemNumbered` 15 → 23, where all five previously did not move; `Text` 13 → 20, `Title` 26 → 40, `Abstract` 12 → 18 as before; the `"Printout"` variants scale too (10 → 15, 15 → 23); `ResetDocumentView` restores every base size exactly and leaves the tagging rules `Inherited`.
+  Suite is 51 tests, including a regression test asserting a screen cell is written for each of the five styles.
+- **Learned:**
+  - **`{ style, "Printout" }` inside a `StyleDefinitions` path resolves the print environment through the whole chain** — `CurrentValue[ nb, { StyleDefinitions, { "Theorem", "Printout" }, FontSize } ]` returns 10 where the bare path returns 13. `StyleData[ style, "Printout" ]` in that position does **not** work: it silently returns the screen value, which would have written every printout override at its screen size.
+  - The style *list* still comes from `LaTeXBase.nb` rather than from the chain, deliberately: the chain resolves a size for the character styles too (`Hyperlink`, `Citation`, `URL`), and pinning those would stop an inline citation inheriting the size of the cell it sits in.
+  - Non-numeric resolved values are real and must be filtered — `Default.nb` gives `DisplayFormulaEquationNumber` the symbolic `-1 + Inherited`.
+  - The chain reader needs a front end, so the previously kernel-only test suite had to stub `baseFontSizes` for the one test that passes a real sheet name, or it fails on messages alone with a correct value.
+- **Next:** T2 — the `Reference` label from `CellTags`.
 
 ## Decisions
 
 | Date | Decision | Rationale |
 |---|---|---|
 | 2026-07-26 | Filed as its own item rather than folded into `PaletteUsability` T6 | the reference label is a referencing defect, not a view control, and the font-size fix rewrites T3's mechanism rather than revising it |
+| 2026-07-26 | The `Reference` label is the cell's own custom tag, shown at the beginning of the cell — not an auto-incremented `[1]` | Pavel's call in the T6 feedback round; it also makes the bibliography entry agree with what `InsertCitation` already writes into the body |
+| 2026-07-26 | A citation to a *numbered environment* shows its resolved number (`Theorem 1.1`), while a citation to a bibliography entry keeps showing its tag | Pavel's call; a paper cross-references theorems by number and literature by label, so the two targets get different renderings from the same button |
+| 2026-07-26 | T1 was implemented during `PaletteUsability` T6 rather than in its own session | Pavel reported the defect a second time while driving the palette, so the fix was the direct revision his feedback round called for; the chain reader T4 had already built made it a contained change |

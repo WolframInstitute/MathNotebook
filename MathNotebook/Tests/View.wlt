@@ -9,13 +9,43 @@ baseCellMargins[ "StubSheet.nb" ] = <|
   "Section" -> { { 40, 25 }, { 10, 28 } },
   "Theorem" -> { { 130, 10 }, { 8, 8 } } |>;
 
+(* The sizes a real parent sheet resolves through its chain, stubbed for the same reason. The
+   point of the stub is the styles LaTeXBase under-declares: Theorem, Proof and Reference carry a
+   printout size but no screen size in the file, and the list styles are not in it at all. *)
+baseFontSizes[ "StubSheet.nb" ] = <|
+  "Screen" -> <| "Text" -> 13, "Title" -> 26, "Theorem" -> 13, "Proof" -> 13, "Reference" -> 13,
+    "Item" -> 15, "ItemNumbered" -> 15, "DisplayFormula" -> 13, "DisplayFormulaNumbered" -> 13,
+    "DisplayFormulaEquationNumber" -> 12 |>,
+  "Printout" -> <| "Text" -> 10, "Title" -> 17, "Theorem" -> 10, "Proof" -> 10, "Reference" -> 10,
+    "Item" -> 15, "ItemNumbered" -> 15, "DisplayFormula" -> 10, "DisplayFormulaNumbered" -> 10,
+    "DisplayFormulaEquationNumber" -> 10 |> |>;
+
+(* The wrapper test passes a real sheet name, and reading the sizes through the chain needs a front
+   end, so that name is stubbed too — otherwise the suite stops being kernel-only. *)
+baseFontSizes[ "AMSArticle.nb" ] = baseFontSizes[ "StubSheet.nb" ];
+
 styleNames[ cells_List ] := Cases[ cells, Cell[ StyleData[ style_String, ___ ], ___ ] :> style ];
 
-VerificationTest[ (* the size hierarchy is readable out of the base sheet, in both environments *)
-  { NumericQ @ documentFontSizeAnchor[], NumericQ @ mathFontSizeAnchor[],
-    SubsetQ[ Keys @ baseFontSizes[][ "Screen" ], { "Text", "Title", "DisplayFormula" } ],
-    SubsetQ[ Keys @ baseFontSizes[][ "Printout" ], { "Text", "Title", "DisplayFormula" } ] },
-  { True, True, True, True }
+(* These go through viewStyleCells rather than calling styleFontSizeNames directly: an undeclared
+   symbol is private to its own file, so a direct call from the test would stay unevaluated and the
+   test would pass or fail for a reason unrelated to what it checks. *)
+VerificationTest[ (* the anchors resolve *)
+  { NumericQ @ documentFontSizeAnchor[ "StubSheet.nb" ], NumericQ @ mathFontSizeAnchor[ "StubSheet.nb" ] },
+  { True, True }
+]
+
+VerificationTest[ (* the character styles stay out, so an inline citation keeps inheriting its cell *)
+  Intersection[ styleNames @ viewStyleCells[ "StubSheet.nb", <| "DocumentFontSize" -> 20 |> ],
+    { "Hyperlink", "Citation", "URL" } ],
+  { }
+]
+
+VerificationTest[ (* the text control reaches the theorem, proof, reference and list styles on SCREEN,
+                     which is the defect Pavel reported: they carry no bare FontSize in LaTeXBase *)
+  Complement[ { "Theorem", "Proof", "Reference", "Item", "ItemNumbered" },
+    Cases[ viewStyleCells[ "StubSheet.nb", <| "DocumentFontSize" -> 20 |> ],
+      Cell[ StyleData[ style_String ], ___, FontSize -> _, ___ ] :> style ] ],
+  { }
 ]
 
 VerificationTest[ (* an untouched document gets no override cells at all *)
@@ -25,15 +55,15 @@ VerificationTest[ (* an untouched document gets no override cells at all *)
 
 VerificationTest[ (* at the anchor size every style is written back at exactly its base size *)
   Union @ Cases[
-    viewStyleCells[ "StubSheet.nb", <| "DocumentFontSize" -> documentFontSizeAnchor[] |> ],
-    Cell[ StyleData[ style_String ], FontSize -> size_ ] :> size === baseFontSizes[][ "Screen", style ] ],
+    viewStyleCells[ "StubSheet.nb", <| "DocumentFontSize" -> documentFontSizeAnchor[ "StubSheet.nb" ] |> ],
+    Cell[ StyleData[ style_String ], FontSize -> size_ ] :> size === baseFontSizes[ "StubSheet.nb" ][ "Screen", style ] ],
   { True }
 ]
 
 VerificationTest[ (* the whole hierarchy scales proportionally, not just Text *)
-  Cases[ viewStyleCells[ "StubSheet.nb", <| "DocumentFontSize" -> 2 documentFontSizeAnchor[] |> ],
+  Cases[ viewStyleCells[ "StubSheet.nb", <| "DocumentFontSize" -> 2 documentFontSizeAnchor[ "StubSheet.nb" ] |> ],
     Cell[ StyleData[ "Title" ], ___, FontSize -> size_, ___ ] :> size ],
-  { Round[ 2 baseFontSizes[][ "Screen", "Title" ] ] }
+  { Round[ 2 baseFontSizes[ "StubSheet.nb" ][ "Screen", "Title" ] ] }
 ]
 
 VerificationTest[ (* prose and mathematics are independent *)
@@ -49,7 +79,7 @@ VerificationTest[ (* the math control reaches the equation number, which would o
 VerificationTest[ (* every size override is written in the "Printout" variant too, or it never prints *)
   Cases[ viewStyleCells[ "StubSheet.nb", <| "MathFontSize" -> 20 |> ],
     Cell[ StyleData[ "DisplayFormula", "Printout" ], ___, FontSize -> size_, ___ ] :> size ],
-  { Round[ 20 baseFontSizes[][ "Printout", "DisplayFormula" ] / mathFontSizeAnchor[] ] }
+  { Round[ 20 baseFontSizes[ "StubSheet.nb" ][ "Printout", "DisplayFormula" ] / mathFontSizeAnchor[ "StubSheet.nb" ] ] }
 ]
 
 VerificationTest[ (* the width is a symmetric Scaled inset plus each style's own indent *)

@@ -94,12 +94,13 @@ viewStyleSheet[ parent_, settings_Association ] :=
     StyleDefinitions -> "PrivateStylesheetFormatting.nb" ]
 
 viewStyleCells[ parent_, settings_Association ] :=
-  mergedStyleCells @ Join[
-    fontSizeCells[ Complement[ styleFontSizeNames[], $mathStyleNames ],
-      Lookup[ settings, "DocumentFontSize", Automatic ], documentFontSizeAnchor[] ],
-    fontSizeCells[ $mathStyleNames,
-      Lookup[ settings, "MathFontSize", Automatic ], mathFontSizeAnchor[] ],
-    contentWidthCells[ parent, Lookup[ settings, "ContentWidth", Automatic ] ] ]
+  With[ { sizes = baseFontSizes[ parent ] },
+    mergedStyleCells @ Join[
+      fontSizeCells[ sizes, Complement[ styleFontSizeNames[], $mathStyleNames ],
+        Lookup[ settings, "DocumentFontSize", Automatic ], documentFontSizeAnchor[ parent ] ],
+      fontSizeCells[ sizes, $mathStyleNames,
+        Lookup[ settings, "MathFontSize", Automatic ], mathFontSizeAnchor[ parent ] ],
+      contentWidthCells[ parent, Lookup[ settings, "ContentWidth", Automatic ] ] ] ]
 
 (* Of two cells carrying the same StyleData head the front end keeps the first and discards the
    second outright — it does not merge their options. Nearly every style the size control writes
@@ -109,19 +110,18 @@ mergedStyleCells[ cells_List ] :=
   KeyValueMap[ { style, options } |-> Cell[ style, Sequence @@ options ],
     Merge[ Map[ First[ # ] -> Rest[ List @@ # ] &, cells ], Catenate ] ]
 
-fontSizeCells[ _, Automatic, _ ] :=
+fontSizeCells[ _, _, Automatic, _ ] :=
   { }
 
 (* Both the bare style and its "Printout" variant must be written: LaTeXBase gives every prose
    and math style an explicit printout size, and the environment-specific definition wins across
    the whole chain, so a bare override alone never reaches the PDF. *)
-fontSizeCells[ styles_List, size_, anchor_ ] :=
-  With[ { sizes = baseFontSizes[] },
-    Join[
-      KeyValueMap[ { style, base } |-> Cell[ StyleData[ style ], FontSize -> Round[ base size / anchor ] ],
-        KeyTake[ sizes[ "Screen" ], styles ] ],
-      KeyValueMap[ { style, base } |-> Cell[ StyleData[ style, "Printout" ], FontSize -> Round[ base size / anchor ] ],
-        KeyTake[ sizes[ "Printout" ], styles ] ] ] ]
+fontSizeCells[ sizes_Association, styles_List, size_, anchor_ ] :=
+  Join[
+    KeyValueMap[ { style, base } |-> Cell[ StyleData[ style ], FontSize -> Round[ base size / anchor ] ],
+      KeyTake[ sizes[ "Screen" ], styles ] ],
+    KeyValueMap[ { style, base } |-> Cell[ StyleData[ style, "Printout" ], FontSize -> Round[ base size / anchor ] ],
+      KeyTake[ sizes[ "Printout" ], styles ] ] ]
 
 contentWidthCells[ _, Automatic ] :=
   { }
@@ -169,32 +169,49 @@ baseStyleCells[] := baseStyleCells[] =
   First @ Get @ FileNameJoin[ { PacletObject[ "WolframInstitute/MathNotebook" ][ "Location" ],
     "FrontEnd", "StyleSheets", "MathNotebook", "LaTeXBase.nb" } ]
 
-(* The size hierarchy is read out of the paclet's own base stylesheet rather than restated here,
-   so regenerating the stylesheets keeps the controls in step. *)
-baseFontSizes[] := baseFontSizes[] =
-  With[ { cells = baseStyleCells[] },
-    <|
-      "Screen" -> DeleteMissing @ Association @ Cases[ cells,
-        Cell[ StyleData[ style_String ] | StyleData[ style_String, StyleDefinitions -> _ ], options___ ] :>
-          ( style -> Lookup[ { options }, FontSize ] ), { 1 } ],
-      "Printout" -> DeleteMissing @ Association @ Cases[ cells,
-        Cell[ StyleData[ style_String, "Printout" ], options___ ] :>
-          ( style -> Lookup[ { options }, FontSize ] ), { 1 } ]
-    |> ]
+(* The base sizes are read out of the document's own stylesheet chain, for the same reason the
+   margins are: it is the only channel that resolves a style whose declaration carries no bare
+   FontSize of its own. LaTeXBase declares the theorem environments, Proof and Reference as
+   StyleData[ name, StyleDefinitions -> StyleData[ "Text" ] ] with a "Printout" size but no screen
+   size, and does not declare the list styles at all — so extracting the sizes from the file left
+   those styles with no screen override and they never changed size. { style, "Printout" } in the
+   path resolves the print environment through the chain; StyleData[ style, "Printout" ] does not,
+   it silently returns the screen value. Non-numeric results are dropped: Default.nb gives the
+   equation number a symbolic "-1 + Inherited". *)
+baseFontSizes[ parent_ ] := baseFontSizes[ parent ] =
+  With[ { document = CreateDocument[ { }, Visible -> False, StyleDefinitions -> parent ] },
+    With[ { read = environment |-> Select[
+          AssociationMap[
+            CurrentValue[ document, { StyleDefinitions, environment[ # ], FontSize } ] &,
+            styleFontSizeNames[] ],
+          NumericQ ] },
+      With[ { sizes = <| "Screen" -> read[ # & ], "Printout" -> read[ { #, "Printout" } & ] |> },
+        NotebookClose[ document ];
+        sizes ] ] ]
 
-styleFontSizeNames[] :=
-  Union @@ Map[ Keys, Values @ baseFontSizes[] ]
+(* The styles to scale are those LaTeXBase gives an explicit FontSize in either environment, plus
+   the list styles it leaves to Default.nb. Deriving the list from the file rather than from the
+   chain is deliberate: it keeps the character styles — Hyperlink, Citation, URL — out, so an
+   inline citation goes on inheriting the size of the cell it sits in instead of being pinned. *)
+styleFontSizeNames[] := styleFontSizeNames[] =
+  Join[
+    Union @ Cases[ baseStyleCells[],
+      Cell[ StyleData[ style_String ] | StyleData[ style_String, StyleDefinitions -> _ ] |
+          StyleData[ style_String, "Printout" ], options___ ] /;
+        ! FreeQ[ { options }, FontSize ] :> style, { 1 } ],
+    { "Item", "ItemNumbered", "ItemParagraph" } ]
 
-documentFontSizeAnchor[] :=
-  baseFontSizes[][ "Screen", "Text" ]
+documentFontSizeAnchor[ parent_ ] :=
+  baseFontSizes[ parent ][ "Screen", "Text" ]
 
-mathFontSizeAnchor[] :=
-  baseFontSizes[][ "Screen", "DisplayFormula" ]
+mathFontSizeAnchor[ parent_ ] :=
+  baseFontSizes[ parent ][ "Screen", "DisplayFormula" ]
 
 (* MaTeX cells are images rendered at a fixed size, so they cannot inherit a style change.
    The TeX survives in TaggingRules, so they are re-rendered at the scaled size instead. *)
 maTeXFontSize[ notebook_NotebookObject ] :=
-  Round[ $maTeXBaseFontSize Lookup[ viewSettings[ notebook ], "MathFontSize", mathFontSizeAnchor[] ] / mathFontSizeAnchor[] ]
+  With[ { anchor = mathFontSizeAnchor @ parentStyleSheet[ notebook ] },
+    Round[ $maTeXBaseFontSize Lookup[ viewSettings[ notebook ], "MathFontSize", anchor ] / anchor ] ]
 
 rescaleMaTeXCells[ notebook_NotebookObject ] :=
   With[ { cells = Select[ Cells[ notebook ], maTeXCellQ @ NotebookRead[ # ] & ] },

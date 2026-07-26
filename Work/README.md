@@ -21,11 +21,12 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 
 ## Active
 
-- [Palette Usability & Document View Controls](Active/PaletteUsability.md) — next: **T6**, feedback round — Pavel writes with it on a real document
+- [Palette Usability & Document View Controls](Active/PaletteUsability.md) — next: **T6**, feedback round open — six points in, sizes fixed, awaiting Pavel's call on absolute column width and the palette's light/dark
 
 ## Backlog
 
-- [View and Reference Defects](Backlog/ViewAndReferenceDefects.md) — the text-size slider misses the list, reference and theorem styles; a `Reference` cell shows no label
+- [View and Reference Defects](Backlog/ViewAndReferenceDefects.md) — T1 done (sizes now reach every prose style); next: **T2**, render the `Reference` label from the cell's tag, then theorem citations by number
+- [Conversion and MaTeX UX](Backlog/ConversionUX.md) — four near-identical conversion labels; what a MaTeX conversion should leave behind; whether per-selection LaTeX conversion survives whole-document export
 - [Update From Cloud Button](Backlog/SelfUpdate.md) — palette button that installs a newer paclet from its cloud URL
 - [Adopt WolframInstituteTools Practices](Backlog/WolframInstituteToolsPractices.md) — real documentation pages for the exported symbols, and their notebook tooling
 - [LaTeX Paper Import](Backlog/LaTeXPaperImport.md) — round-trip a real paper; figures carry their generating code
