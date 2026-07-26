@@ -98,9 +98,28 @@ displayInk[ text_String ] := <|
     First @ convertLaTeXNotebook @ Notebook[ { Cell[ text, "Text" ] } ], Cell[ _, "DisplayFormula", ___ ] ]
 |>
 
+(* T3: a letter that the kernel reads as a constant is a *display* defect and nothing else — the
+   exporter reads the stored "SourceTeX", so a cell showing Euler's number still round-trips
+   byte-identically. What has to be measured is the glyph. Every letter carries ink, and E and I
+   carry exactly the ink of the italic letters rather than that of the two constants. *)
+
+$letters = Join[ CharacterRange[ "a", "z" ], CharacterRange[ "A", "Z" ] ];
+
+mathInk[ boxes_ ] :=
+  inkArea @ Cell[ BoxData[ FormBox[ boxes, TraditionalForm ] ], "Text" ]
+
+letterInk[ ] := <|
+  "Minimum" -> Min @ Map[ mathInk @ texToBoxes[ # ] &, $letters ],
+  "E" -> mathInk @ texToBoxes[ "E" ], "ItalicE" -> mathInk @ StyleBox[ "E", "TI" ],
+  "ExponentialE" -> mathInk[ "\[ExponentialE]" ],
+  "I" -> mathInk @ texToBoxes[ "I" ], "ItalicI" -> mathInk @ StyleBox[ "I", "TI" ],
+  "ImaginaryI" -> mathInk[ "\[ImaginaryI]" ]
+|>
+
 $measured = UsingFrontEnd @ <|
   "InlineInk" -> AssociationMap[ inlineInk, { "A pair $(V, E)$ here.", "A list $x_1, x_2$ here." } ],
   "DisplayInk" -> displayInk[ $displayParagraph ],
+  "LetterInk" -> letterInk[ ],
   "Sheets" -> AssociationMap[ viewMeasurements @ Get @ FileNameJoin[ { $sheetDirectory, # } ] &, $templates ],
   "Default" -> viewMeasurements[ "Default.nb" ],
   "SheetLoaded" -> AssociationMap[
@@ -192,4 +211,18 @@ VerificationTest[
 VerificationTest[
   $measured[ "DisplayInk", "Starred" ] < $measured[ "DisplayInk", "Unstarred" ],
   True
+]
+
+(* T3: no letter of the alphabet renders blank ... *)
+VerificationTest[
+  $measured[ "LetterInk", "Minimum" ] > 0,
+  True
+]
+
+(* ... and the two the kernel has opinions about draw the italic letter, not the constant. *)
+VerificationTest[
+  With[ { ink = $measured[ "LetterInk" ] },
+    { ink[ "E" ] === ink[ "ItalicE" ], ink[ "E" ] =!= ink[ "ExponentialE" ],
+      ink[ "I" ] === ink[ "ItalicI" ], ink[ "I" ] =!= ink[ "ImaginaryI" ] } ],
+  { True, True, True, True }
 ]

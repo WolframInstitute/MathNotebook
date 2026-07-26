@@ -63,7 +63,8 @@ mapCells[ cellTransform_, cell_Cell ] :=
 texToBoxes[ tex_String ] :=
   Replace[ Quiet @ ToExpression[ tex, TeXForm, HoldComplete ],
     { HoldComplete[ $Failed ] :> presentationBoxes[ tex ],
-      HoldComplete[ expression_ ] :> MakeBoxes[ expression, TraditionalForm ],
+      held : HoldComplete[ expression_ ] /; FreeQ[ held, HoldPattern[ E ] | HoldPattern[ I ] ] :>
+        MakeBoxes[ expression, TraditionalForm ],
       _ :> presentationBoxes[ tex ] } ]
 
 presentationBoxes[ tex_String ] :=

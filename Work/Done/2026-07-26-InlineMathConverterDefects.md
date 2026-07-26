@@ -19,6 +19,8 @@ They should be fixed before that item's T2, which builds on this layer.
 A failing span is left in the cell as literal `$…$`, silently.
 On the specimen paper this is every unconverted inline span — 35 of 238, 15% — and they are the ones a reader notices, since `$(V, E)$`-style tuples are what mathematics is written in.
 
+*(T2, measured: recognised all along as a whole cell — the real defect is that a display environment sitting inside a paragraph is never split out, starred or not.)*
+
 **`equation*` is not recognised.**
 As an entire cell it converts to nothing at all, while `equation` becomes `DisplayFormulaNumbered`.
 The tutorial says the starred forms convert and stay unnumbered, so the documentation describes behaviour that does not exist.
@@ -29,6 +31,7 @@ Both display equations in the specimen paper are starred, so none of its display
 `texToBoxes["E"]` and `texToBoxes["I"]` return an empty box, because `E` is 2.718… and `I` is the imaginary unit.
 The specimen paper writes `$E$` for its hyperedge set and it renders as a blank.
 `V`, `D`, `N`, `C`, `K` are unaffected.
+*(T3, measured: not an empty box — `"\[ExponentialE]"` and `"\[ImaginaryI]"`, private-use characters that a terminal prints as nothing. The cell draws the constant, not a blank.)*
 This one is invisible to a round-trip diff — the exporter reads the stored `"SourceTeX"`, not the boxes, so the cell exports perfectly while displaying nothing.
 
 Done when all three convert correctly, each has a test, and the tutorial's claim about starred environments is either true or reworded.
@@ -47,12 +50,13 @@ Done when all three convert correctly, each has a test, and the tutorial's claim
 
 ## Tasks
 
-- [ ] T3 — Protected single letters; sweep the alphabet and assert every one displays itself.
+*All tasks done — the item is complete.*
 
 ### Done
 
 - [x] T1 — Comma-bearing fragments; test with tuples, subscripted lists, and a comma inside `\{…\}`. *(Session 1)*
 - [x] T2 — Starred environments, `equation*` and `align*`; reconcile the tutorial sentence with whatever lands. *(Session 2)*
+- [x] T3 — Protected single letters; sweep the alphabet and assert every one displays itself. *(Session 3)*
 
 ## Progress
 
@@ -131,6 +135,36 @@ Done when all three convert correctly, each has a test, and the tutorial's claim
   - `Shortest` is what makes an unanchored environment rule safe. Two `equation*` blocks in one paragraph would otherwise match as one span running from the first `\begin` to the last `\end`, swallowing the prose between them.
   - Do not `git checkout <file>` to undo a scripted "reintroduce the defect" patch — it reverts the session's real work in the same stroke. Patch and un-patch the same way, or stash.
 - **Next:** T3 — protected single letters (`E`, `I`), sweeping the alphabet with the ink measurement.
+
+### Session 3 — 2026-07-26 — T3
+
+- **Prompt:** `/next-session` continued — keep working the items.
+- **Did:** Fixed the third defect and closed the item.
+
+  **It was never an empty box.**
+  `texToBoxes["E"]` returned `"\[ExponentialE]"` and `texToBoxes["I"]` returned `"\[ImaginaryI]"` — private-use characters that a terminal prints as nothing, which is how T1 came to read them as blanks.
+  On the page they draw Euler's number and the imaginary unit: measured 56 and 42 units of ink against 61 and 33 for the italic letters, so the cell was never blank, it was *the wrong glyph*.
+  That is worse than a blank, not better — a hyperedge set silently becoming a constant is not something a reader spots.
+
+  **The sweep says exactly two letters.**
+  All 52 of `a`–`z`, `A`–`Z` measured; only `E` and `I` are affected, so the Spec's "and anything else `Protected`" has no other members to cover.
+  Beyond bare letters the same substitution reached `E_p`, `\mathcal{E}`, `\mathbb{E}` (the last two also collapsing to each other) and `E = mc^2`.
+
+  **The fix is T1's shape again.**
+  A parse that turned a TeX letter into one of the kernel's two constants has misread the mathematics, so it is treated exactly as a `$Failed` is and `presentationBoxes` answers instead — which has every one of these right.
+  One line in `texToBoxes`.
+  `E = mc^2` improves twice over: it keeps its `E`, and it stops reordering to `c^2 m`, because the presentational path preserves source order where the expression path sorts a `Times`.
+
+  **On the specimen paper:** its four `$E$` spans now carry `StyleBox["E", "TI"]`, no `\[ExponentialE]` or `\[ImaginaryI]` survives anywhere in the converted notebook, and the 105-paragraph round trip is still exact.
+
+  **Tests.** Four in `Tests/Conversion.wlt` — the 52-letter sweep, the two boxes literally, the letter surviving inside `E_p`/`\mathcal{E}`/`\mathbb{E}`/`E \in \mathcal{H}`, and a guard that `\pi` and `\infty` still come through the expression path — and two in `Tests/FrontEnd.wlt`.
+  All 111 tests pass.
+  Reintroducing the defect fails 3 of the 4 and 1 of the 2; the two that stay green are the ones asserting unchanged behaviour (`\pi`) and the literal requirement wording ("no letter renders blank"), which was never what was wrong.
+- **Learned:**
+  - **`I` cannot be matched as `I`.** In a pattern, `E | I` is `Alternatives[E, Complex[0, 1]]`, because `I` evaluates and `E` does not. The `E` half then works, the `I` half silently never matches, and the sweep is what caught it — the first draft of this fix repaired `E` and left `I` exactly as broken as before. Both have to be written `HoldPattern[E] | HoldPattern[I]`.
+  - A private-use character (`\[ExponentialE]` is U+F74D) prints as nothing in a terminal, so `Print` and `InputForm` will report a wrong glyph as an empty one. `ToCharacterCode` is the only honest reading, and this cost T1 a wrong bug report that survived two sessions.
+  - Ink area distinguishes glyphs, not just presence: italic `E` is 61 and `\[ExponentialE]` is 56, so the display assertion can be an equality against the intended glyph rather than a "greater than zero".
+- **Next:** none — the item is complete and moves to `Done/`. `LaTeXPaperImport` T2 is now unblocked.
 
 ## Decisions
 

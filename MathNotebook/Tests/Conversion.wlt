@@ -59,6 +59,40 @@ VerificationTest[ (* the fallback must not disturb align's "&" columns or cases'
   { { 2, 2 }, { 2, 2 } }
 ]
 
+(* Inline Math Converter Defects T3. The expression path reads a TeX letter as whatever the kernel
+   thinks that letter means: "E" came back as \[ExponentialE] and "I" as \[ImaginaryI], so the
+   specimen paper's hyperedge set E rendered as Euler's number — and, being a substitution rather
+   than a failure, silently. Sweeping the alphabet, those two are the only letters affected. The
+   presentational path has them right, so a parse that produced one of the two constants is treated
+   as a misread of the mathematics, exactly as a $Failed is. Note that "I" evaluates to
+   Complex[0, 1]: a bare "E | I" pattern catches E and silently misses I, so both are matched as
+   HoldPattern. *)
+
+$letters = Join[ CharacterRange[ "a", "z" ], CharacterRange[ "A", "Z" ] ]
+
+renderedLetter[ tex_String ] :=
+  texToBoxes[ tex ] //. StyleBox[ boxes_, ___ ] :> boxes
+
+VerificationTest[ (* every letter of the alphabet renders as itself, whatever it means to the kernel *)
+  Select[ $letters, renderedLetter[ # ] =!= # & ],
+  { }
+]
+
+VerificationTest[ (* what the two used to be, and what they are now *)
+  { texToBoxes[ "E" ], texToBoxes[ "I" ] },
+  { StyleBox[ "E", "TI" ], StyleBox[ "I", "TI" ] }
+]
+
+VerificationTest[ (* the letter also survives inside a larger fragment, not only alone *)
+  Map[ renderedLetter, { "E_p", "\\mathcal{E}", "\\mathbb{E}", "E \\in \\mathcal{H}" } ],
+  { SubscriptBox[ "E", "p" ], "E", "E", RowBox[ { "E", "\[Element]", "H" } ] }
+]
+
+VerificationTest[ (* a constant the kernel is right about still comes through the expression path *)
+  { texToBoxes[ "\\pi" ], texToBoxes[ "\\infty" ] },
+  { "\[Pi]", "\[Infinity]" }
+]
+
 VerificationTest[
   boxesToTeX[ SuperscriptBox[ "x", "2" ] ],
   "x^2"
