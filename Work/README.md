@@ -21,7 +21,7 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 
 ## Active
 
-- [View and Reference Defects](Active/ViewAndReferenceDefects.md) — T3 done (a citation to a numbered environment reads `Theorem 1.1` and renumbers itself); next: **T4**, tests for all of it, then Pavel re-checks on the document that produced the report
+- [View and Reference Defects](Active/ViewAndReferenceDefects.md) — T4 done (front-end tests measure resolved sizes and tag-resolved styles, each checked by reintroducing the defect); next: **T5**, the tutorial sentence — and Pavel’s re-check on the original document is still open
 
 ## Backlog
 

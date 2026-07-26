@@ -68,6 +68,7 @@ Paclet for writing math papers in Wolfram notebooks: referencing palette, LaTeX 
 
 ## Build & test
 
-- Tests: `./run_tests.wls` or `TestReport` over `MathNotebook/Tests/*.wlt` after `PacletDirectoryLoad`.
+- Tests: `wolframscript -file run_tests.wls`, or `TestReport` over `MathNotebook/Tests/*.wlt` after `PacletDirectoryLoad`.
+- Every `.wlt` but one is kernel-only and stubs its chain reads. `Tests/FrontEnd.wlt` is the exception and exists because unit tests passed while both `ViewAndReferenceDefects` bugs shipped: it measures resolved sizes and tag-resolved styles through a real front end. It does all its measuring in a single `UsingFrontEnd` up front so the `VerificationTest`s stay pure comparisons — otherwise one front-end problem fails every test with a message storm. When changing `View.wl` or `Referencing.wl`, check a test still bites by **reintroducing the defect**, not by watching it pass; the kernel-only files stay green through a broken `citationTargetStyle`.
 - Build/install: temp copy → `CreatePacletArchive` → `PacletInstall[..., ForceVersionInstall -> True]` (build-paclet skill).
 - After first install, front end menus need a restart or ``FrontEndExecute[FrontEnd`ResetMenusPacket[{Automatic, Automatic}]]``.

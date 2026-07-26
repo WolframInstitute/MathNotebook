@@ -52,7 +52,6 @@ Done when a text-size change moves every prose style on screen and in print on a
 
 ## Tasks
 
-- [ ] T4 — Tests for all of it, then Pavel re-checks on the document that produced the report.
 - [ ] T5 — Add the sentence the tutorial's *Reading and Writing Comfortably* section has been missing since `PaletteUsability` T5 deliberately withheld it: the text slider now reaches the theorem, proof, reference and list styles, which T1 above made true.
 
 ### Done
@@ -60,6 +59,7 @@ Done when a text-size change moves every prose style on screen and in print on a
 - [x] T1 — Rebuild the font-size setters on resolved per-style sizes read from the document's own chain; assert every prose style moves, screen and print, on all five sheets. (landed during `PaletteUsability` T6's feedback round, 2026-07-26)
 - [x] T2 — Render the `Reference` label from the cell's `CellTags` at the beginning of the cell; make `InsertCitation` and the bibliography entry agree. *(Session 5)*
 - [x] T3 — Investigate whether a target theorem's resolved counter value is readable at insert time, then make a citation to a numbered environment display `Theorem 1.1` rather than its tag. *(Session 6)*
+- [x] T4 — Tests for all of it, then Pavel re-checks on the document that produced the report. *(Session 7 — tests landed; **Pavel's re-check is still outstanding**, see the Spec's Done-when)*
 
 ## Progress
 
@@ -110,6 +110,19 @@ Done when a text-size change moves every prose style on screen and in print on a
   - **`Rasterize` on a single cell strips document context** — every counter in it reads 0, tagged ones read `XXX`. A counter can only be seen by rendering the whole notebook (`Export[file, notebookObject]`).
   - `NotebookWrite` of a whole `Cell[TextData[...]]` splits a `ButtonBox[RowBox[...]]` into one button per run; writing the bare `ButtonBox` at a selection point, which is what `InsertCitation` does, leaves it intact. Both render identically, but only the inline path round-trips.
 - **Next:** T4 — tests for all of it, then Pavel re-checks on the document that produced the report.
+
+### Session 7 — 2026-07-26 — T4
+
+- **Prompt:** continue autonomously through the remaining tasks, committing after each.
+- **Did:** New `Tests/FrontEnd.wlt`, 8 tests, deliberately the opposite of the rest of the suite: everything is measured through a real front end and a real chain, because both defects in this item passed their unit tests and still shipped broken — "the call wrote an override cell" is not "the style changed size".
+  It measures each of the four templates plus a plain `Default.nb` document: asserts the sheet actually loaded (Title 26, not Default's 45) before trusting anything, that `Theorem`, `Proof`, `Reference`, `Item` and `ItemNumbered` are among the styles the control scales, that `Text` lands exactly on the requested 20, that **every** prose style's resolved size grew in both `"Screen"` and `"Printout"`, and that `ResetDocumentView` restores every base size exactly.
+  For T3 it asserts `citationTargetStyle` resolves `Section`/`Theorem`/`Definition`/`Reference`/`Text`/`None` from tags on a live notebook, and that exactly the numbered ones cite with a `CounterBox`.
+  Suite is 81.
+- **Learned:**
+  - The tests were checked by **reintroducing each defect** rather than by watching them pass. Dropping the list styles from `styleFontSizeNames[]` fails 2 of the 8 (and 1 in `View.wlt`); breaking `citationTargetStyle` to always answer `None` fails 2 — and `Referencing.wlt` **stays green**, which is precisely the hole this file fills: every kernel-only assertion about citations is satisfied by a target-style resolver that does not work.
+  - A front-end test file must do all its measuring in one `UsingFrontEnd` up front and leave the `VerificationTest`s as pure comparisons; otherwise a front-end problem surfaces as a message storm across every test instead of one failed assertion.
+  - The embedded-parent trap is tolerable here: while a view override is installed, styles the override does *not* write fall through to `Default.nb`, but every style asserted is one it writes. Worth stating in the file, since the next reader will otherwise "fix" it.
+- **Next:** T5 — the tutorial sentence. Pavel's re-check on the original document remains open and is not something a session can close.
 
 ## Decisions
 
