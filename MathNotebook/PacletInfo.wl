@@ -7,7 +7,7 @@ PacletObject[
     "Creator" -> "Pavel Hajek",
     "License" -> "MIT",
     "PublisherID" -> "WolframInstitute",
-    "Version" -> "0.1.7",
+    "Version" -> "0.1.8",
     "WolframVersion" -> "14.3+",
     "PrimaryContext" -> "WolframInstitute`MathNotebook`",
     "Extensions" -> {
@@ -34,7 +34,6 @@ PacletObject[
           "WolframInstitute`MathNotebook`OpenMaTeXPreferences",
           "WolframInstitute`MathNotebook`SetDocumentFontSize",
           "WolframInstitute`MathNotebook`SetMathFontSize",
-          "WolframInstitute`MathNotebook`SetContentWidth",
           "WolframInstitute`MathNotebook`ResetDocumentView",
           "WolframInstitute`MathNotebook`InstallLaTeXFonts",
           "WolframInstitute`MathNotebook`OpenTutorial"

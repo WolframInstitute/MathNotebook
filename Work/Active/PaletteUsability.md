@@ -13,14 +13,17 @@ The palette is a flat column of seventeen buttons in six labelled groups — eve
 This item turns it into a comfortable writing surface: groups that fold away, and live controls for the three typographic decisions an author actually revisits while writing — how big the text is, how big the mathematics is, and how wide the column of content is.
 The last one is the reason papers are readable on a wide screen at all, and it may already exist as a front end option; if it does, the palette should expose it and the tutorial should teach it rather than reinventing it.
 
-Done when the palette folds, the three controls work across all four stylesheets and survive save/reopen, the tutorial documents them, and Pavel has used it on a real document and signed off.
+Done when the palette folds, the controls work across all four stylesheets and survive save/reopen, the tutorial documents them, and Pavel has used it on a real document and signed off.
+
+**Amended 2026-07-26 (session 8):** the centered content column is **withdrawn**, on Pavel's call after driving it — not reworked, removed.
+The item ships two controls, prose size and math size, plus the fold and the reset.
 
 ### Requirements
 
 - **Foldable groups.** Each labelled group (Referencing, Environments, Stylesheet, LaTeX ⇄ math, MaTeX, Setup) opens and closes independently. Open/closed state persists across front end sessions — palettes are `Saveable -> False`, so state belongs in `CurrentValue[$FrontEnd, {TaggingRules, "MathNotebook", ...}]`, not in the palette file.
 - **Document font size.** A slider setting the size of prose for the whole document, not one cell — and it must be a real font size that survives PDF export, distinct from `Magnification`, which only zooms the screen. Offer both if both are wanted, but never conflate them in one control.
 - **Math font size.** The same for mathematics, independently of prose: display equations, inline math, and the equation-number labels.
-- **Centered content column.** Content in a fixed-width column centered in the window instead of stretching to the full width, with a slider for the width. Investigate native support before implementing anything.
+- ~~**Centered content column.** Content in a fixed-width column centered in the window instead of stretching to the full width, with a slider for the width. Investigate native support before implementing anything.~~ **Withdrawn in session 8** — built as a fraction of the page (T4), rebuilt as an absolute centered measure (session 7), then dropped entirely at Pavel's request.
 - **Reset.** Any control can be returned to the stylesheet default — a document must be able to leave no trace of these overrides.
 - **Feedback round.** Pavel drives the palette on a real paper and the result is revised against that, per the `revise` protocol.
 
@@ -31,7 +34,7 @@ Three exported functions, each acting on a notebook and settable from the palett
 ```
 SetDocumentFontSize[ notebook, size ]
 SetMathFontSize[ notebook, size ]
-SetContentWidth[ notebook, width ]
+SetContentWidth[ notebook, width ]   (* withdrawn in session 8 *)
 ```
 
 Mechanisms to evaluate in T1, cheapest first:
@@ -206,6 +209,28 @@ The style names to touch are already partitioned in `Scripts/BuildStyleSheets.wl
   What no script can check, and what his own recorded decision requires before this control is done: that the column is centered and stays centered as a real window is resized, since a headless front end resolves screen `Scaled` against a constant 706 rather than the window.
   Worth the same pass, still unverified from T2 and T3: whether the fold refits live on a click, whether the sliders follow a document switch, and whether the release-time setter fires.
 
+### Session 8 — 2026-07-26 — T6 (feedback round still open)
+
+- **Prompt:** `/next-session` on this item, then two mid-session messages from Pavel: first "keep the column width relative … obviously the absolute does not work and the relative is more natural", then "just remove that functionality whatsoever".
+- **Did:** Removed the content-width control outright.
+  The session opened on the interactive verification the last two left hanging; Pavel's first message redirected it to reverting the width to a fraction, and his second withdrew the control entirely, which is what shipped.
+  Gone from `View.wl`: the exported `SetContentWidth`, `contentWidthCells`, `marginCells`, `styleOffsets`, `baseCellMargins`, `printableWidth`, `printMagnification`, `columnStyleNames`, `$fullContentWidth`, and the `printable` argument that `viewStyleSheet` and `viewStyleCells` carried only for it.
+  Gone from the palette: the *Column width* slider, and `viewSlider`'s `readoutDefault` parameter, which existed only so an unset document could read `Full`.
+  Gone from the tutorial, the usage strings and `PacletInfo.wl`'s symbol list.
+  `ResetDocumentView` keeps clearing the old `"ContentWidth"` tagging rule through a new `$obsoleteViewSettingKeys`, so a document written with 0.1.5–0.1.7 still resets to no trace — verified on a document seeded with a stored width of 300, whose tagging rules came back `Inherited`.
+  Suite is 47 tests (was 54): the six width tests are gone, replaced by one asserting a `"ContentWidth"` setting now generates nothing, and the `columnStyleNames` test dropped as dead — its coverage of the list styles is already carried by the text-size test, which intersects the real name list against the stub.
+  Verified end to end on an `AMSArticle` document: `Text` 13 → 20, `Theorem` 13 → 20, `Item` 15 → 23, `Title` 26 → 40 and the `"Printout"` variant 10 → 15 after `SetDocumentFontSize[ document, 20 ]`; `DisplayFormula` and `DisplayFormulaEquationNumber` 13 → 26 after `SetMathFontSize[ document, 26 ]` with `Text` left at 20; every size back to base after `ResetDocumentView`, the private sheet unwrapped and the tagging rules `Inherited`.
+  No `CellMargins` appears among the 50 generated override cells, and the document's `Text` and `Section` margins read back exactly at base after a reset.
+  Palette, screenshot and tutorial rebuilt; 0.1.8 built and installed, and it is the only version present.
+- **Learned:**
+  - **Reading `CellMargins` through an installed private sheet answers `PrivateStylesheetFormatting.nb`'s own geometry** — `{ { 7, 3 }, { 4, 4 } }` for both `Text` and `Section`, where the document's real values are `{ { 66, 10 }, { 4, 4 } }` and `{ { 40, 25 }, { 10, 28 } }` and `Default.nb`'s are `{ { 66, 10 }, { 7, 8 } }` and `{ { 27, 3 }, { 8, 18 } }`.
+    This is a third face of the embedded-parent trap, and it briefly read as the removal having changed the margins.
+    A structural check on the generated cells settles such a question directly, and needs no front end.
+  - `FreeQ[ CurrentValue[ nb, StyleDefinitions ], CellMargins ]` cannot show that a control writes no margins: the private sheet embeds the whole parent, which is full of them. Test `Rest @ Rest @ First @ ...`, the cells after the parent reference and the marker.
+  - Removing the width left `mergedStyleCells` with no overlapping styles to merge — prose and mathematics are disjoint. It stays, because the two lists are generated independently and it is what makes that safe; the comment now says so instead of naming the width.
+- **Next:** T6 stays open on Pavel — the palette is now the fold, a text-size slider, a math-size slider and a reset, and it needs his sign-off on that.
+  Still unverified interactively from T2 and T3, and unchanged by this session: whether the fold refits live on a click, whether the sliders follow a document switch, and whether the release-time setter fires.
+
 ## Decisions
 
 | Date | Decision | Rationale |
@@ -234,4 +259,6 @@ The style names to touch are already partitioned in `Scripts/BuildStyleSheets.wl
 | 2026-07-26 | The per-style offsets are anchored on `Text`, superseding T4's anchor on the smallest base margin | anchoring on the smallest margin centers the *hull*, leaving the body text 11.5 pt right of centre on a 340 pt column; anchoring on `Text` centers the body and lets section numbers and dingbats hang into the margin as they do in LaTeX, at the cost of a clamp so the widest hang cannot fall off the paper |
 | 2026-07-26 | Paper geometry is read only after restoring the bare parent sheet | read through the private sheet installed by an earlier call, `PaperSize` answers `Automatic` and the printed margins come out of a symbolic width |
 | 2026-07-26 | The centering `Dynamic` must be confirmed interactively before the control is considered done | T1 measured a window-driven `Dynamic` collapsing the printed measure to a third, and a headless front end never lays out to a window, so this is the one part of the design that cannot be verified in a script |
+| 2026-07-26 | The content-width control is **withdrawn**, superseding every earlier decision about it — no fraction, no absolute measure, no slider, no exported function | Pavel drove the absolute column shipped in 0.1.7, asked first for the relative one back, then for the functionality removed outright. The Spec requirement is struck rather than reworked; the front end knowledge it produced stays in `CLAUDE.md`, marked as background rather than as shipped code |
+| 2026-07-26 | `ResetDocumentView` goes on clearing the withdrawn `"ContentWidth"` key | documents written with 0.1.5–0.1.7 carry it, and reset promises to leave no trace; nothing else reads the key, so one line buys a clean upgrade path |
 | 2026-07-26 | Point 4, the palette rendering dark, is **not a defect** — no code change | Diagnosed: `CurrentValue[ $FrontEnd, LightDark ]` is `Automatic` and macOS is in Dark mode, so the front end resolves dark and the palette, which sets no `LightDark` of its own, inherits it — the same behaviour as every built-in palette. The document was the outlier, carrying an explicit `"Light"`. The fix is the global setting `CurrentValue[ $FrontEnd, LightDark ] = "Light"`, left to Pavel. Making the palette follow the *focused document* was rejected: `LightDark` is not a dynamic notebook option, so it would mean restyling the palette's contents by hand and would make it behave unlike every other palette |

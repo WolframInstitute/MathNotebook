@@ -2,19 +2,12 @@ Package["WolframInstitute`MathNotebook`"]
 
 PackageExport[SetDocumentFontSize]
 PackageExport[SetMathFontSize]
-PackageExport[SetContentWidth]
 PackageExport[ResetDocumentView]
 
 PackageScope["$mathStyleNames"]
 PackageScope["$viewSettingKeys"]
 PackageScope["baseStyleCells"]
 PackageScope["baseFontSizes"]
-PackageScope["baseCellMargins"]
-PackageScope["columnStyleNames"]
-PackageScope["contentWidthCells"]
-PackageScope["printMagnification"]
-PackageScope["printableWidth"]
-PackageScope["$fullContentWidth"]
 PackageScope["documentFontSizeAnchor"]
 PackageScope["mathFontSizeAnchor"]
 PackageScope["viewSettings"]
@@ -39,31 +32,20 @@ SetMathFontSize[ notebook_NotebookObject, size : _?NumericQ | Automatic ] :=
   ( applyViewSettings[ notebook, <| "MathFontSize" -> size |> ];
     rescaleMaTeXCells[ notebook ] )
 
-SetContentWidth[ width : _?NumericQ | Automatic | Full ] :=
-  SetContentWidth[ InputNotebook[], width ]
-
-(* The width is an absolute measure in printer's points, the same number on paper as on screen, and
-   the column is centered in the page. Full \[LongDash] which is where the palette's slider tops out, and any
-   width at or beyond it \[LongDash] means the unconstrained page, which is what leaving the setting out
-   already does, so it is stored as no setting at all rather than as a value of its own. *)
-SetContentWidth[ notebook_NotebookObject, width : _?NumericQ | Automatic | Full ] :=
-  applyViewSettings[ notebook,
-    <| "ContentWidth" -> Replace[ width,
-      { Full -> Automatic, size_?NumericQ :> If[ size >= $fullContentWidth, Automatic, Round[ size ] ] } ] |> ]
-
 ResetDocumentView[] :=
   ResetDocumentView[ InputNotebook[] ]
 
 ResetDocumentView[ notebook_NotebookObject ] :=
-  ( applyViewSettings[ notebook, AssociationMap[ Automatic &, $viewSettingKeys ] ];
+  ( applyViewSettings[ notebook, AssociationMap[ Automatic &, Join[ $viewSettingKeys, $obsoleteViewSettingKeys ] ] ];
     rescaleMaTeXCells[ notebook ] )
 
-$viewSettingKeys = { "DocumentFontSize", "MathFontSize", "ContentWidth" }
+$viewSettingKeys = { "DocumentFontSize", "MathFontSize" }
 
-(* The top step of the palette's column-width slider, in points. Kept here rather than in
-   Scripts/BuildPalette.wls because the setter is what has to recognise the top of the range as
-   Full; the build script names this number too and the two must agree. *)
-$fullContentWidth = 500
+(* A content-width control shipped in 0.1.5 through 0.1.7 and was then withdrawn. Its key is still
+   cleared on reset so that a document written with one of those versions is left with no trace of
+   it; nothing else reads the key, and the private sheet is rebuilt whole on every call, so a
+   leftover value cannot affect a document's layout. *)
+$obsoleteViewSettingKeys = { "ContentWidth" }
 
 $mathStyleNames = { "DisplayFormula", "DisplayFormulaNumbered", "DisplayFormulaEquationNumber" }
 
@@ -72,22 +54,14 @@ applyViewSettings[ notebook_NotebookObject, changes_Association ] :=
     KeyValueMap[
       { key, value } |-> ( CurrentValue[ notebook, { TaggingRules, "MathNotebook", key } ] = Replace[ value, Automatic -> Inherited ] ),
       changes ];
-    (* The bare parent goes back on first, unconditionally. The paper geometry the printed column is
-       computed from has to be read off the document's real chain: read through a private sheet this
-       function installed on an earlier call, PaperSize answers Automatic and every printed margin
-       silently comes out of a symbolic width. *)
+    (* The bare parent goes back on first, unconditionally: a second call has to override the
+       document's real stylesheet rather than nest inside the private sheet the first one left. *)
     SetOptions[ notebook, StyleDefinitions -> parent ];
-    With[ { settings = viewSettings[ notebook ], printable = printableWidth[ notebook ] },
+    With[ { settings = viewSettings[ notebook ] },
       If[ documentTaggingRules[ notebook ] === <||>,
         CurrentValue[ notebook, { TaggingRules, "MathNotebook" } ] = Inherited ];
       If[ settings =!= <||>,
-        SetOptions[ notebook, StyleDefinitions -> viewStyleSheet[ parent, printable, settings ] ] ] ] ]
-
-(* The printed column is absolute, so its margins depend on the paper the document is actually set
-   to print on \[LongDash] which the stylesheet declares and the user can change \[LongDash] not on the stylesheet alone. *)
-printableWidth[ notebook_NotebookObject ] :=
-  First @ CurrentValue[ notebook, { PrintingOptions, "PaperSize" } ] -
-    Total @ First @ CurrentValue[ notebook, { PrintingOptions, "PrintingMargins" } ]
+        SetOptions[ notebook, StyleDefinitions -> viewStyleSheet[ parent, settings ] ] ] ] ]
 
 documentTaggingRules[ notebook_NotebookObject ] :=
   Replace[ CurrentValue[ notebook, { TaggingRules, "MathNotebook" } ], Except[ _Association ] -> <||> ]
@@ -106,27 +80,25 @@ parentStyleSheet[ notebook_NotebookObject ] :=
 
 $viewStyleSheetMarker = "MathNotebookView"
 
-viewStyleSheet[ parent_, printable_, settings_Association ] :=
+viewStyleSheet[ parent_, settings_Association ] :=
   Notebook[
     Join[
       { Cell[ StyleData[ StyleDefinitions -> parent ] ],
         Cell[ StyleData[ $viewStyleSheetMarker ], StyleMenuListing -> None, MenuSortingValue -> None ] },
-      viewStyleCells[ parent, printable, settings ] ],
+      viewStyleCells[ parent, settings ] ],
     StyleDefinitions -> "PrivateStylesheetFormatting.nb" ]
 
-viewStyleCells[ parent_, printable_, settings_Association ] :=
+viewStyleCells[ parent_, settings_Association ] :=
   With[ { sizes = baseFontSizes[ parent ] },
     mergedStyleCells @ Join[
       fontSizeCells[ sizes, Complement[ styleFontSizeNames[], $mathStyleNames ],
         Lookup[ settings, "DocumentFontSize", Automatic ], documentFontSizeAnchor[ parent ] ],
       fontSizeCells[ sizes, $mathStyleNames,
-        Lookup[ settings, "MathFontSize", Automatic ], mathFontSizeAnchor[ parent ] ],
-      contentWidthCells[ parent, printable, Lookup[ settings, "ContentWidth", Automatic ] ] ] ]
+        Lookup[ settings, "MathFontSize", Automatic ], mathFontSizeAnchor[ parent ] ] ] ]
 
 (* Of two cells carrying the same StyleData head the front end keeps the first and discards the
-   second outright — it does not merge their options. Nearly every style the size control writes
-   also gets a margin from the width control, so emitting them as separate cells would let a text
-   size silently cancel the column width; one cell per style and environment is the only safe form. *)
+   second outright — it does not merge their options. The prose and mathematics controls overlap on
+   no style today, but they are generated independently and merging is what makes that safe. *)
 mergedStyleCells[ cells_List ] :=
   KeyValueMap[ { style, options } |-> Cell[ style, Sequence @@ options ],
     Merge[ Map[ First[ # ] -> Rest[ List @@ # ] &, cells ], Catenate ] ]
@@ -143,88 +115,6 @@ fontSizeCells[ sizes_Association, styles_List, size_, anchor_ ] :=
       KeyTake[ sizes[ "Screen" ], styles ] ],
     KeyValueMap[ { style, base } |-> Cell[ StyleData[ style, "Printout" ], FontSize -> Round[ base size / anchor ] ],
       KeyTake[ sizes[ "Printout" ], styles ] ] ]
-
-contentWidthCells[ _, _, Automatic | Full ] :=
-  { }
-
-contentWidthCells[ _, _, width_?NumericQ ] /; width >= $fullContentWidth :=
-  { }
-
-(* The two environments need different arithmetic for the same column, and this is the one place in
-   the file where screen and print genuinely diverge.
-
-   On screen the inset is Scaled[ 0.5 ] - width/2: the front end resolves Scaled in CellMargins
-   against PageWidth, which on screen is the window, so the two symmetric insets cancel the window
-   out and leave a column of exactly width points that stays centered as the window is resized.
-
-   In print that same sum silently resolves the Scaled part against the window rather than the
-   paper — a bare Scaled[ f ] does track the paper, but a sum does not — so the printed inset is
-   computed as points instead, from the paper the document is set to print on. Cell margins are
-   laid out at the "Printout" environment's own magnification and only then put on paper, so the
-   point value is divided by it; without that the column comes out at 0.72 of the width asked for.
-
-   It is Text that is centered, and every other style keeps its own indent relative to it: a
-   section number and a theorem or abstract dingbat is drawn to the left of its own cell margin, so
-   it hangs outside the column exactly as it does in LaTeX. Those offsets are negative, so the
-   printed inset is not allowed below the widest of them or a dingbat would fall off the paper. *)
-contentWidthCells[ parent_, printable_, width_ ] :=
-  With[ { margins = baseCellMargins[ parent ] },
-    Join[
-      marginCells[ margins[ "Screen" ], Scaled[ 0.5 ] - width / 2, StyleData ],
-      marginCells[ margins[ "Printout" ],
-        Max[ 0, - Min @ styleOffsets @ margins[ "Printout" ],
-          ( printable - width ) / ( 2 printMagnification[ parent ] ) ],
-        StyleData[ #, "Printout" ] & ] ] ]
-
-marginCells[ <| |>, _, _ ] :=
-  { }
-
-marginCells[ margins_Association, inset_, style_ ] :=
-  With[ { offsets = styleOffsets[ margins ] },
-    KeyValueMap[
-      { name, base } |-> Cell[ style[ name ], CellMargins -> { inset + offsets[ name ], Last @ base } ],
-      margins ] ]
-
-styleOffsets[ margins_Association ] :=
-  Map[ First[ # ] - First @ margins[ "Text" ] &, margins ]
-
-(* The base geometry is read out of the document's own stylesheet chain rather than out of
-   LaTeXBase.nb: it is the one channel that resolves the list styles, which no MathNotebook sheet
-   declares, and that also fits a document still on Default.nb. Reading from the parent rather than
-   from the document keeps a second call from compounding its own override. Both environments are
-   read, as the sizes are: LaTeXBase indents a style differently in print than on screen, and the
-   printed inset is added to the printed indent. *)
-baseCellMargins[ parent_ ] := baseCellMargins[ parent ] =
-  With[ { document = CreateDocument[ { }, Visible -> False, StyleDefinitions -> parent ] },
-    With[ { read = environment |-> Select[
-          AssociationMap[
-            CurrentValue[ document, { StyleDefinitions, environment[ # ], CellMargins } ] &,
-            columnStyleNames[] ],
-          MatchQ[ { { _?NumericQ, _?NumericQ }, { _?NumericQ, _?NumericQ } } ] ] },
-      With[ { margins = <| "Screen" -> read[ # & ], "Printout" -> read[ { #, "Printout" } & ] |> },
-        NotebookClose[ document ];
-        margins ] ] ]
-
-(* Default.nb gives StyleData[ All, "Printout" ] a Magnification of 0.72, so every length in a
-   printout style is laid out at that scale before it reaches the paper. It is not readable as a
-   style option — CurrentValue[ nb, { StyleDefinitions, { style, "Printout" }, Magnification } ]
-   answers 1 — but a document whose SCREEN environment is "Printout" resolves it on the notebook. *)
-printMagnification[ parent_ ] := printMagnification[ parent ] =
-  With[ { document = CreateDocument[ { }, Visible -> False, StyleDefinitions -> parent,
-      ScreenStyleEnvironment -> "Printout" ] },
-    With[ { magnification = AbsoluteCurrentValue[ document, Magnification ] },
-      NotebookClose[ document ];
-      magnification ] ]
-
-(* The column styles are those the base sheet gives an explicit CellMargins — which leaves out the
-   character styles and the equation number, a CellFrameLabels label whose margins sit inside the
-   label — plus the list styles, which the templates style but the base sheet leaves to Default.nb. *)
-columnStyleNames[] := columnStyleNames[] =
-  Join[
-    Union @ Cases[ baseStyleCells[],
-      Cell[ StyleData[ style_String ] | StyleData[ style_String, StyleDefinitions -> _ ], options___ ] /;
-        ! FreeQ[ { options }, CellMargins ] :> style, { 1 } ],
-    { "Item", "ItemNumbered", "ItemParagraph" } ]
 
 baseStyleCells[] := baseStyleCells[] =
   First @ Get @ FileNameJoin[ { PacletObject[ "WolframInstitute/MathNotebook" ][ "Location" ],

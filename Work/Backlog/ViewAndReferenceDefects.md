@@ -44,7 +44,7 @@ Done when a text-size change moves every prose style on screen and in print on a
 
 ### Edge cases & out of scope
 
-- Reading resolved values needs a front end and a `NotebookObject`; memoize per parent stylesheet, as `baseCellMargins` does, so the sliders stay cheap.
+- Reading resolved values needs a front end and a `NotebookObject`; memoize per parent stylesheet, as `baseFontSizes` does, so the sliders stay cheap.
 - On a `Default.nb` document the theorem styles do not exist; writing override cells for absent styles must stay harmless.
 - If the label comes from `CellTags`, a cell can carry several tags — pick one rule and state it.
 - The equation-number style is a `CellFrameLabels` label, not a column style; it scales with the math slider and must not be given column margins.
