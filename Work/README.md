@@ -21,7 +21,7 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 
 ## Active
 
-- [Update From Cloud Button](Active/SelfUpdate.md) — T1 done (publish script owns the archive and the version marker; `$MathNotebookCloudVersion` reads it); next: **T2**, `UpdateMathNotebook[]` with its three outcomes and the post-install menu reset
+- [Update From Cloud Button](Active/SelfUpdate.md) — T2 done (`UpdateMathNotebook[]` decides and reports all four outcomes, resets the menus and reopens the palette); next: **T3**, the palette button in Setup, plus screenshot and tutorial
 
 ## Backlog
 
@@ -29,6 +29,7 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 - [Conversion and MaTeX UX](Backlog/ConversionUX.md) — four near-identical conversion labels; what a MaTeX conversion should leave behind; whether per-selection LaTeX conversion survives whole-document export
 - [Adopt WolframInstituteTools Practices](Backlog/WolframInstituteToolsPractices.md) — real documentation pages for the exported symbols, and their notebook tooling
 - [LaTeX Paper Import](Backlog/LaTeXPaperImport.md) — round-trip a real paper; figures carry their generating code
+- [Complex Systems Stylesheet and Submission Buttons](Backlog/JournalSubmission.md) — a fifth template from the journal's own class file, and a "publish to Complex Systems / arXiv" bundle
 - [Springer Journal Sample PDF](Backlog/SpringerJournalSample.md) — blocked on a manual `svjour3.cls` download
 - [First Public Release](Backlog/Release.md) — tutorial and palette review, then publish; the README's install URL is dead until then
 - [Repo Organization](Backlog/RepoOrganization.md) — root cleanup, and the `Wiki/` yes-or-no decision

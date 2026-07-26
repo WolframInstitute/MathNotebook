@@ -37,6 +37,7 @@ PacletObject[
           "WolframInstitute`MathNotebook`ResetDocumentView",
           "WolframInstitute`MathNotebook`InstallLaTeXFonts",
           "WolframInstitute`MathNotebook`OpenTutorial",
+          "WolframInstitute`MathNotebook`UpdateMathNotebook",
           "WolframInstitute`MathNotebook`$MathNotebookCloudVersion"
         }
       },

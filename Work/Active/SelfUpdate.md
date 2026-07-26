@@ -46,13 +46,13 @@ The marker can be a one-line cloud object (`…/MathNotebook-version.txt`) writt
 
 ## Tasks
 
-- [ ] T2 — `UpdateMathNotebook[]` with the three outcomes, plus the post-install menu reset and palette reopen; decide the kernel-restart question.
 - [ ] T3 — Palette button in Setup; rebuild palette and screenshot; document in the tutorial.
 - [ ] T4 — Test the real path: install an older version, update from the button, confirm the new stylesheets and buttons are live.
 
 ### Done
 
 - [x] T1 — Publish the version marker from the publish script; `$MathNotebookCloudVersion` reads it. *(Session 1)*
+- [x] T2 — `UpdateMathNotebook[]` with the three outcomes, plus the post-install menu reset and palette reopen; decide the kernel-restart question. *(Session 2)*
 
 ## Progress
 
@@ -71,9 +71,26 @@ The marker can be a one-line cloud object (`…/MathNotebook-version.txt`) writt
   A marker read immediately after `CloudExport` came back unreachable once and correct a minute later; the cloud serves `cache-control: public, max-age=60`, so one failed read right after publishing is not a broken marker.
 - **Next:** T2 — `UpdateMathNotebook[]` with the three outcomes, the post-install menu reset and palette reopen, and the kernel-restart decision.
 
+### Session 2 — 2026-07-26 — T2
+
+- **Prompt:** `/next-session` — work the next task; force-install the paclet first.
+- **Did:** `UpdateMathNotebook[]` in `Kernel/Update.wl`, split the way the repo splits conversion: a pure decision core plus a thin front-end wrapper.
+  `updateAction[location, version, cloud]` returns one of `"Development"`, `"Unreachable"`, `"Install"`, `"Current"`, and `updateMessage[action, ...]` turns any outcome — those four plus `"Updated"` and `"Failed"` — into the sentence the user reads; both are pure and headless-testable.
+  The wrapper reads the installed paclet and `$MathNotebookCloudVersion`, and on `"Install"` calls `installUpdate`: `PacletInstall[$pacletCloudURL, ForceVersionInstall -> True]`, then ``FrontEnd`ResetMenusPacket``, then `reopenPalette` — which closes every open notebook whose file is named `MathNotebook.nb` and reopens the palette from the *new* paclet's location, so the running palette is not the old build.
+  A development install shadowing the cloud one is refused before anything is downloaded, by location: `developmentPacletQ` is true when the paclet does not live under `$UserBasePacletsDirectory` or `$BasePacletsDirectory`.
+  Exported in `PacletInfo.wl` and given a usage string.
+  `Tests/Update.wlt` grew from 4 to 14 tests (version ordering, the location predicate, all four actions, every message renders); the suite is green at 61.
+  Verified live against a staging marker at `…/MathNotebook/Staging/`, since the real marker is still unpublished: `"Install"` off a `0.1.9` marker, `"Current"` off `0.1.8`, `"Unreachable"` off the real (absent) marker URL, and a marker reading `not-a-version` came back `Missing["MalformedVersionMarker", …]`. The staging object was deleted afterwards.
+- **Learned:** `Order[a, b]` is `-1` when `a` sorts *after* `b`, so "cloud is newer" is `Order[cloudList, installedList] === -1`; versions compare correctly only as padded integer lists (`PadRight[ToExpression @ StringSplit[v, "."], 4]`), otherwise `"0.1.12"` sorts before `"0.1.9"`.
+  Do not call `cloudVersion` twice in one probe: two reads of the same marker seconds apart disagreed — the cloud's own `max-age=60` means a freshly rewritten marker serves the old body, the new body, or nothing depending on the moment. Read once, bind, then use.
+  `Notebooks[]` throws `FrontEndObject::notavail` under `wolframscript`, so `reopenPalette` cannot be exercised headless; it is front-end-only by construction, as are `MessageDialog` and `FrontEndExecute`. T4 covers the live path.
+- **Next:** T3 — the palette button in Setup, rebuild and screenshot the palette, document it in the tutorial.
+
 ## Decisions
 
 | Date | Decision | Rationale |
 |---|---|---|
 | 2026-07-26 | Publishing moves into the repo as `Scripts/PublishPaclet.wls`, not the `publish-paclet` skill. | The marker has to go up in the same step as the archive, and the generic recipe also omits `FrontEnd/` and `Assets/`. |
+| 2026-07-26 | The button never quits the kernel; it says the kernel must be restarted and stops there. | The button's own evaluation runs in that kernel, so `Quit[]` would abort the menu reset, the palette reopen and the message it is in the middle of producing — and the user's session state is theirs to discard, not the updater's. Everything that *can* be made live without a restart (menus, palette, stylesheets, tutorial) already is. |
+| 2026-07-26 | A development install shadowing the cloud one is refused by **location**, not by asking the user. | `PacletObject` already resolves to whichever copy wins, so its `"Location"` is exactly the shadowing question; installing underneath a `PacletDirectoryLoad` would download a paclet that never loads. |
 | 2026-07-26 | The real marker is **not** published yet — only the staging pair was, and it was deleted. | Publishing the marker before the archive would have the button announce 0.1.8 while the README's `PacletInstall` URL is still dead; the first real run belongs to `Release.md` T3. |

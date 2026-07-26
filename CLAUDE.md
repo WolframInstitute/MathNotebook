@@ -55,7 +55,9 @@ Paclet for writing math papers in Wolfram notebooks: referencing palette, LaTeX 
 - The cloud URLs live once, as `PackageScope` symbols in `Kernel/Update.wl`; the script reads them off the loaded paclet and aborts if they are not strings (a `PackageScope` symbol referenced from outside silently exists with no value — the trap in *Conventions*). `MATHNOTEBOOK_PACLET_URL` / `MATHNOTEBOOK_VERSION_URL` override both for a staging dry run.
 - `$CloudBase` is `None` in `wolframscript`, so `CloudConnect[]` fails there with `invbase` — set it to `https://www.wolframcloud.com` first. The MCP kernel is already connected.
 - `URLRead[request, {"StatusCode", "Body"}]` returns an **Association**, not a list; match it with `KeyValuePattern`.
-- A cloud object read back **immediately** after `CloudExport` came back unreachable once and read correctly a minute later (the cloud serves `cache-control: public, max-age=60`). Do not treat a single failed read right after publishing as a broken marker.
+- A cloud object read back **immediately** after `CloudExport` came back unreachable once and read correctly a minute later (the cloud serves `cache-control: public, max-age=60`). Do not treat a single failed read right after publishing as a broken marker. The same caching makes two reads of one marker seconds apart disagree — a probe must read once and bind, never call `cloudVersion` twice and compare.
+- Versions compare only as padded integer lists (`PadRight[ToExpression @ StringSplit[v, "."], 4]`); as strings `"0.1.12"` sorts before `"0.1.9"`. `Order[a, b]` is `-1` when `a` sorts **after** `b`, so "the cloud is newer" is `Order[cloudList, installedList] === -1`.
+- `UpdateMathNotebook[]` is front-end-only by construction — `Notebooks[]`, `MessageDialog` and `FrontEndExecute` all fail under `wolframscript`. Its decision core (`updateAction`, `updateMessage`) is pure and is what the tests cover; the install path is exercised by hand.
 
 ## Build & test
 

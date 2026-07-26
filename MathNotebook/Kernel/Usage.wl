@@ -15,6 +15,7 @@ SetDocumentFontSize::usage = "SetDocumentFontSize[size] scales the prose of the 
 SetMathFontSize::usage = "SetMathFontSize[size] scales displayed mathematics and equation numbers of the input notebook to the given font size, re-rendering MaTeX cells.\nSetMathFontSize[notebook, size] scales the given notebook.\nSetMathFontSize[notebook, Automatic] removes the override."
 ResetDocumentView::usage = "ResetDocumentView[] returns the input notebook to its stylesheet defaults, leaving no trace of the view overrides.\nResetDocumentView[notebook] resets the given notebook."
 InstallLaTeXFonts::usage = "InstallLaTeXFonts[] installs Latin Modern and TeX Gyre OpenType fonts from the local TeX Live distribution."
+UpdateMathNotebook::usage = "UpdateMathNotebook[] installs the MathNotebook paclet from the Wolfram Cloud when the published version is newer than the installed one, then rebuilds the front end menus and reopens the palette."
 $MathNotebookCloudVersion::usage = "$MathNotebookCloudVersion is the paclet version published in the Wolfram Cloud, or Missing[\"CloudUnreachable\", ...] when the version marker cannot be read."
 OpenTutorial::usage = "OpenTutorial[] opens a copy of the MathNotebook tutorial notebook."
 $LastHyperlinkCell::usage = "$LastHyperlinkCell is the cell from which the last hyperlink was clicked."
