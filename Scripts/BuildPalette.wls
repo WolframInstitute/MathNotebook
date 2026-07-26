@@ -8,15 +8,16 @@ $styleSheets = { "AMSArticle", "ArXivArticle", "SpringerJournal", "RevTeXAPS" };
 $buttonSize = { 200, 27 };
 $labelSize = { 182, 20 };
 $fontSizeRange = { 8, 28, 1 };
-(* The base sheet's own block spans all but 50 pt of the 451 pt printable width, so 0.9 is the
-   step whose printed column is closest to what the stylesheet already does — and it is the top of
-   the range, so the slider only ever narrows: every position leaves the section numbers and the
-   theorem dingbats, which hang to the left of their own cell margin, room to be drawn. *)
-$contentWidthRange = { 0.4, 0.9, 0.05 };
-$defaultContentWidth = 0.9;
+(* The column width is an absolute measure in points, and the top step is Full — the unconstrained
+   page, which is what the stylesheet already does and what an unset document reads as. 500 is
+   past the 451 pt printable width of the A4 the sheets print on, so every numbered step really
+   does narrow the column. $fullContentWidth in MathNotebook/Kernel/View.wl is the same number:
+   the setter has to recognise the top of the range. *)
+$contentWidthRange = { 240, 500, 20 };
+$fullContentWidth = 500;
 $sliderLabelSize = { 72, 20 };
 $sliderSize = { 92, 18 };
-$sliderReadoutSize = { 30, 20 };
+$sliderReadoutSize = { 34, 20 };
 
 (* The neutral slider position is the base sheet's own Text size, so the sliders and
    SetDocumentFontSize agree on what "unchanged" means. *)
@@ -80,18 +81,23 @@ sliderRow[ label_String, control_, readout_ ] :=
   } ]
 
 (* The slider reads and writes the focused document's own tagging rules, so it follows whichever
-   paper is in front and needs no kernel to display. Only the release calls the setter. *)
-viewSlider[ label_String, key_String, setter_Symbol, range_List, default_ ] :=
-  With[ { path = { TaggingRules, "MathNotebook", key } },
+   paper is in front and needs no kernel to display. Only the release calls the setter.
+   The readout takes its own default so that an unset document can read as Full while the slider,
+   which needs a number, reads as the top of its range — the two agree, and neither needs the front
+   end to evaluate anything but a CurrentValue. *)
+viewSlider[ label_String, key_String, setter_Symbol, range_List, default_, readoutDefault_ : Automatic ] :=
+  With[ { path = { TaggingRules, "MathNotebook", key },
+      readout = Replace[ readoutDefault, Automatic -> default ] },
     sliderRow[ label,
       Slider[
         Dynamic[ CurrentValue[ FrontEnd`InputNotebook[ ], path, default ],
           ( Needs[ "WolframInstitute`MathNotebook`" ]; setter[ InputNotebook[ ], # ] ) & ],
         range, ImageSize -> $sliderSize, ContinuousAction -> False ],
-      Dynamic[ CurrentValue[ FrontEnd`InputNotebook[ ], path, default ] ] ] ]
+      Dynamic[ CurrentValue[ FrontEnd`InputNotebook[ ], path, readout ] ] ] ]
 
-staticViewSlider[ label_String, range_List, default_ ] :=
-  sliderRow[ label, Slider[ default, range, ImageSize -> $sliderSize ], default ]
+staticViewSlider[ label_String, range_List, default_, readout_ : Automatic ] :=
+  sliderRow[ label, Slider[ default, range, ImageSize -> $sliderSize ],
+    Replace[ readout, Automatic -> default ] ]
 
 (* Rasterize leaves a Dynamic unevaluated, so the screenshot needs a static stand-in for every
    dynamic item; dual pairs the live rendition with it. *)
@@ -134,8 +140,8 @@ $groups = {
         $fontSizeRange, $defaultFontSize ],
       staticViewSlider[ "Math size", $fontSizeRange, $defaultFontSize ] ],
     dual[ viewSlider[ "Column width", "ContentWidth", WolframInstitute`MathNotebook`SetContentWidth,
-        $contentWidthRange, $defaultContentWidth ],
-      staticViewSlider[ "Column width", $contentWidthRange, $defaultContentWidth ] ],
+        $contentWidthRange, $fullContentWidth, Full ],
+      staticViewSlider[ "Column width", $contentWidthRange, $fullContentWidth, Full ] ],
     kernelButton[ "Reset view", WolframInstitute`MathNotebook`ResetDocumentView[] ] } },
   { "Convert", "LaTeX \[LeftRightArrow] math (selection)", {
     kernelButton[ "TeX \[Rule] math", WolframInstitute`MathNotebook`ConvertLaTeXCells[] ],

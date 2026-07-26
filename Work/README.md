@@ -21,7 +21,7 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 
 ## Active
 
-- [Palette Usability & Document View Controls](Active/PaletteUsability.md) — next: **T6**, feedback round open — six points in, sizes fixed, awaiting Pavel's call on absolute column width and the palette's light/dark
+- [Palette Usability & Document View Controls](Active/PaletteUsability.md) — next: **T6**, feedback round open — the column width is now an absolute centered point measure with `Full`, shipped in 0.1.7; awaiting Pavel's interactive check that it stays centered on a window resize
 
 ## Backlog
 

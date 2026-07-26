@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       154,          7]
-NotebookDataLength[     35810,        820]
-NotebookOptionsPosition[     35120,        795]
-NotebookOutlinePosition[     35841,        822]
-CellTagsIndexPosition[     35798,        819]
+NotebookDataLength[     35809,        820]
+NotebookOptionsPosition[     35119,        795]
+NotebookOutlinePosition[     35840,        822]
+CellTagsIndexPosition[     35797,        819]
 WindowTitle->MathNotebook
 WindowFrame->Palette*)
 
@@ -434,7 +434,7 @@ Cell[BoxData[
                     FrontEnd`InputNotebook[], {
                     TaggingRules, "MathNotebook", "DocumentFontSize"}, 13], 
                    StandardForm]], Alignment -> {Right, Center}, 
-                 ImageSize -> {30, 20}, ScrollPosition -> {0., 0.}]},
+                 ImageSize -> {34, 20}, ScrollPosition -> {0., 0.}]},
                "RowDefault"]},
              {
               TemplateBox[{
@@ -458,7 +458,7 @@ Cell[BoxData[
                     FrontEnd`InputNotebook[], {
                     TaggingRules, "MathNotebook", "MathFontSize"}, 13], 
                    StandardForm]], Alignment -> {Right, Center}, 
-                 ImageSize -> {30, 20}, ScrollPosition -> {0., 0.}]},
+                 ImageSize -> {34, 20}, ScrollPosition -> {0., 0.}]},
                "RowDefault"]},
              {
               TemplateBox[{
@@ -470,19 +470,19 @@ Cell[BoxData[
                  Dynamic[
                   CurrentValue[
                    FrontEnd`InputNotebook[], {
-                   TaggingRules, "MathNotebook", "ContentWidth"}, 0.9], (
+                   TaggingRules, "MathNotebook", "ContentWidth"}, 500], (
                   Needs["WolframInstitute`MathNotebook`"]; 
                   WolframInstitute`MathNotebook`SetContentWidth[
-                    InputNotebook[], #])& ], {0.4, 0.9, 0.05}, 
+                    InputNotebook[], #])& ], {240, 500, 20}, 
                  ImageSize -> {92, 18}, ContinuousAction -> False], 
                 PaneBox[
                  DynamicBox[
                   ToBoxes[
                    CurrentValue[
                     FrontEnd`InputNotebook[], {
-                    TaggingRules, "MathNotebook", "ContentWidth"}, 0.9], 
+                    TaggingRules, "MathNotebook", "ContentWidth"}, Full], 
                    StandardForm]], Alignment -> {Right, Center}, 
-                 ImageSize -> {30, 20}, ScrollPosition -> {0., 0.}]},
+                 ImageSize -> {34, 20}, ScrollPosition -> {0., 0.}]},
                "RowDefault"]},
              {
               ButtonBox["\<\"Reset view\"\>",
@@ -791,7 +791,7 @@ Cell[BoxData[
    GridBoxAlignment->{"Columns" -> {{Left}}},
    GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
    GridBoxSpacings->{"Columns" -> {{Automatic}}, "Rows" -> {{0.4}}}],
-  "Column"]],ExpressionUUID->"ab3a49d3-61b0-4767-88e4-43bd5daa21af"]
+  "Column"]],ExpressionUUID->"70b32454-1271-46c1-ba7b-9a9d670237bf"]
 },
 Editable->False,
 Saveable->False,
@@ -808,7 +808,7 @@ TaggingRules-><|
   "SetupOpen" -> True|>,
 FrontEndVersion->"15.0 for Mac OS X ARM (64-bit) (May 19, 2026)",
 StyleDefinitions->"Palette.nb",
-ExpressionUUID->"6594d410-b789-4ee2-b834-f1eab0fd3204"
+ExpressionUUID->"f78c3643-af06-4b41-9cdf-7363ce35d0f7"
 ]
 (* End of Notebook Content *)
 
@@ -821,7 +821,7 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[581, 21, 34535, 772, 714, InheritFromParent,ExpressionUUID->"ab3a49d3-61b0-4767-88e4-43bd5daa21af"]
+Cell[581, 21, 34534, 772, 714, InheritFromParent,ExpressionUUID->"70b32454-1271-46c1-ba7b-9a9d670237bf"]
 }
 ]
 *)
