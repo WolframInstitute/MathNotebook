@@ -49,7 +49,6 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
 
 ## Tasks
 
-- [ ] T3 — `\label`/`\ref`/`\eqref` ↔ cell tags and reference buttons. Both specimens' labels are already carried verbatim in each structural cell's `"Trailing"` tagging rule, so this task is about *reading* them, not about not losing them.
 - [ ] T4 — Citations and bibliography ↔ `Citation`/`Reference` cells.
 - [ ] T5 — Figures: preserve TikZ, add generating Wolfram code with rendered output, for one real figure of the paper.
 - [ ] T6 — Make both papers round-trip test fixtures under `MathNotebook/Tests/`. T2 already gets a byte-identical round trip on each; the fixture pins it.
@@ -61,6 +60,7 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
 
 - [x] T1 — Baseline: unzip the paper, convert with today's pipeline, convert back, diff against the source, and write the gap report into this item's Progress. *(Session 1)*
 - [x] T2 — Sectioning and theorem environments, both directions, with tests. *(Session 2)*
+- [x] T3 — `\label`/`\ref`/`\eqref` ↔ cell tags and reference buttons. *(Session 3)*
 
 ## Progress
 
@@ -126,9 +126,40 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
   - The document layer composes `splitDisplayMath` and `splitInlineMath` rather than `convertLaTeXCell`, because that function trims the whitespace around a display equation it lifts out and here the whitespace is exactly what must survive. The Spec's "`convertLaTeXCell` stays the math primitive" is honoured one level down.
 - **Next:** T3 — `\label`/`\ref`/`\eqref`. Every label is already sitting in a `"Trailing"` tagging rule waiting to be read.
 
+### Session 3 — 2026-07-26 — T3
+
+- **Prompt:** `/next-session` continued.
+- **Did:** `\label` → `CellTags`, `\ref`/`\eqref` → the front end's own cross-reference, both directions, with the round trip still exact on both papers.
+
+  | | causal graphs | hodgepaper |
+  |---|---|---|
+  | `\label` → `CellTags` | 18 of 25 | 60 of 92 |
+  | `\ref` / `\eqref` → buttons | 1 of 5 | 119 of 191 |
+  | round trip | identical | identical |
+
+  **What is not converted is exactly what has no cell to point at**, and it is left as literal source rather than rendered wrong.
+  The causal paper's 7 unclaimed labels and 4 unconverted `\ref`s are all `fig:` — figures are T5.
+  Hodge's 32 unclaimed labels and 72 unconverted references are all `Eq:` — its equations sit *inside* theorem environments, which T2 deliberately leaves as one cell, so they never became `DisplayFormulaNumbered` cells. That is T7, and this is the measurement of what T7 is worth.
+
+  **A reference is a `CounterBox` chain, not text.**
+  `\ref` becomes the bare chain for the target's style — `CounterBox["Section", key]` for a section, `Section.Theorem` for a theorem-like environment — and `\eqref` the same in parentheses, which is what the two commands print in LaTeX.
+  No prefix: authors write `Theorem~\ref{Thm:2}`, so `citationButton`'s `"Theorem "` prefix would say the word twice.
+  Which command it was is recovered on the way out from whether the box is parenthesised, so `\ref` and `\eqref` both come back as themselves.
+
+  **Verified on the page.** The imported hodgepaper renders as a **25-page PDF with zero `XXX`** — the front end's rendering of an unresolvable tag — and its prose reads `Definition~3.15` where the source wrote `Definition~\ref{Def:dPDModel}`, with 49 parenthesised equation references.
+
+  **The tag is the origin of the exported `\label`, not a mirror of it.** The label is taken out of the stored trailing source and written back from `CellTags`, so retagging a cell in the notebook changes the `\label` that comes out — asserted by a test. The one exception is a label inside a display equation, which is re-emitted from the stored `"SourceTeX"`; there the tag is a read-only mirror.
+
+  **Tests.** Five in `Tests/Document.wlt` and one in `Tests/FrontEnd.wlt`; 130 pass. Reintroducing the defect fails 4 and 1 respectively.
+- **Learned:**
+  - A `Definition` cell numbers itself only under a MathNotebook stylesheet — the counter lives in `CounterIncrements` on the *style*. Rendered on `Default.nb` the same document reads `Definition~2.0`, which looks exactly like a broken reference and is not one. Any front-end test of numbering has to install the sheet.
+  - LaTeX's `~` survives into the notebook as a literal tilde, so imported prose reads `Definition~3.15` on the page. Turning it into a non-breaking space would improve the rendering and would have to be recorded to keep the round trip; not done, and worth a task if the rendering matters.
+- **Next:** T4 — citations and bibliography.
+
 ## Decisions
 
 | Date | Decision | Rationale |
 |---|---|---|
+| 2026-07-26 | `\ref` imports as a bare counter chain, with no `"Theorem "`-style prefix, unlike `citationButton` | LaTeX authors write the word themselves (`Theorem~\ref{...}`); the palette's citation button is for a citation, where the word is wanted, and an import is not that |
 | 2026-07-26 | An environment whose printed name is none of the twelve stylesheet styles is written as `Theorem` with a `CellDingbat` naming it, rather than left as literal text | the specimen paper's `Axiom` is ten of its thirty-two environments; leaving them as text would drop a third of the structure, and the dingbat both numbers with the theorems and prints the right word |
 | 2026-07-26 | Every cell carries the source whitespace that followed it | it is the difference between a round trip that is exact and one that is approximately right, and the item's whole point is fidelity; it also means the exporter needs no rules about blocking |

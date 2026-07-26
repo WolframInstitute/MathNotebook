@@ -22,10 +22,11 @@ ExportLaTeXDocument[ notebook_NotebookObject, rest___ ] :=
   ExportLaTeXDocument[ NotebookGet[ notebook ], rest ]
 
 latexToNotebook[ source_String ] :=
-  Module[ { preamble, body, postamble, pieces },
+  Module[ { preamble, body, postamble, pieces, cells },
     { preamble, body, postamble } = documentParts[ source ];
     pieces = documentPieces[ body, theoremEnvironments[ preamble ] ];
-    Notebook[ withSeparators[ pieces ],
+    cells = Map[ labelledCell, withSeparators[ pieces ] ];
+    Notebook[ Map[ referenceCell[ #, labelStyles[ cells ] ] &, cells ],
       TaggingRules -> <| "MathNotebook" -> <|
         "Preamble" -> preamble,
         "Postamble" -> postamble,
@@ -168,21 +169,91 @@ inlineContent[ text_String ] :=
 notebookCellList[ cells_List ] :=
   Flatten @ Replace[ cells, Cell[ CellGroupData[ inner_List, ___ ], ___ ] :> notebookCellList[ inner ], { 1 } ]
 
+(* \label lands on the cell it labels as a CellTags, which is what the referencing palette and
+   CounterBox both key on. The label is taken out of the stored source and written back from the
+   tag, so retagging a cell in the notebook changes the exported \label. A label inside a display
+   equation is the exception: the equation is re-emitted from its stored "SourceTeX", so there the
+   tag is a mirror of the source rather than its origin. *)
+labelledCell[ cell : Cell[ _, "DisplayFormula" | "DisplayFormulaNumbered", ___ ] ] :=
+  Replace[ StringCases[ storedSourceTeX[ cell ], "\\label{" ~~ key : Except[ "}" ] .. ~~ "}" :> key, 1 ],
+    { { key_ } :> Append[ cell, CellTags -> key ], _ :> cell } ]
+
+labelledCell[ cell_Cell ] :=
+  Replace[ StringCases[ cellTagging[ cell, "Trailing" ],
+      Shortest[ before___ ] ~~ "\\label{" ~~ key : Except[ "}" ] .. ~~ "}" ~~ after___ :> { before, key, after } ],
+    { { { before_, key_, after_ } } :>
+        Append[ retagged[ cell, <| "Trailing" -> before, "TrailingAfter" -> after |> ], CellTags -> key ],
+      _ :> cell } ]
+
+retagged[ cell : Cell[ content_, style_, options___ ], extra_Association ] :=
+  Cell[ content, style, TaggingRules -> <| "MathNotebook" -> Join[ storedTagging[ cell ], extra ] |>,
+    Sequence @@ DeleteCases[ { options }, TaggingRules -> _ ] ]
+
+labelStyles[ cells_List ] :=
+  Association @ Cases[ cells, Cell[ _, style_String, ___, CellTags -> key_String, ___ ] :> key -> style ]
+
+(* \ref and \eqref become the front end's own cross-reference: a CounterBox chain resolved at the
+   labelled cell, so the number follows the target when cells move and is right in the PDF with no
+   kernel. \ref is the bare number and \eqref parenthesises it, exactly as LaTeX prints them —
+   authors write "Theorem~\ref{...}", so a prefix would say the word twice. A key no converted cell
+   carries — the specimen paper's four figure labels — is left as source. *)
+referenceCell[ Cell[ content_, style_, options___ ], labels_Association ] :=
+  Cell[ referenceContent[ content, labels ], style, options ]
+
+referenceContent[ text_String, labels_Association ] :=
+  Replace[ referenceSplit[ text, labels ], { { one_String } :> one, parts_List :> TextData[ parts ] } ]
+
+referenceContent[ TextData[ parts_ ], labels_Association ] :=
+  TextData[ mergeStrings @ Flatten @ Replace[ Flatten @ { parts }, text_String :> referenceSplit[ text, labels ], { 1 } ] ]
+
+referenceContent[ content_, _Association ] :=
+  content
+
+referenceSplit[ text_String, labels_Association ] :=
+  StringSplit[ text,
+    command : ( "\\eqref" | "\\ref" ) ~~ "{" ~~ key : Except[ "}" ] .. ~~ "}" :>
+      referenceBox[ command, key, Lookup[ labels, key, None ] ] ]
+
+referenceBox[ command_String, key_String, style_String ] :=
+  ButtonBox[
+    RowBox @ Join[ If[ command === "\\eqref", { "(" }, { } ],
+      Riffle[ Map[ CounterBox[ #, key ] &, referenceCounters[ style ] ], "." ],
+      If[ command === "\\eqref", { ")" }, { } ] ],
+    BaseStyle -> "Citation", ButtonData -> key ]
+
+referenceBox[ command_String, key_String, _ ] :=
+  command <> "{" <> key <> "}"
+
+referenceCounters[ style_String ] :=
+  Replace[ Lookup[ $referenceLabelSpec, style, None ], { { _, counters_, _ } :> counters, _ :> { style } } ]
+
+referenceTeX[ ButtonBox[ boxes_, ___, ButtonData -> key_String, ___ ] ] /; ! FreeQ[ boxes, _CounterBox ] :=
+  If[ MatchQ[ boxes, RowBox[ { "(", ___, ")" } ] ], "\\eqref{", "\\ref{" ] <> key <> "}"
+
 cellToLaTeX[ cell : Cell[ _, "Section" | "Subsection" | "Subsubsection", ___ ] ] :=
   cellTagging[ cell, "Indent" ] <> "\\" <> ToLowerCase[ cell[[ 2 ]] ] <> "{" <> cellTeXText[ cell ] <> "}" <>
-    cellTagging[ cell, "Trailing" ]
+    cellTrailing[ cell ]
 
 cellToLaTeX[ cell_Cell ] /; cellTagging[ cell, "Environment" ] =!= "" :=
   With[ { name = cellTagging[ cell, "Environment" ] },
     cellTagging[ cell, "Indent" ] <> "\\begin{" <> name <> "}" <> cellTagging[ cell, "EnvironmentTitle" ] <>
-      cellTagging[ cell, "Trailing" ] <> "\n" <> cellTagging[ cell, "BodyIndent" ] <> cellTeXText[ cell ] <>
+      cellTrailing[ cell ] <> "\n" <> cellTagging[ cell, "BodyIndent" ] <> cellTeXText[ cell ] <>
       "\n" <> cellTagging[ cell, "ClosingIndent" ] <> "\\end{" <> name <> "}" ]
 
 cellToLaTeX[ cell_Cell ] :=
-  Replace[ convertMathCell[ cell ], { Cell[ text_String, ___ ] :> text, other_ :> ToString[ other, InputForm ] } ]
+  Replace[ convertMathCell @ referencesToTeX[ cell ],
+    { Cell[ text_String, ___ ] :> text, other_ :> ToString[ other, InputForm ] } ]
 
-cellTeXText[ Cell[ content_, ___ ] ] :=
-  Replace[ convertMathCell @ Cell[ content, "Text" ], { Cell[ text_String, ___ ] :> text, _ :> "" } ]
+cellTrailing[ cell_Cell ] :=
+  cellTagging[ cell, "Trailing" ] <>
+    Replace[ Cases[ cell, ( CellTags -> key_String ) :> "\\label{" <> key <> "}" ], { { label_ } :> label, _ :> "" } ] <>
+    cellTagging[ cell, "TrailingAfter" ]
+
+cellTeXText[ cell : Cell[ content_, ___ ] ] :=
+  Replace[ convertMathCell @ referencesToTeX @ Cell[ content, "Text" ], { Cell[ text_String, ___ ] :> text, _ :> "" } ]
+
+referencesToTeX[ Cell[ content_, rest___ ] ] :=
+  Cell[ Replace[ content, box_ButtonBox :> referenceTeX[ box ], { 0, Infinity } ], rest ]
 
 cellTagging[ cell_Cell, key_String ] :=
   Lookup[ Replace[ storedTagging[ cell ], Except[ _Association ] -> <| |> ], key, "" ]

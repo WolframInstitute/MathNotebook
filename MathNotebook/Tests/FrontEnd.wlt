@@ -116,7 +116,26 @@ letterInk[ ] := <|
   "ImaginaryI" -> mathInk[ "\[ImaginaryI]" ]
 |>
 
+(* LaTeXPaperImport T3: an imported \ref has to render as the target's number. The front end
+   resolves a CounterBox against the tagged cell with no kernel — and renders XXX when the tag is
+   not there, which is the failure this measures. A whole document has to be rendered: a single
+   rasterized cell has no document context and every counter in it reads 0. *)
+
+$importedSource = "\\documentclass{article}\n\\newtheorem{defn}{Definition}[section]\n\\begin{document}\n\n\\section{First} \\label{sec:one}\n\n\\section{Second} \\label{sec:two}\n\n\\begin{defn} \\label{def:one}\nA body.\n\\end{defn}\n\nSee Section~\\ref{sec:two} and Definition~\\ref{def:one}.\n\n\\end{document}\n";
+
+importedText[ source_String ] :=
+  Module[ { notebook, file },
+    notebook = NotebookPut[
+      Append[ latexToNotebook[ source ],
+        StyleDefinitions -> Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ] ],
+      Visible -> False ];
+    file = Export[ FileNameJoin[ { $TemporaryDirectory, "MathNotebookImported.pdf" } ], notebook ];
+    NotebookClose[ notebook ];
+    Import[ file, "Plaintext" ]
+  ]
+
 $measured = UsingFrontEnd @ <|
+  "Imported" -> importedText[ $importedSource ],
   "InlineInk" -> AssociationMap[ inlineInk, { "A pair $(V, E)$ here.", "A list $x_1, x_2$ here." } ],
   "DisplayInk" -> displayInk[ $displayParagraph ],
   "LetterInk" -> letterInk[ ],
@@ -217,6 +236,15 @@ VerificationTest[
 VerificationTest[
   $measured[ "LetterInk", "Minimum" ] > 0,
   True
+]
+
+(* LaTeXPaperImport T3: the references resolve on the page. "Section~2" and "Definition~2.1" are
+   the numbers of the cells the labels landed on, and no reference renders as the front end's XXX. *)
+VerificationTest[
+  { StringContainsQ[ $measured[ "Imported" ], "Section~2" ],
+    StringContainsQ[ $measured[ "Imported" ], "Definition~2.1" ],
+    StringContainsQ[ $measured[ "Imported" ], "XXX" ] },
+  { True, True, False }
 ]
 
 (* ... and the two the kernel has opinions about draw the italic letter, not the constant. *)

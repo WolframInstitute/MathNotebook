@@ -28,10 +28,13 @@ VerificationTest[
   { "Section", "Text", "Subsection", "Definition", "Theorem", "Proof", "Text" }
 ]
 
-VerificationTest[ (* the title is the cell content; the \label stays verbatim for T3 to claim *)
+VerificationTest[ (* the title is the cell content, the whitespace around the command is kept, and
+                     T3's \label has become the cell's tag *)
   First @ $cells,
   Cell[ "First", "Section",
-    TaggingRules -> <| "MathNotebook" -> <| "Indent" -> "", "Trailing" -> " \\label{sec:one}", "Separator" -> "\n\n" |> |> ]
+    TaggingRules -> <| "MathNotebook" -> <| "Indent" -> "", "Trailing" -> " ", "Separator" -> "\n\n",
+      "TrailingAfter" -> "" |> |>,
+    CellTags -> "sec:one" ]
 ]
 
 VerificationTest[ (* the source environment name is kept, not the style it was mapped to *)
@@ -102,4 +105,48 @@ VerificationTest[
 VerificationTest[
   notebookToLaTeX @ latexToNotebook[ "\\section{Only}\n\nSome prose.\n" ],
   "\\section{Only}\n\nSome prose.\n"
+]
+
+(* LaTeXPaperImport T3. \label becomes the CellTags the referencing palette and CounterBox both key
+   on, and \ref/\eqref become the front end's own cross-reference — a CounterBox chain resolved at
+   the labelled cell, so the number is right in the PDF with no kernel and follows the target when
+   cells move. \ref is the bare number and \eqref parenthesises it, as LaTeX prints them: authors
+   write "Theorem~\ref{...}", so a "Theorem " prefix would say the word twice. *)
+
+$referenceSource = $preamble <> "\\begin{document}\n\n\\section{First} \\label{sec:one}\n\n\\begin{defn}[Named] \\label{def:one}\nA body.\n\\end{defn}\n\n\\begin{equation}\\label{eq:one}\nx^2\n\\end{equation}\n\nSee Section~\\ref{sec:one}, Definition~\\ref{def:one} and~\\eqref{eq:one}, but not \\ref{fig:absent}.\n\n\\end{document}\n"
+
+$referenceNotebook = latexToNotebook[ $referenceSource ]
+
+VerificationTest[ (* the label lands on the cell it labels, whatever carried it in the source *)
+  Cases[ First @ $referenceNotebook, Cell[ _, style_String, ___, CellTags -> key_String, ___ ] :> style -> key ],
+  { "Section" -> "sec:one", "Definition" -> "def:one", "DisplayFormulaNumbered" -> "eq:one" }
+]
+
+VerificationTest[ (* \ref is the bare counter chain of the target's style, \eqref the same in parens *)
+  Cases[ First @ $referenceNotebook, _ButtonBox, Infinity ],
+  { ButtonBox[ RowBox @ { CounterBox[ "Section", "sec:one" ] }, BaseStyle -> "Citation", ButtonData -> "sec:one" ],
+    ButtonBox[ RowBox @ { CounterBox[ "Section", "def:one" ], ".", CounterBox[ "Theorem", "def:one" ] },
+      BaseStyle -> "Citation", ButtonData -> "def:one" ],
+    ButtonBox[ RowBox @ { "(", CounterBox[ "DisplayFormulaNumbered", "eq:one" ], ")" },
+      BaseStyle -> "Citation", ButtonData -> "eq:one" ] }
+]
+
+VerificationTest[ (* a key no converted cell carries — the specimen paper's figure labels — is left
+                     as source rather than rendered as the front end's XXX *)
+  ! FreeQ[ First @ $referenceNotebook, "\\ref{fig:absent}" ],
+  True
+]
+
+VerificationTest[ (* out and back, with both commands distinguished *)
+  notebookToLaTeX[ $referenceNotebook ],
+  $referenceSource
+]
+
+VerificationTest[ (* the tag is the origin of the exported \label, not a mirror of it: retagging a
+                     structural cell changes the source that comes back *)
+  StringContainsQ[
+    notebookToLaTeX @ Notebook[ Replace[ First @ $referenceNotebook,
+      Cell[ content_, "Section", options___, CellTags -> _, rest___ ] :> Cell[ content, "Section", options, CellTags -> "sec:renamed", rest ], { 1 } ] ],
+    "\\section{First} \\label{sec:renamed}" ],
+  True
 ]
