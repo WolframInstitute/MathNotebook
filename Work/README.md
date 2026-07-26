@@ -21,7 +21,7 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 
 ## Active
 
-- [View and Reference Defects](Active/ViewAndReferenceDefects.md) — T4 done (front-end tests measure resolved sizes and tag-resolved styles, each checked by reintroducing the defect); next: **T5**, the tutorial sentence — and Pavel’s re-check on the original document is still open
+- [View and Reference Defects](Active/ViewAndReferenceDefects.md) — all implementation done (T1–T5: the text slider reaches every prose style, a tagged `Reference` shows its label, a citation to a theorem reads `Theorem 1.1`, front-end tests for all of it, tutorial updated); next: **T6**, Pavel re-checks on the document that produced the report — the Spec's last gate, and not something a session can close
 
 ## Backlog
 

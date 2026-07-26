@@ -52,14 +52,15 @@ Done when a text-size change moves every prose style on screen and in print on a
 
 ## Tasks
 
-- [ ] T5 — Add the sentence the tutorial's *Reading and Writing Comfortably* section has been missing since `PaletteUsability` T5 deliberately withheld it: the text slider now reaches the theorem, proof, reference and list styles, which T1 above made true.
+- [ ] T6 — Pavel re-checks both fixes on the document that produced the report. This is the Spec's one remaining *Done when* gate; there is nothing left to implement, and no session can close it.
 
 ### Done
 
 - [x] T1 — Rebuild the font-size setters on resolved per-style sizes read from the document's own chain; assert every prose style moves, screen and print, on all five sheets. (landed during `PaletteUsability` T6's feedback round, 2026-07-26)
 - [x] T2 — Render the `Reference` label from the cell's `CellTags` at the beginning of the cell; make `InsertCitation` and the bibliography entry agree. *(Session 5)*
 - [x] T3 — Investigate whether a target theorem's resolved counter value is readable at insert time, then make a citation to a numbered environment display `Theorem 1.1` rather than its tag. *(Session 6)*
-- [x] T4 — Tests for all of it, then Pavel re-checks on the document that produced the report. *(Session 7 — tests landed; **Pavel's re-check is still outstanding**, see the Spec's Done-when)*
+- [x] T4 — Tests for all of it. *(Session 7 — the re-check half is split out as T6, since it is Pavel's and not a session's)*
+- [x] T5 — Add the sentence the tutorial's *Reading and Writing Comfortably* section has been missing since `PaletteUsability` T5 deliberately withheld it: the text slider now reaches the theorem, proof, reference and list styles, which T1 above made true. *(Session 8)*
 
 ## Progress
 
@@ -123,6 +124,16 @@ Done when a text-size change moves every prose style on screen and in print on a
   - A front-end test file must do all its measuring in one `UsingFrontEnd` up front and leave the `VerificationTest`s as pure comparisons; otherwise a front-end problem surfaces as a message storm across every test instead of one failed assertion.
   - The embedded-parent trap is tolerable here: while a view override is installed, styles the override does *not* write fall through to `Default.nb`, but every style asserted is one it writes. Worth stating in the file, since the next reader will otherwise "fix" it.
 - **Next:** T5 — the tutorial sentence. Pavel's re-check on the original document remains open and is not something a session can close.
+
+### Session 8 — 2026-07-26 — T5
+
+- **Prompt:** as Session 7.
+- **Did:** The withheld sentence, in the *Reading and Writing Comfortably* section: `Text size` now says it scales "the title, the headings, the abstract, the theorem environments, proofs, bibliography entries, and both kinds of list", which T1 made true.
+  Found a second stale sentence while there, this one made stale by T3 two sessions ago: the *Referencing* section still said `Insert citation` "inserts a red bracketed link to that name", which now describes only a bibliography target.
+  Added an Item next to it saying a citation to a numbered environment reads `Theorem 1.1`, renumbers itself when cells move, holds in the PDF, and keeps its brackets when no cell carries the tag yet.
+  Regenerated `MathNotebookTutorial.nb` from the script; suite still 81.
+- **Learned:** A behaviour change to an exported function silently ages the tutorial, and nothing in the build or the suite notices — `BuildTutorial.wls` is prose, and prose has no test. Worth a look at the *Referencing* and *Document view* sections whenever `Referencing.wl` or `View.wl` changes what a button does.
+- **Next:** T6, which is Pavel's re-check. All implementation for this item is complete; the paclet has **not** been rebuilt or republished tonight (last published version is 0.1.10, from Session 5), since publishing is outward-facing and was not authorized for this run.
 
 ## Decisions
 
