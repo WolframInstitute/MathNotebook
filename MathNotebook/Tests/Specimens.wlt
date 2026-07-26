@@ -16,9 +16,9 @@ AppendTo[ $ContextPath, "WolframInstitute`MathNotebook`PackageScope`" ]
    button splitting T5 found, which no in-kernel comparison can see -- needs a front end and is
    asserted there, on a synthetic source.
 
-   A census that moves is this fixture working, not a bug in it. T7 lifts the display math out of
-   theorem bodies and T8 converts front matter and lists, so both will change these numbers, and the
-   diff is then the record of what the task did. "Bytes" is the guard on that reading: if it moves,
+   A census that moves is this fixture working, not a bug in it. T7 lifted the display math out of
+   theorem bodies and T8 converted the front matter and the lists, so both changed these numbers, and
+   the diff is the record of what each task did. "Bytes" is the guard on that reading: if it moves,
    the paper changed and not the converter. *)
 
 $specimenDirectory =
@@ -75,14 +75,24 @@ specimenTagging[ cell_Cell, key_String ] :=
       Lookup[ Lookup[ Association @ tagging, "MathNotebook", <| |> ], key, "" ] ],
     { { value_String, ___ } :> value, _ :> "" } ]
 
-$environmentStyles = Append[ Keys @ $theoremEnvironments, "Proof" ]
+$environmentStyles = Join[ Keys @ $theoremEnvironments, { "Proof", "Abstract" } ]
 
+$itemStyles = { "Item", "ItemNumbered", "Subitem", "SubitemNumbered", "Subsubitem", "SubsubitemNumbered" }
+
+$listNames = "itemize" | "enumerate" | "description"
+
+(* T8's invariant is the same shape as T7's, one level down: every \item the source writes lands on a
+   cell (Items), and every one of those cells shows a marker (ItemsHeaded) -- either from an Item-family
+   style or, for an item whose whole content is display math, from the dingbat itemHead writes on it.
+   An item that lost its number or its [label] is invisible to the round trip, which reads the stored
+   source, and to the style counts, which see the cell either way. *)
 specimenCensus[ file_String ] :=
-  Module[ { source, notebook, cells, prose, written },
+  Module[ { source, notebook, cells, prose, opens, written },
     source = Import[ file, "Text" ];
     notebook = ImportLaTeXDocument[ file ];
     cells = First[ notebook ];
     prose = specimenProse[ cells ];
+    opens = Map[ specimenTagging[ #, "EnvironmentOpen" ] &, cells ];
     written = FileNameJoin @ { $TemporaryDirectory, "MathNotebookSpecimen.tex" };
     ExportLaTeXDocument[ notebook, written ];
     <| "Bytes" -> StringLength[ source ],
@@ -91,58 +101,82 @@ specimenCensus[ file_String ] :=
        "Tagged" -> Count[ cells, Cell[ __, CellTags -> _, ___ ] ],
        "Buttons" -> Count[ cells, _ButtonBox, Infinity ],
        "Counters" -> Count[ cells, _CounterBox, Infinity ],
-       "Environments" -> Count[ cells, cell_Cell /; specimenTagging[ cell, "EnvironmentOpen" ] =!= "" ],
+       "Environments" -> Count[ opens,
+         opening_ /; StringContainsQ[ opening, "\\begin{" ] &&
+           ! StringContainsQ[ opening, "\\begin{" ~~ $listNames ~~ "}" ] ],
+       "Lists" -> Count[ opens, opening_ /; StringContainsQ[ opening, "\\begin{" ~~ $listNames ~~ "}" ] ],
        "Headed" -> Count[ cells,
          cell : Cell[ _, style_String, ___ ] /; MemberQ[ $environmentStyles, style ] && FreeQ[ cell, CounterIncrements -> { } ] ],
+       "Items" -> Total @ Map[ StringCount[ #, "\\item" ] &, opens ],
+       "ItemsHeaded" -> Count[ cells,
+         cell : Cell[ _, style_String, ___ ] /;
+           StringContainsQ[ specimenTagging[ cell, "EnvironmentOpen" ], "\\item" ] &&
+           ( MemberQ[ $itemStyles, style ] || ! FreeQ[ cell, CellDingbat -> _ ] ) ],
        "Literal" -> <|
          "Reference" -> StringCount[ prose, "\\ref{" | "\\eqref{" ],
          "Citation" -> StringCount[ prose, "\\cite{" ],
          "Graphics" -> StringCount[ prose, "\\includegraphics" ],
-         "Display" -> StringCount[ prose, "\\begin{equation" | "\\begin{align" ] |>,
+         "Display" -> StringCount[ prose, "\\begin{equation" | "\\begin{align" ],
+         "Item" -> StringCount[ prose, "\\item" ],
+         "FrontMatter" -> StringCount[ prose, "\\title{" | "\\author{" | "\\date{" | "\\begin{abstract}" ] |>,
        "Identical" -> notebookToLaTeX[ notebook ] === source,
        "Written" -> Import[ written, "Text" ] === source |>
   ]
 
 $measured = Map[ specimenCensus, $specimens ]
 
-(* The causal paper converts completely: no \ref, \cite, \includegraphics or display environment is
-   left as literal text anywhere in its prose, and its 7 figures are 7 Input cells beside 7 captions.
-   T7 left it untouched -- none of its 32 environments holds display math -- which is why its numbers
-   below are the same ones Session 6 pinned, and is the guard that T7 changed the converter and not
-   the pipeline.
+(* The causal paper converts completely: no \ref, \cite, \includegraphics, display environment, \item
+   or front-matter command is left as literal text anywhere in its prose, and its 7 figures are 7 Input
+   cells beside 7 captions. T7 left it untouched -- none of its 32 environments holds display math --
+   and T8 is where it moves again: 130 cells became 169 as its title, author, date and abstract became
+   cells of their own and its 12 lists became 41 items. \maketitle is the one command left as prose, by
+   the decision that a command with no content has no notebook counterpart; it joins \sloppy and
+   \tableofcontents rather than being singled out.
 
-   Hodge is where T7 shows: 172 cells became 349 as 53 of its 55 display blocks were lifted out of
-   theorem bodies, and 43 of its 72 unconvertible references found the cell they point at. What is
-   left is named rather than rounded off. The 2 display blocks are the ones texToBoxes cannot read --
-   an equation* wrapping a tikzcd and an equation wrapping a gathered -- which are left as source
-   deliberately. Of the 29 references, 6 are at tables and the rest are at labels no cell carries:
-   an align with two \labels keeps only the first, and a \label on its own line inside a body is not
-   on the \begin line where labelledCell reads it. *)
+   Hodge is where T7 showed: 172 cells became 349 as 53 of its 55 display blocks were lifted out of
+   theorem bodies, and 43 of its 72 unconvertible references found the cell they point at. T8 takes it
+   to 378 -- 11 lists, 31 items, a title, an author and an abstract. What is left is named rather than
+   rounded off. The 2 display blocks are the ones texToBoxes cannot read -- an equation* wrapping a
+   tikzcd and an equation wrapping a gathered -- which are left as source deliberately. Of the 29
+   references, 6 are at tables and the rest are at labels no cell carries: an align with two \labels
+   keeps only the first, and a \label on its own line inside a body is not on the \begin line where
+   labelledCell reads it. The 6 literal \items are the three commented-out enumerate blocks, which must
+   stay literal: the comment mask in itemChunks is what keeps them out of the live lists. *)
 $expected = <|
   "Causal graphs" -> <|
     "Bytes" -> 36656,
-    "Cells" -> 130,
-    "Styles" -> <| "Caption" -> 7, "Construction" -> 2, "Definition" -> 20, "DisplayFormula" -> 2,
-      "Input" -> 7, "Reference" -> 14, "Section" -> 8, "Subsection" -> 11, "Text" -> 49,
-      "Theorem" -> 10 |>,
+    "Cells" -> 169,
+    "Styles" -> <| "Abstract" -> 1, "Author" -> 1, "Caption" -> 7, "Construction" -> 2, "Date" -> 1,
+      "Definition" -> 20, "DisplayFormula" -> 2, "Input" -> 7, "Item" -> 38, "ItemNumbered" -> 3,
+      "Reference" -> 14, "Section" -> 8, "Subsection" -> 11, "Text" -> 43, "Theorem" -> 10,
+      "Title" -> 1 |>,
     "Tagged" -> 39,
     "Buttons" -> 14,
     "Counters" -> 25,
-    "Environments" -> 32,
-    "Headed" -> 32,
-    "Literal" -> <| "Reference" -> 0, "Citation" -> 0, "Graphics" -> 0, "Display" -> 0 |> |>,
+    "Environments" -> 33,
+    "Lists" -> 12,
+    "Headed" -> 33,
+    "Items" -> 41,
+    "ItemsHeaded" -> 41,
+    "Literal" -> <| "Reference" -> 0, "Citation" -> 0, "Graphics" -> 0, "Display" -> 0, "Item" -> 0,
+      "FrontMatter" -> 0 |> |>,
   "Hodge" -> <|
     "Bytes" -> 142877,
-    "Cells" -> 349,
-    "Styles" -> <| "Definition" -> 28, "DisplayFormula" -> 50, "DisplayFormulaNumbered" -> 33,
-      "Example" -> 21, "Lemma" -> 14, "Proof" -> 81, "Proposition" -> 7, "Remark" -> 13,
-      "Section" -> 6, "Text" -> 85, "Theorem" -> 11 |>,
+    "Cells" -> 378,
+    "Styles" -> <| "Abstract" -> 1, "Author" -> 1, "Definition" -> 28, "DisplayFormula" -> 50,
+      "DisplayFormulaNumbered" -> 33, "Example" -> 21, "ItemNumbered" -> 28, "Lemma" -> 14,
+      "Proof" -> 77, "Proposition" -> 7, "Remark" -> 13, "Section" -> 6, "Text" -> 87,
+      "Theorem" -> 11, "Title" -> 1 |>,
     "Tagged" -> 84,
     "Buttons" -> 240,
     "Counters" -> 269,
-    "Environments" -> 70,
-    "Headed" -> 70,
-    "Literal" -> <| "Reference" -> 29, "Citation" -> 0, "Graphics" -> 0, "Display" -> 2 |> |> |>
+    "Environments" -> 71,
+    "Lists" -> 11,
+    "Headed" -> 71,
+    "Items" -> 31,
+    "ItemsHeaded" -> 31,
+    "Literal" -> <| "Reference" -> 29, "Citation" -> 0, "Graphics" -> 0, "Display" -> 2, "Item" -> 6,
+      "FrontMatter" -> 0 |> |> |>
 
 (* Both halves of the round trip: the pure core, and the same thing through the public wrapper and a
    file. They are not the same claim -- Export could add or drop a byte the core never sees. Both are
@@ -155,7 +189,8 @@ Do[
       identical = $measured[ name, "Identical" ],
       written = $measured[ name, "Written" ],
       structure = KeyTake[ $measured[ name ], { "Bytes", "Cells", "Styles" } ],
-      references = KeyTake[ $measured[ name ], { "Tagged", "Buttons", "Counters", "Environments", "Headed" } ],
+      references = KeyTake[ $measured[ name ],
+        { "Tagged", "Buttons", "Counters", "Environments", "Lists", "Headed", "Items", "ItemsHeaded" } ],
       literal = $measured[ name, "Literal" ],
       expected = $expected[ name ] },
     VerificationTest[ identical, True,
@@ -164,7 +199,9 @@ Do[
       TestID -> id <> ": the written file is the imported source" ];
     VerificationTest[ structure, KeyTake[ expected, { "Bytes", "Cells", "Styles" } ],
       TestID -> id <> ": cells and styles" ];
-    VerificationTest[ references, KeyTake[ expected, { "Tagged", "Buttons", "Counters", "Environments", "Headed" } ],
+    VerificationTest[ references,
+      KeyTake[ expected,
+        { "Tagged", "Buttons", "Counters", "Environments", "Lists", "Headed", "Items", "ItemsHeaded" } ],
       TestID -> id <> ": tags, citations and counters" ];
     VerificationTest[ literal, expected[ "Literal" ],
       TestID -> id <> ": what is still literal LaTeX" ] ],

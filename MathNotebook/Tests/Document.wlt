@@ -25,7 +25,7 @@ VerificationTest[
 
 VerificationTest[
   Map[ #[[ 2 ]] &, $cells ],
-  { "Section", "Text", "Subsection", "Definition", "Theorem", "Proof", "Text" }
+  { "Section", "Text", "Subsection", "Definition", "Theorem", "Proof", "Item" }
 ]
 
 VerificationTest[ (* the title is the cell content, the whitespace around the command is kept, and
@@ -62,10 +62,13 @@ VerificationTest[ (* mathematics inside a section title and an environment body 
   True
 ]
 
-VerificationTest[ (* itemize is not a theorem environment: it stays as text, so the export can put
-                     it back untouched *)
-  ! FreeQ[ Last @ $cells, "\\begin{itemize}\n    \\item untouched\n\\end{itemize}" ],
-  True
+VerificationTest[ (* T8: the itemize is an Item cell whose content is the item's own text, with the
+                     \begin, the \item and the \end all carried as source around it *)
+  { Last[ $cells ][[ 1 ]], Last[ $cells ][[ 2 ]],
+    Cases[ Last @ $cells, ( TaggingRules -> <| "MathNotebook" -> tagging_ |> ) :>
+      Lookup[ tagging, { "EnvironmentOpen", "EnvironmentClose" } ] ] },
+  { "untouched", "Item",
+    { { "\\begin{itemize}\n    \\item ", "\n\\end{itemize}" } } }
 ]
 
 VerificationTest[ (* the whole document, out and back, byte for byte *)
@@ -426,4 +429,134 @@ VerificationTest[
     StringCount[ notebookToLaTeX @ latexToNotebook[ $displayFirstSource ], "\\label{eq:x}" ],
     notebookToLaTeX @ latexToNotebook[ $displayFirstSource ] === $displayFirstSource },
   { { "DisplayFormulaNumbered", "Definition" }, 1, True }
+]
+
+(* LaTeXPaperImport T8. Front matter and lists. \title, \author and \date join the three sectioning
+   commands as commands whose braced argument is the cell's content — the style name lowercased is the
+   command, so one clause writes all six back — and abstract joins proof as an environment outside the
+   twelve that has a style of its own. A list is recorded exactly as T7 records a theorem: the \begin
+   on the first cell of the group, the \end on the last, and each \item on the cell it opens. *)
+
+$frontSource = $preamble <> "\\begin{document}\n\n\\title{\\vspace{-1cm}A Paper}\n\\author{\n% a comment\n{First Author}\n}\n\\date{}\n\n\\maketitle\n\n\\begin{abstract}\nAn abstract with $x^2$.\n\nA second paragraph of it.\n\\end{abstract}\n\n\\section{Body}\n\n\\end{document}\n"
+
+$frontNotebook = latexToNotebook[ $frontSource ]
+
+(* \maketitle is the one front-matter command left as prose: it has no content, so it has no notebook
+   counterpart, and hiding it while \sloppy and \tableofcontents stay visible would be arbitrary. *)
+VerificationTest[
+  Map[ #[[ 2 ]] &, First @ $frontNotebook ],
+  { "Title", "Author", "Date", "Text", "Abstract", "Abstract", "Section" }
+]
+
+(* A braced argument is matched brace-balanced, not up to the first "}", or the specimen's
+   \title{\vspace{-1.5cm}...} would have been cut in half; \date{} is the empty case. *)
+VerificationTest[
+  Cases[ First @ $frontNotebook, Cell[ content_, "Title" | "Author" | "Date", ___ ] :> content ],
+  { "\\vspace{-1cm}A Paper", "\n% a comment\n{First Author}\n", "" }
+]
+
+(* The abstract is a block like a theorem: only its first cell is headed, so the style's "Abstract. "
+   dingbat is printed once however many paragraphs it runs to. *)
+VerificationTest[
+  Map[ FreeQ[ #, CounterIncrements ] &, Cases[ First @ $frontNotebook, Cell[ _, "Abstract", ___ ] ] ],
+  { True, False }
+]
+
+VerificationTest[ (* out and back, byte for byte *)
+  notebookToLaTeX[ $frontNotebook ],
+  $frontSource
+]
+
+VerificationTest[ (* the cell owns its content, so retitling the notebook reaches the .tex *)
+  StringContainsQ[
+    notebookToLaTeX @ Notebook[ Replace[ First @ $frontNotebook,
+      Cell[ _, "Title", options___ ] :> Cell[ "Renamed", "Title", options ], { 1 } ] ],
+    "\\title{Renamed}" ],
+  True
+]
+
+$listSource = $preamble <> "\\begin{document}\n\n\\begin{itemize}\n    \\item First with $x^2$.\n    \\item Second.\n\n      A second paragraph.\n\\end{itemize}\n\n\\begin{enumerate}\n\\item[(E)] Labelled.\n\\item Plain.\n\\end{enumerate}\n\n\\end{document}\n"
+
+$listNotebook = latexToNotebook[ $listSource ]
+
+(* An item is a cell; a second paragraph of the same item is an ItemParagraph, which is what carries
+   no bullet of its own. *)
+VerificationTest[
+  Map[ #[[ 2 ]] &, First @ $listNotebook ],
+  { "Item", "Item", "ItemParagraph", "ItemNumbered", "ItemNumbered" }
+]
+
+(* LaTeX restarts every list where the front end's counters run on until a section resets them, so the
+   first item of a list carries the reset — and \item[label] prints its label instead of the number
+   and consumes no counter, so the label becomes the cell's dingbat. *)
+VerificationTest[
+  Map[
+    { FirstCase[ #, ( CounterAssignments -> value_ ) :> value, None ],
+      FirstCase[ #, ( CounterIncrements -> value_ ) :> value, None ],
+      FirstCase[ #, ( CellDingbat -> Cell[ TextData[ label_ ], ___ ] ) :> label, None ] } &,
+    Cases[ First @ $listNotebook, Cell[ _, "Item" | "ItemNumbered", ___ ] ] ],
+  { { { { "Item", 0 } }, None, None },
+    { None, None, None },
+    { { { "ItemNumbered", 0 } }, { }, { "(E)" } },
+    { None, None, None } }
+]
+
+VerificationTest[ (* out and back, byte for byte, with every \item where the source had it *)
+  notebookToLaTeX[ $listNotebook ],
+  $listSource
+]
+
+(* A list inside a theorem body: the body's prose cells take the environment style and the item cells
+   are left alone, because environmentStyled restyles only what is still "Text" at its level. *)
+$listInBodySource = $preamble <> "\\begin{document}\n\n\\begin{defn}\nA definition:\n\\begin{itemize}\n\\item One.\n\\end{itemize}\nand after.\n\\end{defn}\n\n\\end{document}\n"
+
+VerificationTest[
+  { Map[ #[[ 2 ]] &, First @ latexToNotebook[ $listInBodySource ] ],
+    notebookToLaTeX @ latexToNotebook[ $listInBodySource ] === $listInBodySource },
+  { { "Definition", "Item", "Definition" }, True }
+]
+
+(* Nesting: the depth chooses Subitem over Item, and the two wrappers meet on the inner list's last
+   cell, where the outer \end is appended to the inner's. *)
+$nestedListSource = $preamble <> "\\begin{document}\n\n\\begin{itemize}\n\\item Outer.\n  \\begin{enumerate}\n  \\item Inner.\n  \\end{enumerate}\n\\end{itemize}\n\n\\end{document}\n"
+
+VerificationTest[
+  { Map[ #[[ 2 ]] &, First @ latexToNotebook[ $nestedListSource ] ],
+    notebookToLaTeX @ latexToNotebook[ $nestedListSource ] === $nestedListSource },
+  { { "Item", "SubitemNumbered" }, True }
+]
+
+(* An item whose whole content is display math has no cell that could take the item style — three of
+   hodgepaper's description items are an align and nothing else — so the head goes onto the cell that
+   opens it. Without this the item's [label], which is the whole of its content, is not shown at all. *)
+$displayItemSource = $preamble <> "\\begin{document}\n\n\\begin{description}\n\\item[(a)]\n\\begin{equation*}\nx^2\n\\end{equation*}\n\\end{description}\n\n\\end{document}\n"
+
+VerificationTest[
+  { Map[ #[[ 2 ]] &, First @ latexToNotebook[ $displayItemSource ] ],
+    Cases[ First @ latexToNotebook[ $displayItemSource ],
+      Cell[ ___, CellDingbat -> Cell[ TextData[ label_ ], ___ ], ___ ] :> label, Infinity ],
+    notebookToLaTeX @ latexToNotebook[ $displayItemSource ] === $displayItemSource },
+  { { "DisplayFormula" }, { { "(a)" } }, True }
+]
+
+(* Which \item belongs to this list is a depth walk, and both halves of it bite on the specimen. A
+   \begin written inline whose \end starts a line — $\begin{cases} ... \n\end{cases}$ — drove the depth
+   negative when only line-initial delimiters were counted, and items (b) and after became
+   continuation paragraphs of (a). A commented-out %\item must not count at all, which is what the
+   comment mask does now that the StartOfLine anchor cannot do it alone. *)
+$maskSource = $preamble <> "\\begin{document}\n\n\\begin{enumerate}\n\\item[(a)] A case: $x = \\begin{cases}\n\t1\n\t\\end{cases}$\n%\\item[(skipped)] commented out\n\\item[(b)] Second.\n\\end{enumerate}\n\n\\end{document}\n"
+
+VerificationTest[
+  { Map[ #[[ 2 ]] &, First @ latexToNotebook[ $maskSource ] ],
+    Cases[ First @ latexToNotebook[ $maskSource ],
+      Cell[ ___, CellDingbat -> Cell[ TextData[ label_ ], ___ ], ___ ] :> label, Infinity ],
+    notebookToLaTeX @ latexToNotebook[ $maskSource ] === $maskSource },
+  { { "ItemNumbered", "ItemNumbered" }, { { "(a)" }, { "(b)" } }, True }
+]
+
+(* A list with no items at all still has to come back out. *)
+VerificationTest[
+  notebookToLaTeX @ latexToNotebook[
+    $preamble <> "\\begin{document}\n\n\\begin{itemize}\n\\end{itemize}\n\n\\end{document}\n" ],
+  $preamble <> "\\begin{document}\n\n\\begin{itemize}\n\\end{itemize}\n\n\\end{document}\n"
 ]

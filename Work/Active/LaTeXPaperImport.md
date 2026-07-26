@@ -49,7 +49,6 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
 
 ## Tasks
 
-- [ ] T8 — Front matter: `\title`, `\author`, `\date`, `\maketitle`, `abstract` → the `Title`/`Author`/`Date`/`Abstract` styles the stylesheets define, and lists (`itemize`, `enumerate`, `description`) → the `Item` family.
 - [ ] T9 — Numbering. The Spec's "numbering must match" is measurably violated: the causal-graphs paper declares `\newtheorem{defn}{Definition}[subsection]` and numbers per subsection, while the imported notebook renders `Axiom 3.2`, `Definition 3.5` — per section, from the stylesheet's counters.
 - [ ] T10 — `thebibliography` written into the `.tex` ↔ `Reference` cells, and a report when a declared `.bib` is missing. T4 does the `.bib` route, which both specimens use; an in-source bibliography needs a per-item source and separator on each cell inside one environment wrapper, which is the same design problem as T7.
 - [ ] T11 — An imported paper opens with its environments live. `latexToNotebook` sets no `StyleDefinitions` at all, so a fresh import lands on `Default.nb`, where the twelve environment styles do not exist and a reference reads `2.0`. Two halves: a fifth stylesheet that is `Default.nb` plus the environments — same base cell list, Default's typography, contributing only the environment/`Caption`/`Reference`/`Citation` styles and their counters — and `ImportLaTeXDocument` choosing a sheet from the source's `\documentclass` (`amsart` → `AMSArticle`, `revtex` → `RevTeXAPS`, else the new one). What must *not* be done is writing `CounterIncrements`/`CellDingbat` onto each cell to survive any sheet: per-cell options beat the sheet, so swapping sheets to retarget a journal would stop working, and that is the paclet's whole point. *(Pavel's question, Session 6)*
@@ -64,6 +63,7 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
 - [x] T5 — Figures: preserve TikZ, add generating Wolfram code with rendered output, for one real figure of the paper. *(Session 5)*
 - [x] T6 — Make both papers round-trip test fixtures under `MathNotebook/Tests/`. T2 already gets a byte-identical round trip on each; the fixture pins it. *(Session 6)*
 - [x] T7 — Display math and nested environments *inside* a theorem-like environment body. *(Session 7)*
+- [x] T8 — Front matter: `\title`, `\author`, `\date`, `\maketitle`, `abstract` → the `Title`/`Author`/`Date`/`Abstract` styles the stylesheets define, and lists (`itemize`, `enumerate`, `description`) → the `Item` family. *(Session 8)*
 
 ## Progress
 
@@ -332,6 +332,55 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
   - `Position[pieces, _Cell, {1}]` needs `Heads -> False`, and `Last[list, default]` rather than `Last[list]`, or an environment with no prose cell takes the whole import down with a message about `Last`.
 - **Next:** T8 — front matter and lists.
 
+### Session 8 — 2026-07-27 — T8
+
+- **Prompt:** `/next-session` continued.
+- **Did:** Front matter and lists, both directions, with the round trip still exact on both papers — in the kernel and through a real save and reopen.
+
+  | | causal graphs | hodgepaper |
+  |---|---|---|
+  | cells | 130 → **169** | 349 → **378** |
+  | front matter | `Title`, `Author`, `Date`, `Abstract` | `Title`, `Author`, `Abstract` |
+  | lists → items | 12 → **41** | 11 → **31** |
+  | items headed | 41 / 41 | 31 / 31 |
+  | environments headed exactly once | 33 / 33 | 71 / 71 |
+  | literal `\item` left | 0 | 6 — all in commented-out blocks |
+  | literal front-matter command left | 0 | 0 |
+  | round trip, in kernel and through a save | identical | identical |
+
+  **`\title`, `\author` and `\date` are the sectioning commands with a different table.**
+  All six are a command whose braced argument is the cell's content, and the style name lowercased *is* the command, so one `cellToLaTeX` clause writes all six back and `commandRules` builds all six rules.
+  The argument had to stop being matched with `Shortest[…] ~~ "}"`: the specimen's title is `\title{\vspace{-1.5cm}Axiomatic Relativity…}`, which that pattern cut off at `\vspace{-1.5cm`.
+  It is brace-balanced to three levels now, and a deeper nesting simply does not match and stays literal source — the same safe failure T3 gave an unresolvable `\ref`.
+  The cell owns its content, so retitling the notebook reaches the `.tex`.
+
+  **An `abstract` is a `proof`**: an environment outside the twelve that the stylesheets nevertheless declare a style for, unnumbered, carrying its own label.
+  Adding it to the environment table and to `$plainEnvironments` was the whole change — the T7 body machinery then splits a two-paragraph abstract into two `Abstract` cells and heads only the first, so "Abstract. " is printed once.
+
+  **A list is a T7 environment whose items are its cells.**
+  The `\begin{itemize}` rides on the first cell of the group, the `\end{itemize}` on the last, and each `\item` on the cell it opens — all three in the *same* `"EnvironmentOpen"` slot, each *prepended* to whatever the cell already carries.
+  That one decision is what makes nesting come out in source order with no new machinery: the outer `\item`, then the inner `\begin`, then the inner `\item`, because the inner wrappers are applied first and the outer ones prepend.
+  So an item's content goes through `splitPieces` like any other body — display math lifted, nested environments recursed into — and `description` needs no case of its own, since every one of its items carries the `[label]` that becomes its dingbat, exactly as an `\item[(E)]` inside an `enumerate` does.
+
+  **Two things the front end gets wrong unless the cell says otherwise.**
+  LaTeX restarts every list where `ItemNumbered` runs on until a `Section` resets it, so the first item of each list carries `CounterAssignments`; without it two lists in one section read 1, 2, 3, 4.
+  And an `\item[label]` consumes no counter, so the labelled cell carries `CounterIncrements -> {}` and the item after it is 1.
+  Neither is visible in the kernel or in a round trip — both read the stored source — so the assertion is a `"CounterValue"` read off the live cells in `Tests/FrontEnd.wlt`, which measured `{1, 2, 0, 1}` where dropping the reset gives `{1, 2, 2, 3}`.
+
+  **Verified on the page.** The imported causal paper renders as an **8-page PDF** (7 at T7) with no `XXX`, `Abstract.` once, `1.`/`2.`/`3.` on its numbered items, all 32 environments still numbered, `Figure 1`–`Figure 7`, and not one literal `\title`, `\author`, `\date`, `\begin{abstract}`, `\begin{itemize}`, `\begin{enumerate}` or `\item` anywhere in the text.
+  It got a page *longer*, not shorter: the front matter and the items have their own generous margins where they used to be justified body prose.
+
+  **Tests.** Thirteen new in `Tests/Document.wlt`, two in `Tests/FrontEnd.wlt`, and four new census keys in `Tests/Specimens.wlt` — `Lists`, `Items`, `ItemsHeaded` and two more `Literal` counts; 180 pass and the one failure is T12, pre-existing and unrelated.
+  Five defects reintroduced: dropping the front-matter commands fails 3 + 2, dropping `listRules` fails 8 + 6, counting the depth only at line starts fails 1 + 3, dropping the per-list counter reset fails **only** the front-end test, and dropping the prose-less item head fails 1 + 1.
+- **Learned:**
+  - **A depth walk cannot be anchored to `StartOfLine`, and this is the bug T8 nearly shipped.** Counting only line-initial `\begin{`/`\end{` is asymmetric: hodgepaper writes `\begin{cases}` inline and its `\end{cases}` at the start of a line, so the depth went to −1 and items (b), (c) and (d) of that list became *continuation paragraphs of item (a)* — 3 of 31 items silently lost, with the round trip byte-identical and every other census number intact. Both delimiters have to be counted wherever they stand, with the comments masked instead: a `%`-tail becomes spaces of its own length, so positions still index the source. That is the fourth time in this item that fidelity and correctness came apart, and the first time the census did not catch it either — only counting *markers against source `\item`s* did.
+  - **T7's "the head goes on the first prose cell" is false for items.** All 102 environments of the two papers open with prose, so T7 could leave it; 6 of 31 items do not — three `description` items and three `enumerate` items are an `align` and nothing else — and those items rendered with no bullet, no number and no `[label]` at all, which for a `description` is the whole of the content. The head is written onto whatever cell opens such an item: the dingbat is free on a display formula (its number lives in `CellFrameLabels`) and the counter is *appended* to the one the cell already increments rather than replacing it. This is the one place a positive counter goes on a cell, bounded to a cell with no other way to be headed.
+  - **`StringCases[s, patt :> ""]` returns `{}`, not `{""}`** — a match whose replacement is the empty string is dropped from the result. It cost half an hour of believing a brace-balanced pattern did not match `\date{}` when it matched perfectly; the pattern was verifiable only by giving the rule a non-empty RHS.
+  - **In a string pattern `|` binds tighter than `~~`.** `A | "{" ~~ B ~~ "}"` is `StringExpression[Alternatives[A, "{"], B, "}"]`, so a brace-group alternative needs its own parentheses — without them the pattern silently matched nothing. This is the complement of the `~~`/`:` note already in `CLAUDE.md`.
+  - **`git checkout --` is not a way to restore a bite check.** The harness I wrote restored the file from git between defects, which discarded the whole session's uncommitted implementation on the first iteration; it had to be retyped. Copy the working file aside and restore from the copy, and patch by *verified literal* replacement — the same `perl -pi` that matched nothing and reported a green suite happened again in this session, exactly as Session 4 recorded.
+  - **`MathNotebook/Assets/MathNotebookTutorial.nb` carries hand edits in the working tree** — 7 cells that are not in the build script's output, including an evaluated `Output` cell and a "As explained in Equation (n)" cell with a live reference button, i.e. someone using the tutorial as a scratchpad for the referencing palette. Regenerating discards them. `Scripts/BuildTutorial.wls` is updated for T8 and the `.nb` is **not** regenerated; that is Pavel's call, and until it is made the shipped tutorial still says lists and front matter are carried verbatim.
+- **Next:** T9 — numbering: the causal paper declares `\newtheorem{defn}{Definition}[subsection]` and numbers per subsection where the stylesheets number per section. T8 adds one case to it: `\begin{enumerate}[label=(\alph*)]` renders `1.` where LaTeX renders `(a)`, twice in hodgepaper.
+
 ## Decisions
 
 | Date | Decision | Rationale |
@@ -350,3 +399,8 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
 | 2026-07-27 | An environment spans cells; the `\begin` rides on the first cell of the group and the `\end` on the last, as plain strings | it is what lets the body be split by the same code the document body goes through — display math lifted, nested environments recursed into — while the export stays a `StringJoin` and the delimiters stay where the source had them; keeping the body to one cell was only ever a consequence of the `\end` having nowhere to go |
 | 2026-07-27 | A continuation cell suppresses the dingbat, the counter and the QED square on the cell, rather than the sheets gaining twelve continuation styles | "this cell continues the one above" is true under every stylesheet, so a sheet swap still retargets the journal — unlike writing the positive counter onto each cell, which T11 rules out — and it costs no stylesheet change at all |
 | 2026-07-27 | The heading goes on the body's first *prose* cell, so a body opening with display math is headed after the equation | all 102 environments of the two specimens open with prose; the alternative is writing an explicit dingbat and counter onto whatever cell opens the group, which is the per-cell counter T11 rules out, guessed at for a case no paper here has |
+| 2026-07-27 | An `\item` is recorded in the *same* `"EnvironmentOpen"` slot as a `\begin`, prepended rather than kept apart | it is what makes a nested list come back in source order — outer `\item`, inner `\begin`, inner `\item` — with no new machinery and no new export clause, because the inner wrappers are applied first and each outer one prepends; two slots would have to know which comes first and would get it wrong |
+| 2026-07-27 | `\maketitle` stays as literal prose | it has no content, so it has no notebook counterpart — the Title/Author/Date cells *are* the title block — and hiding it while `\sloppy`, `\tableofcontents` and `\newpage` stay visible would be arbitrary; a cell that renders as nothing and exports a command is the general fix and belongs with whichever task decides to take on all of them |
+| 2026-07-27 | An `\item[label]`'s dingbat is a mirror of the `[label]` stored in the marker, not the origin of one | recovering an edited dingbat means re-serializing boxes to TeX, which is what the bibliography decision already declined; the label round-trips verbatim either way, and the cost — editing the label in the notebook does not reach the `.tex` — is the same cost a `.bib` entry has |
+| 2026-07-27 | An item with no prose cell is headed by writing the dingbat, and if unlabelled the counter, onto whatever cell opens it | 6 of the two papers' 31 items are an `align` and nothing else, and they rendered with no marker at all — for a `description` item the `[label]` is the whole content; restyling a display formula as an `Item` would cost its centering and its equation number, and inserting an empty head cell would inject a `"\n\n"` the separator machinery cannot suppress |
+| 2026-07-27 | No stylesheet change: lists use the `Item` family the chain already resolves from `Default.nb` | `$proseStyles` in `BuildStyleSheets.wls` already lists `Item`, `ItemNumbered` and `ItemParagraph`, so all four templates already set the paper's `FontFamily` on them and the view controls already reach them; the gap is that `Subitem`/`Subsubitem` are not in that list, which only shows on a nested list and neither specimen has one |

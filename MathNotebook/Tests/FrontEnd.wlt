@@ -206,8 +206,31 @@ notebookImageInk[ imported_Notebook ] :=
     inkOf @ Import[ file ]
   ]
 
+(* LaTeXPaperImport T8: LaTeX restarts every list, where the front end's ItemNumbered counter runs on
+   until a Section resets it — so two lists in one section would read 1, 2, 3, 4 and the second one
+   would be wrong. The reset is a CounterAssignments on the first item of each list, and nothing in
+   the kernel or in the round trip can see whether it worked: both read the stored source. Reading the
+   resolved counter off the live cells is exact where the rendered page is not — an item's dingbat is
+   just "1.", which collides with everything in a PDF's plaintext. An \item[label] prints its label
+   instead of the number and consumes no counter, which is why the third value is 0 and not 1. *)
+
+$listPaper = "\\documentclass{article}\n\\begin{document}\n\n\\title{A Title}\n\\author{An Author}\n\\maketitle\n\n\\begin{abstract}\nAn abstract.\n\nA second paragraph of it.\n\\end{abstract}\n\n\\section{First}\n\n\\begin{enumerate}\n\\item First.\n\\item Second.\n\\end{enumerate}\n\nBetween the lists.\n\n\\begin{enumerate}\n\\item[(E)] Labelled.\n\\item Restarted.\n\\end{enumerate}\n\n\\end{document}\n";
+
+listMeasurements[ source_String ] :=
+  Module[ { notebook, counters },
+    notebook = NotebookPut[
+      Append[ latexToNotebook[ source ],
+        StyleDefinitions -> Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ] ],
+      Visible -> False ];
+    counters = Map[ CurrentValue[ #, { "CounterValue", "ItemNumbered" } ] &,
+      Cells[ notebook, CellStyle -> "ItemNumbered" ] ];
+    NotebookClose[ notebook ];
+    <| "Counters" -> counters, "Text" -> importedText @ latexToNotebook[ source ] |>
+  ]
+
 $measured = UsingFrontEnd @ <|
   "Imported" -> importedText[ $importedSource ],
+  "Lists" -> listMeasurements[ $listPaper ],
   "Figures" -> figureMeasurements[ $figurePaper ],
   "Saved" -> savedRoundTrip[ $savedSource ],
   "Body" -> importedText @ latexToNotebook[ $bodyPaper ],
@@ -379,4 +402,28 @@ VerificationTest[
     StringContainsQ[ $measured[ "Body" ], "See Theorem~1.1, Theorem~1.2 and~(1)." ],
     StringContainsQ[ $measured[ "Body" ], "XXX" | "\\begin{equation" ] },
   { 1, 1, 1, 1, True, False }
+]
+
+(* LaTeXPaperImport T8: the second list restarts. Without the per-list reset these read 1, 2, 2, 3. *)
+VerificationTest[
+  $measured[ "Lists", "Counters" ],
+  { 1, 2, 0, 1 }
+]
+
+(* ... and the front matter is on the page: the title and author as their own styles, the abstract
+   headed once however many paragraphs it runs to, the [label] of an item drawn instead of a number,
+   and no list or front-matter command left as prose. The author is read case-insensitively because
+   the Author style is small caps, so the PDF's plaintext of "An Author" is "AN AUTHOR". \maketitle is
+   the one command still there, by the decision that a command with no content has no notebook
+   counterpart — it is asserted rather than overlooked. *)
+VerificationTest[
+  { StringContainsQ[ $measured[ "Lists", "Text" ], "A Title" ],
+    StringContainsQ[ $measured[ "Lists", "Text" ], "An Author", IgnoreCase -> True ],
+    StringCount[ $measured[ "Lists", "Text" ], "Abstract." ],
+    StringContainsQ[ $measured[ "Lists", "Text" ], "(E)" ],
+    StringContainsQ[ $measured[ "Lists", "Text" ],
+      "\\item" | "\\title" | "\\author" | "\\begin{abstract}" | "\\begin{enumerate}" ],
+    StringCount[ $measured[ "Lists", "Text" ], "\\maketitle" ],
+    StringContainsQ[ $measured[ "Lists", "Text" ], "XXX" ] },
+  { True, True, 1, True, False, 1, False }
 ]

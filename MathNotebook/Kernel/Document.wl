@@ -61,11 +61,13 @@ exportedCellQ[ cell_Cell ] :=
    defaults are the twelve style names lowercased; a \newtheorem declaration overrides or adds to
    them, in either of its two forms — \newtheorem{name}{Printed}[counter] and, when the environment
    shares another's counter, \newtheorem{name}[shared]{Printed}. The specimen paper declares four
-   of its own, so a fixed table of English names would have matched none of them. *)
+   of its own, so a fixed table of English names would have matched none of them.
+   proof and abstract are declared by the document class rather than by a \newtheorem, and each has a
+   style of its own, so both are here unconditionally. *)
 theoremEnvironments[ preamble_String ] :=
   Join[
     AssociationMap[ Capitalize, Map[ ToLowerCase, Keys @ $theoremEnvironments ] ],
-    <| "proof" -> "Proof" |>,
+    <| "proof" -> "Proof", "abstract" -> "Abstract" |>,
     Association @ StringCases[ preamble,
       { "\\newtheorem" ~~ "*" | "" ~~ "{" ~~ name : Except[ "}" ] .. ~~ "}{" ~~ printed : Except[ "}" ] .. ~~ "}" :>
           name -> printed,
@@ -111,23 +113,46 @@ cellSeparator[ cell_Cell ] :=
    declared environment name, with the name written literally into both delimiters — a string
    pattern will not take a back-reference to a named Alternatives, and answers
    StringExpression::invld rather than failing to match. Only declared names are matched, so
-   \begin{figure} and \begin{itemize} pass through as text. *)
+   \begin{figure} and \begin{table} pass through as text. *)
 structureRules[ environments_Association, entries_Association ] :=
   Join[
     bibliographyRules[ entries ],
     figureRules[ ],
-    Map[ Apply[ { command, style } |->
-        ( StartOfLine ~~ indent : ( " " | "\t" ) ... ~~ command ~~ "{" ~~ Shortest[ title___ ] ~~ "}" ~~
-            trailing : Except[ "\n" ] ... :> sectionCell[ style, indent, title, trailing ] ) ],
-      { { "\\subsubsection", "Subsubsection" }, { "\\subsection", "Subsection" }, { "\\section", "Section" } } ],
-    environmentRules[ environments ] ]
+    commandRules[ ],
+    nestedRules[ environments, 1 ] ]
 
-environmentRules[ environments_Association ] :=
+(* The rules that may apply inside another block's body as well as at document level: an environment,
+   and a list. The depth is the list nesting, which is what chooses between Item, Subitem and
+   Subsubitem; a theorem inside an item does not change it. *)
+nestedRules[ environments_Association, depth_Integer ] :=
+  Join[ listRules[ environments, depth ], environmentRules[ environments, depth ] ]
+
+(* One rule shape for every command whose braced argument is the cell's content — the three
+   sectioning commands and the three front-matter ones. The style name lowercased is the command it
+   came from, so cellToLaTeX needs no table to write it back. The argument is matched brace-balanced
+   rather than up to the first "}", because the specimen's title is \title{\vspace{-1.5cm}...} and a
+   section title may hold a $\mathcal{H}$; a deeper nesting than the pattern allows simply does not
+   match, and the command stays literal source. *)
+commandRules[ ] :=
+  Map[ Apply[ { command, style } |->
+      ( StartOfLine ~~ indent : ( " " | "\t" ) ... ~~ command ~~ "{" ~~ title : $braceBody ~~ "}" ~~
+          trailing : Except[ "\n" ] ... :> sectionCell[ style, indent, title, trailing ] ) ],
+    $commandStyles ]
+
+$commandStyles = {
+  { "\\subsubsection", "Subsubsection" }, { "\\subsection", "Subsection" }, { "\\section", "Section" },
+  { "\\title", "Title" }, { "\\author", "Author" }, { "\\date", "Date" } }
+
+$braceGroup = "{" ~~ ( Except[ "{" | "}" ] | ( "{" ~~ Except[ "{" | "}" ] ... ~~ "}" ) ) ... ~~ "}"
+
+$braceBody = ( Except[ "{" | "}" ] | $braceGroup ) ...
+
+environmentRules[ environments_Association, depth_Integer ] :=
   Map[ name |->
       ( StartOfLine ~~ indent : ( " " | "\t" ) ... ~~ ( "\\begin{" <> name <> "}" ) ~~
           title : ( "[" ~~ Except[ "]" ] ... ~~ "]" ) | "" ~~ trailing : Except[ "\n" ] ... ~~
           Shortest[ inner___ ] ~~ StartOfLine ~~ closingIndent : ( " " | "\t" ) ... ~~ ( "\\end{" <> name <> "}" ) :>
-        environmentCell[ environments, name, indent, title, trailing, inner, closingIndent ] ),
+        environmentCell[ environments, depth, name, indent, title, trailing, inner, closingIndent ] ),
     Keys[ environments ] ]
 
 sectionCell[ style_String, indent_String, title_String, trailing_String ] :=
@@ -141,10 +166,10 @@ sectionCell[ style_String, indent_String, title_String, trailing_String ] :=
    with the \begin{...} on the first, so the export is still a StringJoin and the delimiters still
    land where the source had them. Nesting composes by concatenation: an outer \begin is prepended
    to whatever opening its first cell already carries and an outer \end appended to its closing. *)
-environmentCell[ environments_Association, name_String, indent_String, title_String, trailing_String,
-    inner_String, closingIndent_String ] :=
+environmentCell[ environments_Association, depth_Integer, name_String, indent_String, title_String,
+    trailing_String, inner_String, closingIndent_String ] :=
   environmentPieces[ environments[ name ], name, indent, title, trailing, closingIndent,
-    splitPieces[ inner, environmentRules[ environments ] ] ]
+    splitPieces[ inner, nestedRules[ environments, depth ] ] ]
 
 environmentPieces[ printed_String, name_String, indent_String, title_String, trailing_String,
     closingIndent_String, pieces_List ] :=
@@ -201,15 +226,192 @@ environmentStyledCell[ Cell[ content_, "Text", options___ ], printed_String, fir
 
 (* A declared environment whose printed name is none of the twelve — the specimen paper's ten
    Axioms — is written as a Theorem, which numbers it correctly, with a dingbat that says what it
-   really is. The alternative was to leave a third of the paper's environments as literal text. *)
+   really is. The alternative was to leave a third of the paper's environments as literal text.
+   Proof and Abstract are the two names outside the twelve that the stylesheets do declare: neither is
+   numbered, and each carries the label it needs ("Proof." and "Abstract. ") in its own style. *)
+$plainEnvironments = { "Proof", "Abstract" }
+
 environmentStyle[ printed_String ] :=
-  If[ KeyExistsQ[ $theoremEnvironments, printed ] || printed === "Proof", printed, "Theorem" ]
+  If[ KeyExistsQ[ $theoremEnvironments, printed ] || MemberQ[ $plainEnvironments, printed ],
+    printed, "Theorem" ]
 
 environmentDingbat[ printed_String ] :=
   If[ environmentStyle[ printed ] === printed,
     { },
     { CellDingbat -> Cell[ TextData[ { printed <> " ", CounterBox[ "Section" ], ".", CounterBox[ "Theorem" ], "." } ],
         FontWeight -> "Bold" ] } ]
+
+(* A list is an environment whose items are its cells, and it is recorded exactly as T7 records a
+   theorem: the \begin{itemize} rides on the first cell of the group, the \end{itemize} on the last,
+   and each \item on the cell it opens — all of them plain strings in the tagging rules, so the export
+   stays a StringJoin. An item's content then goes through splitPieces like any other body, so its
+   display math is lifted into its own cell and a nested environment or list is recursed into, and the
+   markers come back out in source order because each wrapper is *prepended* to whatever opening the
+   cell already carries: the outer \item, then the inner \begin, then the inner \item.
+   description needs no case of its own — every one of its items carries the [label] that becomes the
+   item's dingbat, which is the same thing an \item[(E)] inside an enumerate wants. *)
+$listEnvironments = <| "itemize" -> "Item", "enumerate" -> "ItemNumbered", "description" -> "Item" |>
+
+listRules[ environments_Association, depth_Integer ] :=
+  KeyValueMap[ { name, base } |->
+      ( StartOfLine ~~ indent : ( " " | "\t" ) ... ~~ ( "\\begin{" <> name <> "}" ) ~~
+          options : ( "[" ~~ Except[ "]" ] ... ~~ "]" ) | "" ~~ trailing : Except[ "\n" ] ... ~~
+          Shortest[ inner___ ] ~~ StartOfLine ~~ closingIndent : ( " " | "\t" ) ... ~~
+          ( "\\end{" <> name <> "}" ) :>
+        listCells[ environments, depth, name, indent <> "\\begin{" <> name <> "}" <> options, trailing,
+          inner, closingIndent <> "\\end{" <> name <> "}" ] ),
+    $listEnvironments ]
+
+listCells[ environments_Association, depth_Integer, name_String, opening_String, trailing_String,
+    inner_String, closing_String ] :=
+  Module[ { chunks = itemChunks[ inner ], leading, pieces, positions, first, last },
+    leading = First[ chunks ];
+    pieces = Flatten @ MapIndexed[
+      itemPieces[ environments, depth, name, First[ #2 ] === 1, #1 ] &, Rest[ chunks ] ];
+    positions = Flatten @ Position[ pieces, _Cell, { 1 }, Heads -> False ];
+    If[ positions === { },
+      { environmentOpened[
+          environmentClosed[ Cell[ "", listStyle[ $listEnvironments[ name ], depth ] ], closing ],
+          name, opening, trailing, leading <> joinMarks[ pieces ] ] },
+      first = First[ positions ]; last = Last[ positions ];
+      Take[
+        MapAt[ environmentClosed[ #, joinMarks @ Drop[ pieces, last ] <> closing ] &,
+          MapAt[ environmentOpened[ #, name, opening, trailing,
+              leading <> joinMarks @ Take[ pieces, first - 1 ] ] &,
+            pieces, first ],
+          last ],
+        { first, last } ] ]
+  ]
+
+(* The item's own leading whitespace goes into its marker rather than staying a separator, because a
+   separator belongs to the cell before it and the marker is what precedes this one; the whitespace
+   that FOLLOWS the item's last cell is left as pieces, so it becomes that cell's separator and the
+   next \item lands where the source had it. *)
+itemPieces[ environments_Association, depth_Integer, name_String, firstQ_,
+    { marker_String, content_String } ] :=
+  Module[ { pieces = splitPieces[ content, nestedRules[ environments, depth + 1 ] ], positions, first },
+    positions = Flatten @ Position[ pieces, _Cell, { 1 }, Heads -> False ];
+    If[ positions === { },
+      Prepend[ pieces,
+        itemOpened[ itemStyledCell[ Cell[ "", "Text" ], name, depth, marker, firstQ, True ], marker, "" ] ],
+      first = First[ positions ];
+      Drop[
+        MapAt[ itemOpened[ #, marker, joinMarks @ Take[ pieces, first - 1 ] ] &,
+          itemStyled[ pieces, name, depth, marker, firstQ ],
+          first ],
+        first - 1 ] ]
+  ]
+
+itemOpened[ cell_Cell, marker_String, leading_String ] :=
+  retagged[ cell, <| "EnvironmentOpen" -> marker <> leading <> cellTagging[ cell, "EnvironmentOpen" ] |> ]
+
+(* As in an environment body, only the cells still styled "Text" at this level are the item's own
+   prose: the first is the item, the rest are its continuation paragraphs. An item with no prose at all
+   is the case T7's rule about environments left open, and here it is real — three of hodgepaper's
+   description items are a \begin{align*} and nothing else — so it falls back to itemHead. *)
+itemStyled[ pieces_List, name_String, depth_Integer, marker_String, firstQ_ ] :=
+  With[ { positions = Flatten @ Position[ pieces, Cell[ _, "Text", ___ ], { 1 }, Heads -> False ] },
+    If[ positions === { },
+      MapAt[ itemHead[ #, name, depth, marker, firstQ ] &, pieces,
+        First @ Flatten @ Position[ pieces, _Cell, { 1 }, Heads -> False ] ],
+      Fold[ { current, index } |->
+          MapAt[ itemStyledCell[ #, name, depth, marker, firstQ, index === 1 ] &, current, positions[[ index ]] ],
+        pieces, Range @ Length[ positions ] ] ] ]
+
+(* \item[label] prints the label instead of the bullet or the number and consumes no counter, so the
+   label becomes the cell's dingbat — a mirror of the [label] stored in the marker, like a display
+   formula's CellTags, not the origin of one. And LaTeX restarts every list, while the front end's
+   counters run on until a section resets them, so the first item of a list carries the reset. *)
+itemStyledCell[ Cell[ content_, "Text", options___ ], name_String, depth_Integer, marker_String,
+    firstQ_, headQ_ ] :=
+  With[ { style = listStyle[ $listEnvironments[ name ], depth ], label = itemLabel[ marker ] },
+    If[ headQ,
+      Cell[ content, style,
+        Sequence @@ If[ label === "", { },
+          { CellDingbat -> itemDingbat[ label, name === "description" ], CounterIncrements -> { } } ],
+        Sequence @@ If[ firstQ, { CounterAssignments -> { { style, 0 } } }, { } ],
+        options ],
+      Cell[ content, listStyle[ "ItemParagraph", depth ], options ] ] ]
+
+(* An item whose whole content is display math has no cell that could take the item style — a
+   DisplayFormula restyled as an Item would lose its centering and its equation number — so the head
+   is written onto whatever cell opens it. The dingbat is free there, since a display formula's number
+   lives in CellFrameLabels and not in its dingbat, and a counter the cell already increments is added
+   to rather than replaced. This is the one place a *positive* counter goes on a cell, which T11 rules
+   out in general; it is bounded to a cell that has no other way to be headed, and without it a
+   description item loses the label that is the whole of its content. *)
+itemHead[ cell : Cell[ content_, style_String, options___ ], name_String, depth_Integer,
+    marker_String, firstQ_ ] :=
+  With[ { counter = listStyle[ $listEnvironments[ name ], depth ], label = itemLabel[ marker ],
+      numberedQ = $listEnvironments[ name ] === "ItemNumbered" },
+    Cell[ content, style,
+      CellDingbat -> Which[
+        label =!= "", itemDingbat[ label, name === "description" ],
+        numberedQ, Cell[ TextData[ { CounterBox[ counter ], "." } ], FontWeight -> "Bold" ],
+        True, Cell[ TextData[ "\[FilledSmallSquare]" ] ] ],
+      Sequence @@ If[ label === "" && numberedQ,
+        { CounterIncrements -> Flatten @ { cellCounters[ cell ], counter } }, { } ],
+      Sequence @@ If[ firstQ, { CounterAssignments -> { { counter, 0 } } }, { } ],
+      Sequence @@ DeleteCases[ { options }, ( CellDingbat | CounterIncrements | CounterAssignments ) -> _ ] ] ]
+
+cellCounters[ cell_Cell ] :=
+  Replace[ FirstCase[ cell, ( CounterIncrements -> counters_ ) :> counters ], _Missing -> { } ]
+
+itemDingbat[ label_String, boldQ_ ] :=
+  Cell[ TextData @ Flatten @ { Replace[ inlineContent[ label ], TextData[ parts_ ] :> parts ] },
+    FontWeight -> If[ boldQ, "Bold", "Plain" ] ]
+
+itemLabel[ marker_String ] :=
+  First[ StringCases[ marker, "[" ~~ label___ ~~ "]" ~~ EndOfString :> label, 1 ], "" ]
+
+listStyle[ base_String, depth_Integer ] :=
+  Replace[ Min[ depth, 3 ],
+    { 1 -> base, 2 -> "Sub" <> Decapitalize[ base ], _ -> "Subsub" <> Decapitalize[ base ] } ]
+
+(* Which \item starts an item of THIS list: one nested inside a \begin{...} of the body — a table, an
+   align, a list the Shortest pattern could not separate — is not one, and brace-style depth cannot be
+   written as a string pattern, so the begins and ends are counted the way a .bib field's braces are.
+   Both delimiters have to be counted wherever they stand, not only at the start of a line: the
+   specimen writes \begin{cases} inline and its \end{cases} at the start of one, so counting only
+   line-initial delimiters drove the depth negative and made items (b), (c) and (d) of that list
+   continuation paragraphs of item (a). What the comment mask replaces is the StartOfLine anchor's
+   other job — keeping a commented-out %\item, and both halves of a commented-out %\begin{enumerate},
+   from counting; hodgepaper has three such blocks. *)
+itemChunks[ inner_String ] :=
+  Module[ { text = uncommented[ inner ], markers, delimiters, starts },
+    markers = StringPosition[ text, StartOfLine ~~ ( " " | "\t" ) ... ~~ "\\item" ];
+    delimiters = Join[
+      Map[ { First[ # ], 1 } &, StringPosition[ text, "\\begin{" ] ],
+      Map[ { First[ # ], -1 } &, StringPosition[ text, "\\end{" ] ] ];
+    markers = Select[ markers,
+      Total @ Cases[ delimiters, { position_, step_ } /; position < First[ # ] :> step ] === 0 & ];
+    starts = Map[ First, markers ];
+    If[ markers === { },
+      { inner },
+      Prepend[
+        MapThread[ itemChunk[ inner, #1, #2 ] &,
+          { markers, Append[ Rest[ starts ] - 1, StringLength[ inner ] ] } ],
+        stringSlice[ inner, 1, First[ starts ] - 1 ] ] ]
+  ]
+
+(* A %-tail becomes spaces of its own length, so a depth walk can ignore comments while every position
+   still refers to the same character of the source — the positions are what the slicing uses. An
+   escaped \% is not a comment. *)
+uncommented[ text_String ] :=
+  StringReplace[ text,
+    comment : RegularExpression[ "(?<!\\\\)%[^\n]*" ] :> StringRepeat[ " ", StringLength[ comment ] ] ]
+
+itemChunk[ inner_String, { from_Integer, to_Integer }, until_Integer ] :=
+  With[ { length = itemLabelLength @ stringSlice[ inner, to + 1, until ] },
+    { stringSlice[ inner, from, to + length ], stringSlice[ inner, to + length + 1, until ] } ]
+
+itemLabelLength[ rest_String ] :=
+  First[
+    StringCases[ rest, StartOfString ~~ label : ( "[" ~~ Except[ "]" ] ... ~~ "]" ) :> StringLength[ label ], 1 ],
+    0 ]
+
+stringSlice[ text_String, from_Integer, to_Integer ] :=
+  If[ to < from, "", StringTake[ text, { from, to } ] ]
 
 (* A figure is the one block a notebook can do better than the source: LaTeX ships a rendered
    picture, and the notebook wants the code that draws it. So each \includegraphics becomes an Input
@@ -565,7 +767,9 @@ referenceTeX[ ButtonBox[ boxes_, ___, ButtonData -> key_String, ___ ] ] /; ! Fre
 referenceTeX[ ButtonBox[ boxes_, ___, ButtonData -> key_String, ___ ] ] /; FreeQ[ boxes, _CounterBox ] :=
   citationTeX[ boxes, key ]
 
-cellToLaTeX[ cell : Cell[ _, "Section" | "Subsection" | "Subsubsection", ___ ] ] :=
+(* The style name lowercased is the command, which is what commandRules matched, so the six styles
+   whose whole content is a braced argument share one clause. *)
+cellToLaTeX[ cell : Cell[ _, "Section" | "Subsection" | "Subsubsection" | "Title" | "Author" | "Date", ___ ] ] :=
   cellTagging[ cell, "Indent" ] <> "\\" <> ToLowerCase[ cell[[ 2 ]] ] <> "{" <> cellTeXText[ cell ] <> "}" <>
     cellTrailing[ cell ]
 
