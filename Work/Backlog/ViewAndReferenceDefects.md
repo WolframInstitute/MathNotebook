@@ -55,6 +55,7 @@ Done when a text-size change moves every prose style on screen and in print on a
 - [ ] T2 — Render the `Reference` label from the cell's `CellTags` at the beginning of the cell; make `InsertCitation` and the bibliography entry agree.
 - [ ] T3 — Investigate whether a target theorem's resolved counter value is readable at insert time, then make a citation to a numbered environment display `Theorem 1.1` rather than its tag.
 - [ ] T4 — Tests for all of it, then Pavel re-checks on the document that produced the report.
+- [ ] T5 — Add the sentence the tutorial's *Reading and Writing Comfortably* section has been missing since `PaletteUsability` T5 deliberately withheld it: the text slider now reaches the theorem, proof, reference and list styles, which T1 above made true.
 
 ### Done
 

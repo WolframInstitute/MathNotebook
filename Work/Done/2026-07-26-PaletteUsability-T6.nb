@@ -1,0 +1,213 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Wolfram 15.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       154,          7]
+NotebookDataLength[      9975,        204]
+NotebookOptionsPosition[      6466,        157]
+NotebookOutlinePosition[      6823,        172]
+CellTagsIndexPosition[      6780,        169]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell["A Probe for the Document View Controls", "Title",ExpressionUUID->"dc57bbad-883a-463b-9462-19d002485cc9"],
+
+Cell["MathNotebook", "Author",ExpressionUUID->"09cde4b4-1cf4-49d1-abf3-5acdb3597829"],
+
+Cell["T6 \[AHat]\.80\.94 feedback round", "Date",ExpressionUUID->"e16a17d6-9845-46ff-90f7-4a6d15c0f5f6"],
+
+Cell["\<\
+Every style the two sliders are supposed to reach appears below exactly once, \
+in the order the stylesheet declares them. Drag a slider and read down the \
+page: a style that does not move is a defect. The text slider should move \
+everything except the two displays and the equation number; the math slider \
+should move only those three.\
+\>", "Abstract",ExpressionUUID->"a556c6d2-2396-4a97-82bb-b4bd9f5d429c"],
+
+Cell["What to Check", "Section",ExpressionUUID->"1378976c-4759-4b07-aef7-1ece19aeeb90"],
+
+Cell["\<\
+These are the things no script can verify, because a headless front end has \
+no window and nothing ever gets clicked. They are the whole reason this round \
+runs by hand.\
+\>", "Text",ExpressionUUID->"3e5cfe07-e2c7-4318-b56f-ba525cad7eb5"],
+
+Cell["\<\
+Clicking a group header folds it, and the palette window refits to the new \
+height immediately rather than on the next open.\
+\>", "Item",ExpressionUUID->"ed21a0c9-ea03-4761-8e16-e7456202c3af"],
+
+Cell["\<\
+Fold state comes back after quitting and reopening the front end.\
+\>", "Item",ExpressionUUID->"0af39139-7d8e-494d-9a30-62b86e34f011"],
+
+Cell["\<\
+Both sliders follow the focused document: click into another notebook and the \
+readouts change to that document's sizes.\
+\>", "Item",ExpressionUUID->"70b96ba3-cdc4-407b-a72a-691a48f6c7c5"],
+
+Cell["\<\
+Releasing a slider actually applies the size \[Dash] dragging alone should \
+not, and the release should.\
+\>", "Item",ExpressionUUID->"7d803fb3-bb13-48c7-9fd0-19462eac1fa4"],
+
+Cell["\<\
+Reset view returns this document to the sizes it has right now, with no trace \
+left behind.\
+\>", "Item",ExpressionUUID->"f1404f58-0f15-46ee-b3f0-080b2f026039"],
+
+Cell["\<\
+The palette is comfortable to keep open beside a paper you are actually \
+writing.\
+\>", "Item",ExpressionUUID->"58df2454-80e7-4795-93df-6257603b05e6"],
+
+Cell["Prose and Sectioning", "Section",ExpressionUUID->"952e8ad0-6113-499e-885d-c75cb08172e1"],
+
+Cell["\<\
+Body text, the anchor of the text slider. This paragraph is deliberately long \
+enough to wrap several times at every size in the slider's range, because the \
+number of wrapped lines is the only honest read on whether a font size \
+actually changed \[AHat]\.80\.94 the glyphs alone are easy to misjudge by eye.\
+\>", "Text",ExpressionUUID->"a3187c59-0ad4-4cbb-90be-faa6f19547d8"],
+
+Cell["A Subsection", "Subsection",ExpressionUUID->"9b8a0181-56d4-4577-9b6b-97fe226f6486"],
+
+Cell["\<\
+A second paragraph under a subsection, with inline mathematics \[Sum] \
+\[Alpha] \[CenterDot] \[Beta] \[Element] \[DoubleStruckCapitalR] set in the \
+body font, so prose and mathematics can be compared in one line.\
+\>", "Text",ExpressionUUID->"1cba22b7-bd45-4582-b1fa-303a46b627c2"],
+
+Cell["A Subsubsection", "Subsubsection",ExpressionUUID->"38f886f4-0f5a-45a2-a231-31e18186dd91"],
+
+Cell["Prose under a subsubsection.", "Text",ExpressionUUID->"11d3ddad-c74a-46db-870d-9d2aef4e482d"],
+
+Cell["Mathematics", "Section",ExpressionUUID->"171c7610-bb52-4713-9e4d-a49b7bac234b"],
+
+Cell["\<\
+An unnumbered display follows, then a numbered one. The equation number is \
+its own style and has to grow with the mathematics, not with the prose.\
+\>", "Text",ExpressionUUID->"ee2869a2-b357-4e1b-ad86-7aefa2c816ee"],
+
+Cell[BoxData[
+ RowBox[{
+  SubscriptBox["\[Integral]", "\[CapitalOmega]"], "d", "\[Omega]", "=", 
+  SubscriptBox["\[Integral]", 
+   RowBox[{"\[PartialD]", "\[CapitalOmega]"}]], 
+  "\[Omega]"}]], "DisplayFormula",ExpressionUUID->"1cd1e494-2b8d-4461-b70a-\
+9aa758c4ab9d"],
+
+Cell[BoxData[
+ RowBox[{
+  SuperscriptBox["\[CapitalDelta]", "k"], "=", "d", 
+  SuperscriptBox["d", "*"], "+", 
+  SuperscriptBox["d", "*"], "d"}]], "DisplayFormulaNumbered",ExpressionUUID->\
+"3cdad40a-138d-485a-b8aa-792fefeba1e2"],
+
+Cell["Environments", "Section",ExpressionUUID->"1b35783f-d484-4de8-b559-2483c44f5e2a"],
+
+Cell["\<\
+A plain-class environment. It is declared to inherit from Text, so it carries \
+no bare font size of its own and was one of the styles the text slider used \
+to miss entirely.\
+\>", "Theorem",ExpressionUUID->"485c75c0-0192-42b7-99c5-7d886d0675c1"],
+
+Cell["\<\
+The proof style, which inherits from Text in the same way. Both should now \
+track the text slider; if either stays put, that is the session 6 fix \
+regressing.\
+\>", "Proof",ExpressionUUID->"7634b140-0b53-4fa6-845c-4521bc622e7d"],
+
+Cell["A definition-class environment, upright rather than italic.", \
+"Definition",ExpressionUUID->"22cc67e4-7d20-407b-bed4-3c886f22df0d"],
+
+Cell["A remark-class environment, with an italic dingbat.", "Remark",ExpressionUUID->"6e1cb3f4-0752-4c43-927a-8720951db7a4"],
+
+Cell["Lists", "Section",ExpressionUUID->"8db39fac-d397-4afc-8041-03a05ee4369b"],
+
+Cell["\<\
+The three list styles come from Default.nb, not from LaTeXBase.nb.\
+\>", "Text",ExpressionUUID->"5a0c8236-8213-4228-8174-7d6ba2cc7802"],
+
+Cell["An item.", "Item",ExpressionUUID->"9b69754c-1493-424e-b7e5-5c646ead99cb"],
+
+Cell["A numbered item.", "ItemNumbered",ExpressionUUID->"efe76e31-3bc2-40ed-a23d-bb9948b3503e"],
+
+Cell["An item paragraph.", "ItemParagraph",ExpressionUUID->"48b86f71-3ca0-495f-843b-4d4915bcdd2e"],
+
+Cell["References", "Section",ExpressionUUID->"b095d46c-9c82-40d5-aa87-21949f84ec3d"],
+
+Cell["\<\
+Ollivier, Ricci curvature of Markov chains on metric spaces, \
+https://arxiv.org/abs/0810.5625\
+\>", "Reference",ExpressionUUID->"695d9025-9b7b-406f-9e7f-2a350fd593f1"],
+
+Cell["\<\
+Forman, Bochner's method for cell complexes and combinatorial Ricci \
+curvature, Discrete Comput. Geom. 29 (2003) 323\[Dash]374\
+\>", "Reference",ExpressionUUID->"80758b58-4d45-420b-a001-ae6358264daf"]
+},
+WindowSize->{900, 800},
+FrontEndVersion->"15.0 for Mac OS X ARM (64-bit) (May 19, 2026)",
+StyleDefinitions->"MathNotebook/AMSArticle.nb",
+ExpressionUUID->"161f8735-dc17-41ff-ac93-7734105f4e66"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[554, 20, 110, 0, 70, "Title",ExpressionUUID->"dc57bbad-883a-463b-9462-19d002485cc9"],
+Cell[667, 22, 85, 0, 70, "Author",ExpressionUUID->"09cde4b4-1cf4-49d1-abf3-5acdb3597829"],
+Cell[755, 24, 104, 0, 70, "Date",ExpressionUUID->"e16a17d6-9845-46ff-90f7-4a6d15c0f5f6"],
+Cell[862, 26, 423, 6, 70, "Abstract",ExpressionUUID->"a556c6d2-2396-4a97-82bb-b4bd9f5d429c"],
+Cell[1288, 34, 87, 0, 70, "Section",ExpressionUUID->"1378976c-4759-4b07-aef7-1ece19aeeb90"],
+Cell[1378, 36, 250, 4, 70, "Text",ExpressionUUID->"3e5cfe07-e2c7-4318-b56f-ba525cad7eb5"],
+Cell[1631, 42, 204, 3, 70, "Item",ExpressionUUID->"ed21a0c9-ea03-4761-8e16-e7456202c3af"],
+Cell[1838, 47, 144, 2, 70, "Item",ExpressionUUID->"0af39139-7d8e-494d-9a30-62b86e34f011"],
+Cell[1985, 51, 200, 3, 70, "Item",ExpressionUUID->"70b96ba3-cdc4-407b-a72a-691a48f6c7c5"],
+Cell[2188, 56, 184, 3, 70, "Item",ExpressionUUID->"7d803fb3-bb13-48c7-9fd0-19462eac1fa4"],
+Cell[2375, 61, 171, 3, 70, "Item",ExpressionUUID->"f1404f58-0f15-46ee-b3f0-080b2f026039"],
+Cell[2549, 66, 161, 3, 70, "Item",ExpressionUUID->"58df2454-80e7-4795-93df-6257603b05e6"],
+Cell[2713, 71, 94, 0, 70, "Section",ExpressionUUID->"952e8ad0-6113-499e-885d-c75cb08172e1"],
+Cell[2810, 73, 390, 5, 70, "Text",ExpressionUUID->"a3187c59-0ad4-4cbb-90be-faa6f19547d8"],
+Cell[3203, 80, 89, 0, 70, "Subsection",ExpressionUUID->"9b8a0181-56d4-4577-9b6b-97fe226f6486"],
+Cell[3295, 82, 293, 4, 70, "Text",ExpressionUUID->"1cba22b7-bd45-4582-b1fa-303a46b627c2"],
+Cell[3591, 88, 95, 0, 70, "Subsubsection",ExpressionUUID->"38f886f4-0f5a-45a2-a231-31e18186dd91"],
+Cell[3689, 90, 99, 0, 70, "Text",ExpressionUUID->"11d3ddad-c74a-46db-870d-9d2aef4e482d"],
+Cell[3791, 92, 85, 0, 70, "Section",ExpressionUUID->"171c7610-bb52-4713-9e4d-a49b7bac234b"],
+Cell[3879, 94, 227, 3, 70, "Text",ExpressionUUID->"ee2869a2-b357-4e1b-ad86-7aefa2c816ee"],
+Cell[4109, 99, 268, 6, 70, "DisplayFormula",ExpressionUUID->"1cd1e494-2b8d-4461-b70a-9aa758c4ab9d"],
+Cell[4380, 107, 229, 5, 70, "DisplayFormulaNumbered",ExpressionUUID->"3cdad40a-138d-485a-b8aa-792fefeba1e2"],
+Cell[4612, 114, 86, 0, 70, "Section",ExpressionUUID->"1b35783f-d484-4de8-b559-2483c44f5e2a"],
+Cell[4701, 116, 257, 4, 70, "Theorem",ExpressionUUID->"485c75c0-0192-42b7-99c5-7d886d0675c1"],
+Cell[4961, 122, 240, 4, 70, "Proof",ExpressionUUID->"7634b140-0b53-4fa6-845c-4521bc622e7d"],
+Cell[5204, 128, 138, 1, 70, "Definition",ExpressionUUID->"22cc67e4-7d20-407b-bed4-3c886f22df0d"],
+Cell[5345, 131, 124, 0, 70, "Remark",ExpressionUUID->"6e1cb3f4-0752-4c43-927a-8720951db7a4"],
+Cell[5472, 133, 79, 0, 70, "Section",ExpressionUUID->"8db39fac-d397-4afc-8041-03a05ee4369b"],
+Cell[5554, 135, 145, 2, 70, "Text",ExpressionUUID->"5a0c8236-8213-4228-8174-7d6ba2cc7802"],
+Cell[5702, 139, 79, 0, 70, "Item",ExpressionUUID->"9b69754c-1493-424e-b7e5-5c646ead99cb"],
+Cell[5784, 141, 95, 0, 70, "ItemNumbered",ExpressionUUID->"efe76e31-3bc2-40ed-a23d-bb9948b3503e"],
+Cell[5882, 143, 98, 0, 70, "ItemParagraph",ExpressionUUID->"48b86f71-3ca0-495f-843b-4d4915bcdd2e"],
+Cell[5983, 145, 84, 0, 70, "Section",ExpressionUUID->"b095d46c-9c82-40d5-aa87-21949f84ec3d"],
+Cell[6070, 147, 178, 3, 70, "Reference",ExpressionUUID->"695d9025-9b7b-406f-9e7f-2a350fd593f1"],
+Cell[6251, 152, 211, 3, 70, "Reference",ExpressionUUID->"80758b58-4d45-420b-a001-ae6358264daf"]
+}
+]
+*)
+
+(* End of internal cache information *)

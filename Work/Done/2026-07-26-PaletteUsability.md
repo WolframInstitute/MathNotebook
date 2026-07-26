@@ -58,8 +58,6 @@ The style names to touch are already partitioned in `Scripts/BuildStyleSheets.wl
 
 ## Tasks
 
-- [ ] T6 — Feedback round: Pavel writes with it on a real document; revise.
-
 ### Done
 
 - [x] T1 — Investigate the three mechanisms in a scratch notebook; write down what actually works in 15.0, especially whether a native centered-content-width option exists. (Session 1)
@@ -67,6 +65,7 @@ The style names to touch are already partitioned in `Scripts/BuildStyleSheets.wl
 - [x] T3 — `SetDocumentFontSize` / `SetMathFontSize` plus palette sliders, with a reset, and a decision recorded on MaTeX cells. (Session 3)
 - [x] T4 — `SetContentWidth` plus slider — exposing the native option if T1 found one, otherwise private style definitions. (Session 4)
 - [x] T5 — Document all of it in the tutorial (`Scripts/BuildTutorial.wls`), in a new section on reading and writing comfortably; tests for the three functions. (Session 5)
+- [x] T6 — Feedback round: Pavel writes with it on a real document; revise. (Sessions 6–9)
 
 ## Progress
 
@@ -231,6 +230,20 @@ The style names to touch are already partitioned in `Scripts/BuildStyleSheets.wl
 - **Next:** T6 stays open on Pavel — the palette is now the fold, a text-size slider, a math-size slider and a reset, and it needs his sign-off on that.
   Still unverified interactively from T2 and T3, and unchanged by this session: whether the fold refits live on a click, whether the sliders follow a document switch, and whether the release-time setter fires.
 
+### Session 9 — 2026-07-26 — T6 (closed)
+
+- **Prompt:** `/next-session` on this item, then Pavel's sign-off on the shipped palette.
+- **Did:** Closed the feedback round and completed the item.
+  Refreshed `Scripts/BuildViewProbe.wls` and regenerated `PaletteUsability-T6.nb`, which was built in session 6 and still narrated the column-width control that 0.1.8 removed — three stale passages, and an Abstract pointing at a checklist the notebook never contained.
+  The probe now describes two sliders rather than three, says which styles each one should move, and carries a *What to Check* section holding the six things no script can verify: that a fold refits the palette window on the click rather than on the next open, that fold state survives a front end restart, that both sliders follow the focused document, that the release-time setter fires while dragging does not, that reset leaves no trace, and that the palette is comfortable to keep open beside a real paper.
+  Confirmed the installed 0.1.8 palette carries exactly *Text size*, *Math size* and *Reset view* under *Document view*, with no width remnant, and that 0.1.8 is the only version installed.
+  Pavel signed off on that palette, which closes T6 and, with it, the item.
+- **Learned:**
+  - **A probe document is deliverable state and goes stale like any other.** This one survived the withdrawal untouched for a session, so the artifact built specifically to make the feedback round honest would have handed Pavel a page describing a control that no longer exists. Anything generated for a review round wants regenerating whenever what it reviews changes.
+  - The three interactive behaviours that T2 and T3 could not verify headlessly — live refit on a click, sliders following a document switch, the release-time setter — are **accepted on Pavel's sign-off**, not measured. They are written into the probe's checklist so that a future regression has somewhere to be caught.
+- **Next:** none — item complete.
+  The nearest follow-on is `Work/Backlog/ViewAndReferenceDefects.md` T2, and the tutorial's *Reading and Writing Comfortably* section can now claim the text slider reaches the theorem, proof, reference and list styles, which session 5 deliberately left out and session 6 made true.
+
 ## Decisions
 
 | Date | Decision | Rationale |
@@ -261,4 +274,6 @@ The style names to touch are already partitioned in `Scripts/BuildStyleSheets.wl
 | 2026-07-26 | The centering `Dynamic` must be confirmed interactively before the control is considered done | T1 measured a window-driven `Dynamic` collapsing the printed measure to a third, and a headless front end never lays out to a window, so this is the one part of the design that cannot be verified in a script |
 | 2026-07-26 | The content-width control is **withdrawn**, superseding every earlier decision about it — no fraction, no absolute measure, no slider, no exported function | Pavel drove the absolute column shipped in 0.1.7, asked first for the relative one back, then for the functionality removed outright. The Spec requirement is struck rather than reworked; the front end knowledge it produced stays in `CLAUDE.md`, marked as background rather than as shipped code |
 | 2026-07-26 | `ResetDocumentView` goes on clearing the withdrawn `"ContentWidth"` key | documents written with 0.1.5–0.1.7 carry it, and reset promises to leave no trace; nothing else reads the key, so one line buys a clean upgrade path |
+| 2026-07-26 | T6 closes on Pavel's sign-off of 0.1.8, and the item is complete | the palette folds, the two size sliders reach every prose and math style, and reset leaves no trace; the withdrawn width is struck from the Spec rather than carried as an open requirement |
+| 2026-07-26 | The three interactive behaviours are accepted on sign-off rather than measured | live refit, document-switch tracking and the release-time setter need a real window and a real click, which no headless front end supplies; they are recorded in the probe's *What to Check* list so a regression has a place to be caught |
 | 2026-07-26 | Point 4, the palette rendering dark, is **not a defect** — no code change | Diagnosed: `CurrentValue[ $FrontEnd, LightDark ]` is `Automatic` and macOS is in Dark mode, so the front end resolves dark and the palette, which sets no `LightDark` of its own, inherits it — the same behaviour as every built-in palette. The document was the outlier, carrying an explicit `"Light"`. The fix is the global setting `CurrentValue[ $FrontEnd, LightDark ] = "Light"`, left to Pavel. Making the palette follow the *focused document* was rejected: `LightDark` is not a dynamic notebook option, so it would mean restyling the palette's contents by hand and would make it behave unlike every other palette |
