@@ -22,7 +22,7 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 ## Active
 
 - [View and Reference Defects](Active/ViewAndReferenceDefects.md) — all implementation done (T1–T5: the text slider reaches every prose style, a tagged `Reference` shows its label, a citation to a theorem reads `Theorem 1.1`, front-end tests for all of it, tutorial updated); next: **T6**, Pavel re-checks on the document that produced the report — the Spec's last gate, and not something a session can close
-- [LaTeX Paper Import](Active/LaTeXPaperImport.md) — T1–T4 done (`ImportLaTeXDocument`/`ExportLaTeXDocument`: both specimen papers round-trip byte-identically with sectioning, theorem environments, labels, cross-references, citations and the `.bib` bibliography converted; the causal paper renders as an 8-page PDF whose last page is its bibliography); next: **T5**, figures — preserve TikZ and add generating Wolfram code
+- [LaTeX Paper Import](Active/LaTeXPaperImport.md) — T1–T5 done (`ImportLaTeXDocument`/`ExportLaTeXDocument`: both specimen papers round-trip byte-identically — now through a real save and reopen — with sectioning, theorem environments, labels, cross-references, citations, the `.bib` bibliography and figures converted; the causal paper renders as a 10-page PDF with a live `WolframModel` causal graph in it); next: **T6**, make both papers round-trip test fixtures
 - [Cross-Platform TeX and Font Support](Active/CrossPlatformTeX.md) — T1 done (the suite no longer assumes macOS or a TeX install, and a machine with no TeX gets a message telling it what to do); next: **T2**, Linux end to end — needs a Linux machine
 
 ## Backlog

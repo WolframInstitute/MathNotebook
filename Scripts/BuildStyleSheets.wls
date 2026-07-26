@@ -38,7 +38,7 @@ $templates = <|
 
 $proseStyles = Join[
   { "Title", "Author", "Date", "Abstract", "Section", "Subsection", "Subsubsection",
-    "Text", "Item", "ItemNumbered", "ItemParagraph", "Reference", "Proof" },
+    "Text", "Item", "ItemNumbered", "ItemParagraph", "Caption", "Reference", "Proof" },
   Keys[ $theoremEnvironments ] ];
 
 $mathStyles = { "DisplayFormula", "DisplayFormulaNumbered", "DisplayFormulaEquationNumber" };
@@ -144,6 +144,18 @@ baseStyleSheet[] := Notebook[ Flatten @ {
 
   Cell[ StyleData[ "URL", StyleDefinitions -> StyleData[ "Hyperlink" ] ],
     FontColor -> RGBColor[ 0.8, 0, 0.8 ] ],
+
+  (* A figure caption numbers itself from its own counter, which article numbers straight through the
+     document rather than per section, and the dingbat is what an imported \ref{fig:...} resolves
+     against. An explicit FontSize is what lets the view controls reach it: a style declared with a
+     Text parent inherits its size inside this sheet and would then carry none of its own. *)
+  Cell[ StyleData[ "Caption", StyleDefinitions -> StyleData[ "Text" ] ],
+    CellDingbat -> Cell[ TextData[ { "Figure ", CounterBox[ "Caption" ], "." } ], FontWeight -> "Bold" ],
+    CounterIncrements -> "Caption",
+    ParagraphIndent -> 0, FontSize -> 11, FontSlant -> "Plain",
+    CellMargins -> { { 130, 110 }, { 4, 14 } },
+    MenuSortingValue -> 1280 ],
+  Cell[ StyleData[ "Caption", "Printout" ], FontSize -> 9 ],
 
   Cell[ StyleData[ "Reference", StyleDefinitions -> StyleData[ "Text" ] ],
     CellMargins -> { { 90, 10 }, { 3, 3 } }, ParagraphIndent -> -24,

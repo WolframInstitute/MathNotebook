@@ -49,7 +49,6 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
 
 ## Tasks
 
-- [ ] T5 — Figures: preserve TikZ, add generating Wolfram code with rendered output, for one real figure of the paper.
 - [ ] T6 — Make both papers round-trip test fixtures under `MathNotebook/Tests/`. T2 already gets a byte-identical round trip on each; the fixture pins it.
 - [ ] T7 — Display math and nested environments *inside* a theorem-like environment body. T2 deliberately runs only the inline converter there, since an environment has to stay one cell; on `hodgepaper.tex` that leaves 53 `equation`/`align` blocks and two nested `sublemma*` as literal source inside otherwise converted cells.
 - [ ] T8 — Front matter: `\title`, `\author`, `\date`, `\maketitle`, `abstract` → the `Title`/`Author`/`Date`/`Abstract` styles the stylesheets define, and lists (`itemize`, `enumerate`, `description`) → the `Item` family.
@@ -62,6 +61,7 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
 - [x] T2 — Sectioning and theorem environments, both directions, with tests. *(Session 2)*
 - [x] T3 — `\label`/`\ref`/`\eqref` ↔ cell tags and reference buttons. *(Session 3)*
 - [x] T4 — Citations and bibliography ↔ `Citation`/`Reference` cells. *(Session 4)*
+- [x] T5 — Figures: preserve TikZ, add generating Wolfram code with rendered output, for one real figure of the paper. *(Session 5)*
 
 ## Progress
 
@@ -192,6 +192,58 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
   - **A defect-reintroduction check is worthless until you confirm the patch landed.** One of my three `perl` edits silently matched nothing, and the suite came back green — which reads exactly like "the test does not bite". Print the changed line before believing the result.
 - **Next:** T5 — figures: preserve TikZ, add generating Wolfram code with rendered output. Two things this session deliberately left: a missing `.bib` is dropped silently rather than reported (the Spec's "say what it could not handle"), and `thebibliography` written into the `.tex` is not imported — neither specimen has one, and it needs its own per-item separator design, so it is filed as T10.
 
+### Session 5 — 2026-07-26 — T5
+
+- **Prompt:** `/next-session` continued.
+- **Did:** A `figure` becomes the code that draws it plus a `Caption` cell, and one figure of the paper is regenerated from Wolfram code.
+
+  | | causal graphs | hodgepaper |
+  |---|---|---|
+  | `figure` → cells | 7 → 7 `Input` + 7 `Caption` | none — no figures |
+  | `\label{fig:…}` → `CellTags` | 7 of 7 | — |
+  | `\ref{fig:…}` → counters | 4 of 4 | — |
+  | round trip | identical | identical |
+
+  T3 left the causal paper's 7 labels and 4 references unconverted because they were all `fig:` and no cell carried the key.
+  All of them convert now, and the paper's remaining literal `\ref` count is **zero**.
+
+  **The caption is the cell; the picture's markup is the tagging rule.**
+  Everything up to and including `\caption{` rides in a `"FigurePrefix"` rule and everything from its closing brace on rides in `"Trailing"`, where `labelledCell` finds the `\label` and turns it into the cell's tag exactly as it does for a section.
+  So editing a caption in the notebook reaches the `.tex` — unlike a bibliography entry, which cannot — while `\centering`, the `\includegraphics` options and a whole `tikzpicture` are returned untouched.
+  That is what makes the Spec's "TikZ source preserved verbatim" true without translating TikZ: neither specimen has any, so it is asserted on a synthetic figure instead.
+  A figure with no caption owns nothing and re-emits its whole source from `"FigureTeX"`.
+
+  **The generating code is the notebook's alone.**
+  Each `\includegraphics` becomes an `Input` cell holding `Import[FileNameJoin[{NotebookDirectory[], "spatial_hg.png"}]]` — code that produces that picture, for the author to replace with the code that generates it — and the whole evaluation family (`Input`, `Output`, `Code`, `Print`, `Message`, `Echo`) emits nothing into the `.tex`.
+  Replacing the causal-graph figure's cell with
+  ```wolfram
+  Needs[ "SetReplace`" ];
+  Graph[
+    WolframModel[ { { 1, 2 }, { 1, 3 } } -> { { 3, 4 }, { 4, 1 }, { 2, 4 } }, { { 1, 1 }, { 1, 1 } }, 8,
+      "CausalGraph" ],
+    GraphLayout -> "LayeredDigraphEmbedding", VertexStyle -> RGBColor[ 0.62, 0.76, 0.89 ],
+    EdgeStyle -> RGBColor[ 0.72, 0.66, 0.80 ], VertexSize -> 0.4, ImageSize -> 340 ]
+  ```
+  and evaluating gives **7 `GraphicsBox`es for 6 rasters** — the six shipped PNGs plus one live causal graph, 13 events and 24 edges, which is the object Figure 3 of the paper depicts — and the export is still the source byte for byte.
+  The Spec's "at least one figure is regenerated from code in the notebook" is met; what does *not* happen is the reverse, since the exporter writes the original `\includegraphics` back rather than rasterizing the code into a new PNG.
+
+  **A `Caption` style was added to all five stylesheets**, numbering itself from its own counter — `article` counts figures straight through the document, and neither specimen declares `\numberwithin{figure}{section}` — with `$referenceLabelSpec` extended so the palette's own buttons read `Figure 3` too.
+
+  **Verified on the page.** The imported causal paper renders as a **10-page PDF** (8 before this session) carrying `Figure 1`–`Figure 7`, all 32 environments still numbered, no `XXX`, and no literal `\cite`, `\ref` or `includegraphics` anywhere in the text.
+
+  **A defect the whole importer had, found by being the first session to save the notebook.** The front end splits a `ButtonBox[RowBox[…]]` inside a `TextData` into one button per run when a notebook is written to disk and opened again — `CLAUDE.md` records this of `NotebookWrite`, and it is not only `NotebookWrite`. So the specimen's 14 buttons came back as 46, `\cite{first, second}` exported five `\cite` commands and the 7-key citation fifteen, and `\eqref{eq:a}` came back as `\cite{eq:a}\ref{eq:a}\cite{eq:a}` — the parentheses had been carried off into buttons of their own, so the counter no longer looked parenthesised and the brackets no longer looked like references at all. Consecutive buttons on one key are now merged before anything reads them, and the saved-and-reopened paper round-trips exactly. T2–T4's central claim held only for a notebook nobody had saved.
+
+  **Tests.** Four in `Tests/Document.wlt` and two in `Tests/FrontEnd.wlt`; 147 pass.
+  Reintroducing two defects — dropping the figure rules, and dropping the button merge — fails 5+1 and 1+1 respectively.
+- **Learned:**
+  - **`NotebookEvaluate` inside `UsingFrontEnd` hangs.** The front end's evaluator is the same kernel that is driving it, so asking it to evaluate a notebook deadlocks; it sat for ten minutes with no output and had to be killed. Put the `Output` cell in kernel-side with `ToBoxes` instead — which is also what makes the assertion cheap.
+  - **Byte-identical round trips measured in one kernel do not survive a file.** Every earlier session compared `notebookToLaTeX @ latexToNotebook[source]`, which never touches the front end; the button-splitting defect above was invisible to all of it and is a *bug in shipped behaviour*, not an import gap. Any fidelity claim about a notebook has to go through `Export`/`NotebookOpen`/`NotebookGet` at least once.
+  - The front end also **groups** the reopened cells into `CellGroupData` and reads 130 cells back as 11 at top level. That one is harmless — `notebookCellList` already flattens — but it makes a naive `Cases[…, Cell[_, style_String, ___]]` on a reopened notebook report almost nothing.
+  - `Cases` on a `Notebook` defaults to level 1, where the only elements are the cell *list* and the options; every count of cells in a probe needs `Infinity` or `First`. Cost one demonstration run that reported the generating code was not installed when it was.
+  - `WolframModel` takes no `VertexStyle`/`EdgeStyle`; it warns `optx` and returns unevaluated, so the figure silently came out as no graphic at all. Wrap the result in `Graph[…, opts]`.
+  - `pkill -f wolframscript` is not safe on this machine: Pavel had three long-running scripts of his own going, and a broad kill reached whatever was running. Scope a kill to the script name.
+- **Next:** T6 — make both papers round-trip test fixtures under `MathNotebook/Tests/`.
+
 ## Decisions
 
 | Date | Decision | Rationale |
@@ -201,4 +253,7 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
 | 2026-07-26 | `\cite` converts unconditionally, where `\ref` converts only when a cell carries the key | a citation's label is literal text and reads correctly with no bibliography to point at, whereas an unresolvable `CounterBox` renders the front end's `XXX`; it is what makes hodgepaper's 78 citations convert with no `.bib` at all |
 | 2026-07-26 | A `.bib` bibliography's `Reference` cells emit nothing into the `.tex`; the block's last cell re-emits the `\bibliography` commands verbatim | the entries are not in the `.tex` and the `.bib` stays the source of truth, so editing an entry in the notebook does not reach the source — the alternative was to write a bibliography style engine and lose the exact round trip |
 | 2026-07-26 | Only the cited entries become cells, in the order of the `.bib` | LaTeX prints only the cited ones (three of seventeen here are never cited); emulating the style's sort order is a bibliography style engine, which is out of scope |
+| 2026-07-26 | A figure's caption is a `Caption` cell the notebook owns and writes back; the rest of the environment's source rides verbatim in a tagging rule | the caption is prose and an author will edit it, so it has to reach the `.tex`; the picture's markup is not prose and translating it is out of scope, so returning it untouched is both the honest and the lossless choice |
+| 2026-07-26 | The generating code and its output live only in the notebook — the exporter writes the original `\includegraphics` back | writing a picture out means rasterizing the code into a new file and rewriting the source to point at it, which is a build step and not a converter; the paper stays compilable either way |
+| 2026-07-26 | A figure is numbered by the `Caption` counter straight through the document, not per section | both specimens are `article` and declare no `\numberwithin{figure}{section}`; per-section figure numbering belongs with T9, which is about numbering generally |
 | 2026-07-26 | Every cell carries the source whitespace that followed it | it is the difference between a round trip that is exact and one that is approximately right, and the item's whole point is fidelity; it also means the exporter needs no rules about blocking |

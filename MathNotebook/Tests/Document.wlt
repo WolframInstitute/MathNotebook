@@ -131,8 +131,8 @@ VerificationTest[ (* \ref is the bare counter chain of the target's style, \eqre
       BaseStyle -> "Citation", ButtonData -> "eq:one" ] }
 ]
 
-VerificationTest[ (* a key no converted cell carries — the specimen paper's figure labels — is left
-                     as source rather than rendered as the front end's XXX *)
+VerificationTest[ (* a key no converted cell carries at all is left as source rather than rendered as
+                     the front end's XXX *)
   ! FreeQ[ First @ $referenceNotebook, "\\ref{fig:absent}" ],
   True
 ]
@@ -230,4 +230,115 @@ VerificationTest[
     Length @ Cases[ First @ latexToNotebook[ $citeSource ], _ButtonBox, Infinity ],
     notebookToLaTeX @ latexToNotebook[ $citeSource ] === $citeSource },
   { { "Text", "Text" }, 4, True }
+]
+
+(* LaTeXPaperImport T5. A figure becomes the code that draws it plus a Caption cell: one Input cell
+   per \includegraphics, holding an Import of the shipped file for the author to replace with the
+   code that generates the picture, and a Caption cell tagged with the figure's \label so
+   "Figure \ref{fig:x}" resolves to the front end's own counter. The markup that drew the picture —
+   \centering, the includegraphics options, a whole tikzpicture — rides verbatim on the caption cell,
+   which is what lets a TikZ figure round-trip a picture the notebook cannot render. *)
+
+$figureSource = "\\documentclass{article}\n\\begin{document}\n\nProse before, see Figure \\ref{fig:one} and Figure \\ref{fig:none}.\n\n\\begin{figure}[htpb]\n\t\\centering\n\t\\begin{tikzpicture}\n\t\t\\draw (0,0) -- (1,1);\n\t\\end{tikzpicture}\n\t\\caption{A \\textbf{drawn} picture, $x^2$.}\n\t\\label{fig:one}\n\\end{figure}\n\n\\begin{figure*}\n\\includegraphics[width=0.7\\textwidth]{a.png}\n\\includegraphics{b.png}\n\\end{figure*}\n\nProse after.\n\n\\end{document}\n"
+
+$figureNotebook = latexToNotebook[ $figureSource ]
+
+(* The kernel's own reader of these is file-private to Document.wl, so a test that called it would
+   silently get an inert symbol back — the PackageScope trap. *)
+storedRule[ cell_Cell, key_String ] :=
+  Lookup[ Cases[ cell, ( TaggingRules -> tagging_ ) :> tagging[ "MathNotebook" ] ][[ 1 ]], key, "" ]
+
+(* The captioned figure gives one Caption cell carrying the label as its tag; the captionless one
+   gives an Input cell per graphic and no caption at all. *)
+VerificationTest[
+  Cases[ First @ $figureNotebook, Cell[ _, style_String, options___ ] :>
+    { style, Lookup[ { options }, CellTags, None ] } ],
+  { { "Text", None }, { "Caption", "fig:one" }, { "Input", None }, { "Input", None }, { "Text", None } }
+]
+
+(* The graphic cells hold code that produces the picture, and emit nothing into the .tex — the
+   markup that drew it is on the caption cell instead. The last cell of a captionless figure carries
+   the whole environment verbatim, since there is no cell content to write back. *)
+VerificationTest[
+  { Cases[ First @ $figureNotebook, Cell[ BoxData[ code_String ], "Input", ___ ] :> code ],
+    Map[ storedRule[ #, "Suppressed" ] &, Cases[ First @ $figureNotebook, Cell[ _, "Input", ___ ] ] ],
+    Map[ storedRule[ #, "FigureTeX" ] &, Cases[ First @ $figureNotebook, Cell[ _, "Input", ___ ] ] ] },
+  { { "Import[ FileNameJoin @ { NotebookDirectory[], \"a.png\" } ]",
+      "Import[ FileNameJoin @ { NotebookDirectory[], \"b.png\" } ]" },
+    { "True", "" },
+    { "", "\\begin{figure*}\n\\includegraphics[width=0.7\\textwidth]{a.png}\n\\includegraphics{b.png}\n\\end{figure*}" } }
+]
+
+(* A caption holds braces of its own, so it ends at the brace that closes it and not at the first
+   "}" — \textbf{drawn} is inside this one, and the source on either side of the caption is what the
+   exporter puts back. The label is taken out of the trailing source and becomes the cell's tag. *)
+VerificationTest[
+  Cases[ First @ $figureNotebook, cell : Cell[ _, "Caption", ___ ] :>
+    { storedRule[ cell, "FigurePrefix" ], storedRule[ cell, "Trailing" ], storedRule[ cell, "TrailingAfter" ],
+      Cases[ cell, TextData[ { text_String, ___ } ] :> text, Infinity ] } ],
+  { { "\\begin{figure}[htpb]\n\t\\centering\n\t\\begin{tikzpicture}\n\t\t\\draw (0,0) -- (1,1);\n\t\\end{tikzpicture}\n\t\\caption{",
+      "}\n\t", "\n\\end{figure}", { "A \\textbf{drawn} picture, " } } }
+]
+
+(* A \ref at a figure resolves through the Caption counter, which article numbers straight through
+   the document; a key no cell carries is still left as source. *)
+VerificationTest[
+  { Cases[ First @ $figureNotebook, CounterBox[ counter_, key_ ] :> { counter, key }, Infinity ],
+    StringContainsQ[ ToString[ First @ $figureNotebook, InputForm ], "\\\\ref{fig:none}" ] },
+  { { { "Caption", "fig:one" } }, True }
+]
+
+(* Out and back, with the tikzpicture the notebook never rendered returned verbatim. *)
+VerificationTest[
+  notebookToLaTeX[ $figureNotebook ] === $figureSource,
+  True
+]
+
+(* Unlike a bibliography entry, a caption is the notebook's to own: it is written back out of the
+   cell, so editing it in the notebook reaches the .tex. *)
+VerificationTest[
+  StringContainsQ[
+    notebookToLaTeX @ Replace[ $figureNotebook,
+      Cell[ _, "Caption", options___ ] :> Cell[ "Retitled.", "Caption", options ], { 2 } ],
+    "\\caption{Retitled.}\n\t\\label{fig:one}" ],
+  True
+]
+
+(* Evaluating a figure's code leaves an Output cell beside it, and neither the code nor a rasterized
+   graphic has a LaTeX form — the figure's own markup is what goes back into the .tex. So the whole
+   evaluation family emits nothing, and a live picture in the notebook cannot leak into the source. *)
+VerificationTest[
+  notebookToLaTeX @ Replace[ $figureNotebook,
+    Notebook[ cells_List, options___ ] :>
+      Notebook[
+        Flatten @ Replace[ cells,
+          cell : Cell[ _, "Input", ___ ] :>
+            { cell, Cell[ BoxData @ ToBoxes @ Graphics @ Disk[ ], "Output" ],
+              Cell[ BoxData[ "1 + 1" ], "Code" ] }, { 1 } ],
+        options ] ],
+  $figureSource
+]
+
+(* Writing a notebook to disk and opening it again splits a ButtonBox[RowBox[...]] in a TextData into
+   one button per run, so the round trip held only for a notebook that had never been saved. This is
+   the shape the front end really hands back, measured: a two-key citation as five buttons and an
+   \eqref as three, the parentheses carried off into buttons of their own so the counter no longer
+   looked parenthesised and the brackets no longer looked like references at all. The runs are put
+   back together before anything reads them. Tests/FrontEnd.wlt asserts the same through a real save. *)
+$splitCell = Cell[ TextData[ {
+  "See ",
+  ButtonBox[ "[", BaseStyle -> "Citation", ButtonData -> "first, second" ],
+  ButtonBox[ "first", BaseStyle -> "Citation", ButtonData -> "first, second" ],
+  ButtonBox[ ", ", BaseStyle -> "Citation", ButtonData -> "first, second" ],
+  ButtonBox[ "second", BaseStyle -> "Citation", ButtonData -> "first, second" ],
+  ButtonBox[ "]", BaseStyle -> "Citation", ButtonData -> "first, second" ],
+  " and ",
+  ButtonBox[ "(", BaseStyle -> "Citation", ButtonData -> "eq:a" ],
+  ButtonBox[ CounterBox[ "DisplayFormulaNumbered", "eq:a" ], BaseStyle -> "Citation", ButtonData -> "eq:a" ],
+  ButtonBox[ ")", BaseStyle -> "Citation", ButtonData -> "eq:a" ],
+  "." } ], "Text" ]
+
+VerificationTest[
+  notebookToLaTeX @ Notebook[ { $splitCell } ],
+  "See \\cite{first, second} and \\eqref{eq:a}.\n\n"
 ]

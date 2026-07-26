@@ -43,8 +43,19 @@ notebookToLaTeX[ notebook : Notebook[ cells_List, ___ ] ] :=
   With[ { tagging = documentTagging[ notebook ] },
     tagging[ "Preamble" ] <> tagging[ "BodyPrefix" ] <>
       StringJoin @ Map[ cell |-> cellToLaTeX[ cell ] <> cellSeparator[ cell ],
-        Select[ notebookCellList[ cells ], cellTagging[ #, "Suppressed" ] === "" & ] ] <>
+        Select[ notebookCellList[ cells ], exportedCellQ ] ] <>
       tagging[ "Postamble" ] ]
+
+(* Evaluating a figure's code leaves an Output cell beside it, and neither the code nor the graphic
+   has a LaTeX form — the figure's own markup is what goes back into the .tex. So the whole
+   evaluation family emits nothing, and a live picture in the notebook cannot leak into the source.
+   The exception is the cell carrying a captionless figure, which is an Input cell itself. *)
+$evaluationStyles = { "Input", "Output", "Code", "Print", "Message", "Echo" }
+
+exportedCellQ[ cell_Cell ] :=
+  cellTagging[ cell, "Suppressed" ] === "" &&
+    ( cellTagging[ cell, "FigureTeX" ] =!= "" ||
+      ! MemberQ[ $evaluationStyles, Replace[ cell, { Cell[ _, style_String, ___ ] :> style, _ :> None } ] ] )
 
 (* Which source environment names this document uses, and what each is printed as. The amsthm
    defaults are the twelve style names lowercased; a \newtheorem declaration overrides or adds to
@@ -102,6 +113,7 @@ cellSeparator[ cell_Cell ] :=
 structureRules[ environments_Association, entries_Association ] :=
   Join[
     bibliographyRules[ entries ],
+    figureRules[ ],
     Map[ Apply[ { command, style } |->
         ( StartOfLine ~~ indent : ( " " | "\t" ) ... ~~ command ~~ "{" ~~ Shortest[ title___ ] ~~ "}" ~~
             trailing : Except[ "\n" ] ... :> sectionCell[ style, indent, title, trailing ] ) ],
@@ -143,6 +155,68 @@ environmentDingbat[ printed_String ] :=
     { },
     { CellDingbat -> Cell[ TextData[ { printed <> " ", CounterBox[ "Section" ], ".", CounterBox[ "Theorem" ], "." } ],
         FontWeight -> "Bold" ] } ]
+
+(* A figure is the one block a notebook can do better than the source: LaTeX ships a rendered
+   picture, and the notebook wants the code that draws it. So each \includegraphics becomes an Input
+   cell holding code that produces that picture — Import of the shipped file, which the author
+   replaces with the code that generates it — and the caption becomes a Caption cell tagged with the
+   figure's \label, which is what makes "Figure \ref{fig:x}" resolve to the front end's own counter.
+   Only declared theorem names are matched by the environment rules, so figure needs its own; the two
+   starred and unstarred forms each get one, for the same reason a back-reference to a named
+   Alternatives is not a legal string pattern. *)
+$figureEnvironments = { "figure", "figure*" }
+
+figureRules[ ] :=
+  Map[ name |->
+      ( StartOfLine ~~ indent : ( " " | "\t" ) ... ~~ ( "\\begin{" <> name <> "}" ) ~~
+          Shortest[ inner___ ] ~~ StartOfLine ~~ closingIndent : ( " " | "\t" ) ... ~~
+          ( "\\end{" <> name <> "}" ) :>
+        figureCells[ indent <> "\\begin{" <> name <> "}", inner,
+          closingIndent <> "\\end{" <> name <> "}" ] ),
+    $figureEnvironments ]
+
+figureCells[ opening_String, inner_String, closing_String ] :=
+  Replace[ captionCell[ opening, inner, closing ],
+    { caption_Cell :> Append[ Map[ graphicCell, figureGraphics[ inner ] ], caption ],
+      None :> MapAt[ retagged[ #, <| "Suppressed" -> "",
+            "FigureTeX" -> opening <> inner <> closing |> ] &,
+        Replace[ Map[ graphicCell, figureGraphics[ inner ] ], { } -> { graphicCell[ "" ] } ], -1 ] } ]
+
+(* The graphic cells emit nothing: the markup that drew the picture — \centering, the
+   \includegraphics options, a whole tikzpicture — rides verbatim in the caption cell's
+   "FigurePrefix", which is what lets a TikZ figure survive a round trip it cannot render. *)
+graphicCell[ code_String ] :=
+  Cell[ BoxData[ code ], "Input", TaggingRules -> <| "MathNotebook" -> <| "Suppressed" -> "True" |> |> ]
+
+figureGraphics[ inner_String ] :=
+  Map[ file |-> "Import[ FileNameJoin @ { NotebookDirectory[], \"" <> file <> "\" } ]",
+    Flatten @ StringCases[ inner,
+      "\\includegraphics" ~~ ( "[" ~~ Except[ "]" ] ... ~~ "]" ) | "" ~~ "{" ~~
+        file : Except[ "}" ] .. ~~ "}" :> file ] ]
+
+(* The caption is the one part of a figure the notebook owns, so it is the cell the source hangs off:
+   everything up to and including \caption{ goes in "FigurePrefix" and everything from its closing
+   brace on goes in "Trailing", where labelledCell finds the \label and turns it into the cell's tag
+   exactly as it does for a section. Editing the caption in the notebook therefore reaches the .tex,
+   while the picture's own markup is returned untouched. A figure with no caption owns nothing, and
+   its whole source is re-emitted from "FigureTeX". *)
+captionCell[ opening_String, inner_String, closing_String ] :=
+  Replace[ StringPosition[ inner, "\\caption{", 1 ],
+    { { { _, brace_ } } :>
+        With[ { caption = braceContent[ inner, brace ] },
+          Cell[ inlineContent[ caption ], "Caption",
+            TaggingRules -> <| "MathNotebook" -> <|
+              "FigurePrefix" -> opening <> StringTake[ inner, brace ],
+              "Trailing" -> StringDrop[ inner, brace + StringLength[ caption ] ] <> closing |> |> ] ],
+      _ :> None } ]
+
+(* A caption holds braces of its own — \textbf, \emph, a nested \cite — so it ends at the brace that
+   closes it and not at the first "}": the same depth walk a .bib field needs. *)
+braceContent[ text_String, brace_Integer ] :=
+  With[ { characters = Characters @ StringDrop[ text, brace ] },
+    StringJoin @@ Take[ characters,
+      First @ FirstPosition[
+        Accumulate @ Replace[ characters, { "{" -> 1, "}" -> -1, _ -> 0 }, { 1 } ], -1 ] - 1 ] ]
 
 (* The bibliography is the one block of a paper whose content is not in the .tex at all: the source
    says \bibliography{refs} or \printbibliography and the entries live in a .bib. So the commands
@@ -442,6 +516,13 @@ cellToLaTeX[ cell : Cell[ _, "Section" | "Subsection" | "Subsubsection", ___ ] ]
 cellToLaTeX[ cell_Cell ] /; cellTagging[ cell, "BibliographyTeX" ] =!= "" :=
   cellTagging[ cell, "BibliographyTeX" ]
 
+(* A captionless figure has no cell content to write back, so its source is returned whole. *)
+cellToLaTeX[ cell_Cell ] /; cellTagging[ cell, "FigureTeX" ] =!= "" :=
+  cellTagging[ cell, "FigureTeX" ]
+
+cellToLaTeX[ cell_Cell ] /; cellTagging[ cell, "FigurePrefix" ] =!= "" :=
+  cellTagging[ cell, "FigurePrefix" ] <> cellTeXText[ cell ] <> cellTrailing[ cell ]
+
 cellToLaTeX[ cell_Cell ] /; cellTagging[ cell, "Environment" ] =!= "" :=
   With[ { name = cellTagging[ cell, "Environment" ] },
     cellTagging[ cell, "Indent" ] <> "\\begin{" <> name <> "}" <> cellTagging[ cell, "EnvironmentTitle" ] <>
@@ -461,7 +542,35 @@ cellTeXText[ cell : Cell[ content_, ___ ] ] :=
   Replace[ convertMathCell @ referencesToTeX @ Cell[ content, "Text" ], { Cell[ text_String, ___ ] :> text, _ :> "" } ]
 
 referencesToTeX[ Cell[ content_, rest___ ] ] :=
-  Cell[ Replace[ content, box_ButtonBox :> referenceTeX[ box ], { 0, Infinity } ], rest ]
+  Cell[ Replace[ content /. TextData[ parts_List ] :> TextData @ mergedButtons[ parts ],
+      box_ButtonBox :> referenceTeX[ box ], { 0, Infinity } ], rest ]
+
+(* Writing a notebook to disk and opening it again splits a ButtonBox[RowBox[...]] inside a TextData
+   into one button per run — the same front-end behaviour NotebookWrite has — and it reaches every
+   imported citation and cross-reference, so without this the round trip holds only for a notebook
+   that was never saved. Measured: \cite{first, second} came back as five buttons and exported five
+   \cite commands, and \eqref{eq:a} came back as three, the parentheses carried off into buttons of
+   their own so that the counter no longer looked parenthesised and the brackets no longer looked
+   like references at all — \cite{eq:a}\ref{eq:a}\cite{eq:a}. Consecutive buttons on one key are put
+   back together before anything reads them; two adjacent citations to the same key, which no real
+   paper writes, would merge into one. *)
+mergedButtons[ parts_List ] :=
+  Flatten @ Replace[ SplitBy[ parts, buttonKey ],
+    run : { ButtonBox[ _, ___, ButtonData -> key_, ___ ], __ } :>
+      { ButtonBox[ RowBox @ Flatten @ Map[ buttonBoxes, run ], BaseStyle -> "Citation", ButtonData -> key ] },
+    { 1 } ]
+
+buttonKey[ ButtonBox[ ___, ButtonData -> key_, ___ ] ] :=
+  key
+
+buttonKey[ _ ] :=
+  None
+
+buttonBoxes[ ButtonBox[ RowBox[ boxes_List ], ___ ] ] :=
+  boxes
+
+buttonBoxes[ ButtonBox[ boxes_, ___ ] ] :=
+  { boxes }
 
 cellTagging[ cell_Cell, key_String ] :=
   Lookup[ Replace[ storedTagging[ cell ], Except[ _Association ] -> <| |> ], key, "" ]

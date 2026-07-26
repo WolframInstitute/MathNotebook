@@ -146,8 +146,63 @@ $bibliographySource = "\\documentclass{article}\n\\begin{document}\n\nProse citi
 
 $bibliographyBib = "@article{ehlers,\n  title={The geometry of free fall},\n  author={Ehlers, J{\\\"u}rgen},\n  year={2012}\n}\n\n@article{andreka,\n  title={A logic road},\n  author={Andr{\\'e}ka, Hajnal},\n  year={2012}\n}\n";
 
+(* LaTeXPaperImport T5: what only the page can show is the numbering — a caption numbers itself from
+   its own counter, and article counts figures straight through the document rather than per section,
+   so a \ref at a figure has to read "2" and not "2.1" or the front end's XXX. The evaluated figure's
+   graphic is put in kernel-side rather than by NotebookEvaluate: the front end's evaluator is the
+   same kernel that is driving it, and asking for it from inside UsingFrontEnd hangs. *)
+
+$figurePaper = "\\documentclass{article}\n\\begin{document}\n\n\\begin{figure}\n\\centering\n\\includegraphics{first.png}\n\\caption{The first picture.}\n\\label{fig:one}\n\\end{figure}\n\n\\begin{figure}\n\\centering\n\\includegraphics{second.png}\n\\caption{The second picture.}\n\\label{fig:two}\n\\end{figure}\n\nSee Figure~\\ref{fig:two}.\n\n\\end{document}\n";
+
+(* The imported code is an Import of the file the paper shipped; a figure whose code has been
+   evaluated carries its graphic in an Output cell beside it, which is what this stands in for. *)
+evaluatedFigures[ source_String ] :=
+  Replace[ latexToNotebook[ source ],
+    Notebook[ cells_List, options___ ] :>
+      Notebook[
+        Flatten @ Replace[ cells,
+          cell : Cell[ BoxData[ _String ], "Input", ___ ] :>
+            { cell, Cell[ BoxData @ ToBoxes @ Graph[ { 1 -> 2, 2 -> 3 } ], "Output" ] }, { 1 } ],
+        options ] ]
+
+figureMeasurements[ source_String ] :=
+  With[ { evaluated = evaluatedFigures[ source ] },
+    <| "Graphics" -> Count[ evaluated, _GraphicsBox, Infinity ],
+      "Exported" -> notebookToLaTeX[ evaluated ] === source,
+      "Ink" -> notebookImageInk[ evaluated ] > notebookImageInk[ latexToNotebook[ source ] ],
+      "Text" -> importedText[ latexToNotebook[ source ] ] |> ]
+
+(* Only a real save can show this: the front end splits a ButtonBox[RowBox[...]] in a TextData into
+   one button per run, so before the runs were merged back an imported paper round-tripped only as
+   long as nobody wrote it to disk — the specimen's citations came back multiplied five and fifteen
+   fold and its \eqref came back as \cite\ref\cite. *)
+savedRoundTrip[ source_String ] :=
+  Module[ { file, notebook, back },
+    file = FileNameJoin[ { $TemporaryDirectory, "MathNotebookSaved.nb" } ];
+    Export[ file, latexToNotebook[ source ], "NB" ];
+    notebook = NotebookOpen[ file, Visible -> False ];
+    back = NotebookGet[ notebook ];
+    NotebookClose[ notebook ];
+    <| "Buttons" -> Count[ back, _ButtonBox, Infinity ], "Exported" -> notebookToLaTeX[ back ] === source |>
+  ]
+
+$savedSource = "\\documentclass{article}\n\\begin{document}\n\n\\section{S} \\label{sec:a}\n\nSee \\cite{first, second} and Section~\\ref{sec:a} and~\\eqref{eq:a}.\n\n\\begin{equation}\\label{eq:a}\nx^2\n\\end{equation}\n\n\\end{document}\n";
+
+notebookImageInk[ imported_Notebook ] :=
+  Module[ { notebook, file },
+    notebook = NotebookPut[
+      Append[ imported, StyleDefinitions -> Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ] ],
+      Visible -> False ];
+    file = Export[ FileNameJoin[ { $TemporaryDirectory, "MathNotebookFigureInk.png" } ], notebook,
+      ImageResolution -> 72 ];
+    NotebookClose[ notebook ];
+    inkOf @ Import[ file ]
+  ]
+
 $measured = UsingFrontEnd @ <|
   "Imported" -> importedText[ $importedSource ],
+  "Figures" -> figureMeasurements[ $figurePaper ],
+  "Saved" -> savedRoundTrip[ $savedSource ],
   "Bibliography" -> importedText @ latexToNotebook[ $bibliographySource, bibliographyDatabase[ $bibliographyBib ] ],
   "InlineInk" -> AssociationMap[ inlineInk, { "A pair $(V, E)$ here.", "A list $x_1, x_2$ here." } ],
   "DisplayInk" -> displayInk[ $displayParagraph ],
@@ -278,4 +333,28 @@ VerificationTest[
     { ink[ "E" ] === ink[ "ItalicE" ], ink[ "E" ] =!= ink[ "ExponentialE" ],
       ink[ "I" ] === ink[ "ItalicI" ], ink[ "I" ] =!= ink[ "ImaginaryI" ] } ],
   { True, True, True, True }
+]
+
+(* LaTeXPaperImport T5: the captions number themselves on the page, straight through the document as
+   article does, and "Figure~2" is the number of the cell the label landed on rather than the front
+   end's XXX. An evaluated figure's graphic really lands in the rendered document — strictly more ink
+   than the same paper unevaluated — and still exports the source byte for byte, so a live picture
+   cannot leak into the .tex. *)
+VerificationTest[
+  { StringContainsQ[ $measured[ "Figures", "Text" ], "Figure 1. The first picture." ],
+    StringContainsQ[ $measured[ "Figures", "Text" ], "Figure 2. The second picture." ],
+    StringContainsQ[ $measured[ "Figures", "Text" ], "See Figure~2." ],
+    StringContainsQ[ $measured[ "Figures", "Text" ], "XXX" ],
+    $measured[ "Figures", "Graphics" ] > 0,
+    $measured[ "Figures", "Ink" ],
+    $measured[ "Figures", "Exported" ] },
+  { True, True, True, False, True, True, True }
+]
+
+(* A paper written to disk and opened again still exports its source byte for byte. The front end
+   handed back nine buttons where the import made three — one per bracket, comma and key — and every
+   one of them would have exported a command of its own. *)
+VerificationTest[
+  { $measured[ "Saved", "Buttons" ] > 3, $measured[ "Saved", "Exported" ] },
+  { True, True }
 ]

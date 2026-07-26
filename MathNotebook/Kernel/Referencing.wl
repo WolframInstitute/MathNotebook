@@ -109,7 +109,8 @@ $referenceLabelSpec = Join[
     "Section" -> { "Section ", { "Section" }, "" },
     "Subsection" -> { "Section ", { "Section", "Subsection" }, "" },
     "Subsubsection" -> { "Section ", { "Section", "Subsection", "Subsubsection" }, "" },
-    "ItemNumbered" -> { "Item ", { "ItemNumbered" }, "" }
+    "ItemNumbered" -> { "Item ", { "ItemNumbered" }, "" },
+    "Caption" -> { "Figure ", { "Caption" }, "" }
   |>,
   AssociationMap[ { # <> " ", { "Section", "Theorem" }, "" } &, Keys[ $theoremEnvironments ] ]
 ]
