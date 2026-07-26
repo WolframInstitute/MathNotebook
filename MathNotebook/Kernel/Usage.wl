@@ -5,6 +5,7 @@ TagSelectedCell::usage = "TagSelectedCell[] assigns a cell tag to the selected c
 GoBack::usage = "GoBack[] moves the selection back to the cell from which the last hyperlink was clicked."
 InsertEnvironment::usage = "InsertEnvironment[style] inserts a new cell of the given environment style at the current position."
 InsertCitation::usage = "InsertCitation[] inserts a citation link to a tagged reference cell."
+LabelReferences::usage = "LabelReferences[] labels every tagged Reference cell of the input notebook with its own tag, as the citations to it read, and clears the label of an untagged one.\nLabelReferences[notebook] labels the given notebook."
 ConvertLaTeXCells::usage = "ConvertLaTeXCells[] converts LaTeX math fragments in the selected cells into native typeset math, or in the whole input notebook if nothing is selected.\nConvertLaTeXCells[notebook] converts the given notebook.\nConvertLaTeXCells[{cell, ...}] converts the given cells."
 ConvertMathCells::usage = "ConvertMathCells[] converts native typeset math in the selected cells into LaTeX fragments, or in the whole input notebook if nothing is selected.\nConvertMathCells[notebook] converts the given notebook.\nConvertMathCells[{cell, ...}] converts the given cells."
 ConvertToMaTeX::usage = "ConvertToMaTeX[] renders the selected display math cells with MaTeX, or all of them if nothing is selected.\nConvertToMaTeX[notebook] converts the given notebook.\nConvertToMaTeX[{cell, ...}] converts the given cells."

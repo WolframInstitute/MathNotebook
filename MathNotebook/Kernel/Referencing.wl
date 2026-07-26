@@ -5,11 +5,16 @@ PackageExport[TagSelectedCell]
 PackageExport[GoBack]
 PackageExport[InsertEnvironment]
 PackageExport[InsertCitation]
+PackageExport[LabelReferences]
 PackageExport[$LastHyperlinkCell]
 
 PackageScope["$theoremEnvironments"]
 PackageScope["$referenceLabelSpec"]
 PackageScope["referenceButton"]
+PackageScope["referenceLabel"]
+PackageScope["referenceDingbat"]
+PackageScope["citationButton"]
+PackageScope["labelReferenceCells"]
 
 CopyCellReference[] :=
   Replace[ SelectedCells[ InputNotebook[] ], {
@@ -23,15 +28,45 @@ TagSelectedCell[] :=
   Replace[ SelectedCells[ InputNotebook[] ], {
     { cell_, ___ } :>
       With[ { tag = InputString[ "Cell tag:" ] },
-        If[ StringQ[ tag ], SetOptions[ cell, CellTags -> tag ] ]
+        If[ StringQ[ tag ], tagCell[ cell, tag ] ]
       ],
     {} :> MessageDialog[ "Select a cell!" ] } ]
 
 InsertCitation[] :=
   With[ { tag = InputString[ "Citation tag:" ] },
-    If[ StringQ[ tag ],
-      NotebookWrite[ InputNotebook[], ButtonBox[ "[" <> tag <> "]", BaseStyle -> "Citation", ButtonData -> tag ] ] ]
+    If[ StringQ[ tag ], NotebookWrite[ InputNotebook[], citationButton[ tag ] ] ]
   ]
+
+LabelReferences[ notebook_NotebookObject ] :=
+  NotebookPut[ labelReferenceCells @ NotebookGet[ notebook ], notebook ]
+
+LabelReferences[] :=
+  LabelReferences[ InputNotebook[] ]
+
+(* The label is the cell's own first tag, so a bibliography entry reads exactly as the
+   citation that points at it, and nothing renumbers when cells move. *)
+referenceLabel[ tag_String ] :=
+  "[" <> tag <> "]"
+
+citationButton[ tag_String ] :=
+  ButtonBox[ referenceLabel[ tag ], BaseStyle -> "Citation", ButtonData -> tag ]
+
+referenceDingbat[ tags_ ] :=
+  Replace[ First[ Flatten @ { tags }, None ],
+    { tag_String :> { CellDingbat -> Cell[ TextData[ referenceLabel[ tag ] ] ] }, _ :> { } } ]
+
+tagCell[ cell_CellObject, tag_String ] := (
+  SetOptions[ cell, CellTags -> tag ];
+  If[ MemberQ[ Flatten @ { CurrentValue[ cell, CellStyle ] }, "Reference" ],
+    SetOptions[ cell, referenceDingbat[ tag ] ] ]
+)
+
+labelReferenceCells[ notebook_Notebook ] :=
+  ReplaceAll[ notebook,
+    Cell[ contents_, "Reference", options___ ] :>
+      Cell[ contents, "Reference",
+        Sequence @@ FilterRules[ { options }, Except[ CellDingbat ] ],
+        Sequence @@ referenceDingbat @ Lookup[ { options }, CellTags, { } ] ] ]
 
 GoBack[] :=
   SelectionMove[ $LastHyperlinkCell, All, Cell ]

@@ -14,6 +14,7 @@ Paclet for writing math papers in Wolfram notebooks: referencing palette, LaTeX 
 - In the `Package[]` format an **undeclared symbol is private to its own file** (`WolframInstitute`MathNotebook`<File>`PackagePrivate`x`). Calling such a helper from another file creates a distinct, definition-less symbol, so the call just stays unevaluated — **no message, no failure, the operation silently does nothing**. Every cross-file helper needs `PackageScope["name"]` in the file that defines it.
 - All four template stylesheets are generated from the same base cell list as `LaTeXBase.nb` and each chains to `Default.nb`; they must define identical style names (enforced by `Tests/StyleSheets.wlt`).
 - Palette buttons must be cold-kernel-safe: `Needs["WolframInstitute`MathNotebook`"]` + fully qualified symbols, `Method -> "Queued"`.
+- **A `CellDingbat` cannot read the options of the cell it labels.** `CellDingbat -> Cell[BoxData[ToBoxes @ Dynamic[... CurrentValue[EvaluationCell[], CellTags] ...]]]` renders, and renders empty: inside the dingbat `EvaluationCell[]` does not resolve to the owning cell. A label that depends on the cell's own tags has to be written into the cell (`referenceDingbat` in `Referencing.wl`), not derived at display time. Counters are the exception — `CounterBox` is a front-end box and works in a dingbat, which is how the theorem environments number themselves.
 
 ## Palette state and folding
 

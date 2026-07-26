@@ -52,7 +52,6 @@ Done when a text-size change moves every prose style on screen and in print on a
 
 ## Tasks
 
-- [ ] T2 — Render the `Reference` label from the cell's `CellTags` at the beginning of the cell; make `InsertCitation` and the bibliography entry agree.
 - [ ] T3 — Investigate whether a target theorem's resolved counter value is readable at insert time, then make a citation to a numbered environment display `Theorem 1.1` rather than its tag.
 - [ ] T4 — Tests for all of it, then Pavel re-checks on the document that produced the report.
 - [ ] T5 — Add the sentence the tutorial's *Reading and Writing Comfortably* section has been missing since `PaletteUsability` T5 deliberately withheld it: the text slider now reaches the theorem, proof, reference and list styles, which T1 above made true.
@@ -60,6 +59,7 @@ Done when a text-size change moves every prose style on screen and in print on a
 ### Done
 
 - [x] T1 — Rebuild the font-size setters on resolved per-style sizes read from the document's own chain; assert every prose style moves, screen and print, on all five sheets. (landed during `PaletteUsability` T6's feedback round, 2026-07-26)
+- [x] T2 — Render the `Reference` label from the cell's `CellTags` at the beginning of the cell; make `InsertCitation` and the bibliography entry agree. *(Session 5)*
 
 ## Progress
 
@@ -74,6 +74,22 @@ Done when a text-size change moves every prose style on screen and in print on a
   - Non-numeric resolved values are real and must be filtered — `Default.nb` gives `DisplayFormulaEquationNumber` the symbolic `-1 + Inherited`.
   - The chain reader needs a front end, so the previously kernel-only test suite had to stub `baseFontSizes` for the one test that passes a real sheet name, or it fails on messages alone with a correct value.
 - **Next:** T2 — the `Reference` label from `CellTags`.
+
+### Session 5 — 2026-07-26 — T2
+
+- **Prompt:** `/next-session`, third task of the run — and "build the paclet and reinstall and redeploy".
+- **Did:** The label is a static `CellDingbat` carrying `[tag]`, written from the cell's own `CellTags`.
+  `Referencing.wl` gained one source of the label text — `referenceLabel[tag]` — used by both `citationButton` (which `InsertCitation` now writes) and `referenceDingbat`, so the entry and the citations pointing at it cannot drift apart.
+  `labelReferenceCells[notebook_Notebook]` is the pure core in the repo's usual shape: it relabels every `Reference` cell, strips a stale label from one whose tag went away, and leaves every other style alone.
+  `TagSelectedCell` now routes through `tagCell`, which sets the tag and, on a `Reference` cell, the label with it — so tagging from the palette labels the entry with nothing else to press.
+  Exported `LabelReferences[]` / `LabelReferences[notebook]` for a bibliography tagged before this or tagged through the Cell Tags dialog, with a usage string and a `PacletInfo.wl` entry.
+  Seven tests in `Referencing.wlt` (label text, entry-and-citation agreement, add, clear, replace, first-of-several tags, non-`Reference` untouched); suite green at 68.
+  The tutorial's *Referencing* section says what the label is and names `LabelReferences[]`, and `BuildTutorial.wls` now tags its four Credits entries and runs the notebook through `labelReferenceCells`, so the shipped tutorial demonstrates the labels it describes.
+  Published 0.1.10, reinstalled it *through the update path itself* (0.1.9 → 0.1.10, a second live run of T4's code and of the `"0.1.9" < "0.1.10"` ordering), redeployed the previews, and removed the 0.1.8/0.1.9 test installs.
+- **Learned:** The obvious design — a `CellDingbat` holding `Dynamic[CurrentValue[EvaluationCell[], CellTags]]`, so the label tracks the tag with no code — **does not work**: rendered in a real front end the dingbat's `EvaluationCell[]` does not resolve to the cell that owns the dingbat, and every label came out empty. A dingbat cannot read its own cell's options; the label has to be written in.
+  With the label written in, the existing `ParagraphIndent -> -24` hanging indent is exactly right — `[ollivier]` sits right-aligned in the margin and the body hangs under itself, which is the `thebibliography` look. Nothing in the stylesheets had to change.
+  A `Reference` cell's options are plain rules, so `FilterRules[..., Except[CellDingbat]]` plus a freshly computed dingbat is enough to make relabelling idempotent — no separate "is there already a label" branch.
+- **Next:** T3 — whether a target theorem's resolved counter is readable at insert time, so a citation can show `Theorem 1.1`.
 
 ## Decisions
 

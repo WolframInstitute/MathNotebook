@@ -21,7 +21,7 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 
 ## Active
 
-- [View and Reference Defects](Active/ViewAndReferenceDefects.md) — T1 done (sizes now reach every prose style); next: **T2**, render the `Reference` label from the cell's tag, then theorem citations by number, and the tutorial sentence T1 earned
+- [View and Reference Defects](Active/ViewAndReferenceDefects.md) — T2 done (a tagged `Reference` cell shows `[tag]`, and the citation to it reads the same); next: **T3**, make a citation to a theorem show `Theorem 1.1` rather than its tag
 
 ## Backlog
 

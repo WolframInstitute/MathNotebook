@@ -2,6 +2,12 @@ repoDirectory = Replace[ $ScriptCommandLine,
   { { path_, ___ } :> DirectoryName[ ExpandFileName[ path ], 2 ], _ :> Environment[ "MATHNOTEBOOK_REPO" ] } ];
 tutorialPath = FileNameJoin[ { repoDirectory, "MathNotebook", "Assets", "MathNotebookTutorial.nb" } ];
 
+(* The Credits section is a bibliography, so it is labelled by the same code the palette runs,
+   and the tutorial demonstrates the labels it describes. *)
+PacletDirectoryLoad[ repoDirectory ];
+Needs[ "WolframInstitute`MathNotebook`" ];
+labelReferences = WolframInstitute`MathNotebook`PackageScope`labelReferenceCells;
+
 key[ text_String ] := StyleBox[ text, FontWeight -> "Bold" ];
 name[ text_String ] := StyleBox[ text, FontSlant -> "Italic" ];
 link[ label_String, url_String ] :=
@@ -27,6 +33,8 @@ tutorialNotebook = Notebook[ {
   Cell[ "The pasted reference is a live button showing the current number, so reordering cells renumbers every reference to them.", "Item" ],
   Cell[ TextData[ { "Clicking a reference jumps to its target; ", name[ "\[UpArrow] Go back" ], " returns to where you clicked from." } ], "Item" ],
   Cell[ TextData[ { name[ "Tag cell" ], " names a cell, and ", name[ "Insert citation" ], " inserts a red bracketed link to that name \[LongDash] the two together give a bibliography: style each entry ", name[ "Reference" ], ", tag it, cite it." } ], "Item" ],
+  Cell[ TextData[ { "Tagging a ", name[ "Reference" ], " cell also labels it: the entry shows its tag in brackets in the margin, which is exactly what a citation to it reads, so the bibliography and the body agree without your typing either." } ], "Item" ],
+  Cell[ TextData[ { "For a bibliography tagged before that was true \[LongDash] or tagged through the Cell Tags dialog rather than the palette \[LongDash] ", name[ "LabelReferences[]" ], " labels every entry of a notebook at once, and clears the label of an entry whose tag you removed." } ], "Item" ],
   Cell[ TextData[ { "Existing tags are listed under ", name[ "Cell \[RightArrow] Cell Tags" ], "." } ], "Item" ],
   Cell[ "The theorem below and the equation after it are practice targets: select either one and copy a reference to it.", "Item" ],
   Cell[ "The exponential map is surjective onto the unit circle.", "Theorem" ],
@@ -91,14 +99,14 @@ tutorialNotebook = Notebook[ {
   Cell[ "Credits", "Section" ],
   Cell[ TextData[ { "The referencing scheme and the MaTeX integration are originally due to Nik Murzin, ",
     link[ "github.com/sw1sh", "https://github.com/sw1sh" ], "; this paclet packages and extends that work." } ], "Text" ],
-  Cell[ TextData[ { "Nik Murzin, ", link[ "https://github.com/sw1sh", "https://github.com/sw1sh" ] } ], "Reference" ],
-  Cell[ TextData[ { "Szabolcs Horvat, MaTeX: LaTeX labels in Mathematica, ", link[ "https://github.com/szhorvat/MaTeX", "https://github.com/szhorvat/MaTeX" ] } ], "Reference" ],
-  Cell[ TextData[ { "TeX Live, ", link[ "https://tug.org/texlive/", "https://tug.org/texlive/" ], " \[LongDash] on macOS, MacTeX, ", link[ "https://tug.org/mactex/", "https://tug.org/mactex/" ] } ], "Reference" ],
-  Cell[ TextData[ { "Latin Modern, ", link[ "https://ctan.org/pkg/lm", "https://ctan.org/pkg/lm" ], " and TeX Gyre, ", link[ "https://ctan.org/pkg/tex-gyre", "https://ctan.org/pkg/tex-gyre" ] } ], "Reference" ]
+  Cell[ TextData[ { "Nik Murzin, ", link[ "https://github.com/sw1sh", "https://github.com/sw1sh" ] } ], "Reference", CellTags -> "murzin" ],
+  Cell[ TextData[ { "Szabolcs Horvat, MaTeX: LaTeX labels in Mathematica, ", link[ "https://github.com/szhorvat/MaTeX", "https://github.com/szhorvat/MaTeX" ] } ], "Reference", CellTags -> "matex" ],
+  Cell[ TextData[ { "TeX Live, ", link[ "https://tug.org/texlive/", "https://tug.org/texlive/" ], " \[LongDash] on macOS, MacTeX, ", link[ "https://tug.org/mactex/", "https://tug.org/mactex/" ] } ], "Reference", CellTags -> "texlive" ],
+  Cell[ TextData[ { "Latin Modern, ", link[ "https://ctan.org/pkg/lm", "https://ctan.org/pkg/lm" ], " and TeX Gyre, ", link[ "https://ctan.org/pkg/tex-gyre", "https://ctan.org/pkg/tex-gyre" ] } ], "Reference", CellTags -> "lm" ]
   },
   StyleDefinitions -> FrontEnd`FileName[ { "MathNotebook" }, "AMSArticle.nb", CharacterEncoding -> "UTF-8" ],
   LightDark -> "Light"
 ];
 
-Export[ tutorialPath, tutorialNotebook, "NB" ];
+Export[ tutorialPath, labelReferences @ tutorialNotebook, "NB" ];
 Print[ "Tutorial written to ", tutorialPath ]
