@@ -188,6 +188,13 @@ savedRoundTrip[ source_String ] :=
 
 $savedSource = "\\documentclass{article}\n\\begin{document}\n\n\\section{S} \\label{sec:a}\n\nSee \\cite{first, second} and Section~\\ref{sec:a} and~\\eqref{eq:a}.\n\n\\begin{equation}\\label{eq:a}\nx^2\n\\end{equation}\n\n\\end{document}\n";
 
+(* LaTeXPaperImport T7: an environment body that spans cells has to number itself once. The name,
+   the number and the QED square come from the style, so every cell of a three-cell theorem would
+   carry all three and the next theorem would be 1.4 — and none of that is visible in the kernel or
+   in a round trip, because both read the stored source. Only the rendered page shows it. *)
+
+$bodyPaper = "\\documentclass{article}\n\\newtheorem{thm}{Theorem}[section]\n\\begin{document}\n\n\\section{First}\n\n\\begin{thm}\\label{Thm:a}\nA first claim, before the equation:\n\\begin{equation}\\label{Eq:a}\nx^2 + y^2 = z^2\n\\end{equation}\nand a second claim after it.\n\\end{thm}\n\n\\begin{proof}\nFirst step.\n\\begin{equation*}\na + b\n\\end{equation*}\nSecond step.\n\\end{proof}\n\n\\begin{thm}\\label{Thm:b}\nA later claim.\n\\end{thm}\n\nSee Theorem~\\ref{Thm:a}, Theorem~\\ref{Thm:b} and~\\eqref{Eq:a}.\n\n\\end{document}\n";
+
 notebookImageInk[ imported_Notebook ] :=
   Module[ { notebook, file },
     notebook = NotebookPut[
@@ -203,6 +210,7 @@ $measured = UsingFrontEnd @ <|
   "Imported" -> importedText[ $importedSource ],
   "Figures" -> figureMeasurements[ $figurePaper ],
   "Saved" -> savedRoundTrip[ $savedSource ],
+  "Body" -> importedText @ latexToNotebook[ $bodyPaper ],
   "Bibliography" -> importedText @ latexToNotebook[ $bibliographySource, bibliographyDatabase[ $bibliographyBib ] ],
   "InlineInk" -> AssociationMap[ inlineInk, { "A pair $(V, E)$ here.", "A list $x_1, x_2$ here." } ],
   "DisplayInk" -> displayInk[ $displayParagraph ],
@@ -357,4 +365,18 @@ VerificationTest[
 VerificationTest[
   { $measured[ "Saved", "Buttons" ] > 3, $measured[ "Saved", "Exported" ] },
   { True, True }
+]
+
+(* LaTeXPaperImport T7: a theorem whose body wraps around a display equation is three cells, and the
+   page has to show one heading, one number and one equation number for it — and the theorem after
+   it has to read 1.2 and not 1.4. The proof beside it is the same claim for the QED square, which
+   comes from CellFrameLabels rather than from the dingbat and so needs suppressing separately. *)
+VerificationTest[
+  { StringCount[ $measured[ "Body" ], "Theorem 1.1." ],
+    StringCount[ $measured[ "Body" ], "Theorem 1.2." ],
+    StringCount[ $measured[ "Body" ], "Proof." ],
+    StringCount[ $measured[ "Body" ], "\[EmptySquare]" ],
+    StringContainsQ[ $measured[ "Body" ], "See Theorem~1.1, Theorem~1.2 and~(1)." ],
+    StringContainsQ[ $measured[ "Body" ], "XXX" | "\\begin{equation" ] },
+  { 1, 1, 1, 1, True, False }
 ]

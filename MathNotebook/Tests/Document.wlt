@@ -342,3 +342,88 @@ VerificationTest[
   notebookToLaTeX @ Notebook[ { $splitCell } ],
   "See \\cite{first, second} and \\eqref{eq:a}.\n\n"
 ]
+
+(* LaTeXPaperImport T7. An environment body is split exactly as the document body is: its display
+   math is lifted into cells of its own, and a nested environment becomes its own cells. What kept
+   a body to one cell before was that the \end{...} had nowhere else to go; it rides on the LAST
+   cell of the group now and the \begin{...} on the first, both as plain strings, so the export is
+   still a StringJoin and the delimiters still land where the source had them. *)
+
+$bodySource = $preamble <> "\\begin{document}\n\n\\begin{defn}[Named] \\label{def:one}\nBefore the equation:\n\\begin{equation}\\label{eq:inner}\nx^2\n\\end{equation}\nand after it.\n\n\\begin{axiom}\nA nested body.\n\\end{axiom}\n\nA last word.\n\\end{defn}\n\nSee Definition~\\ref{def:one} and~\\eqref{eq:inner}.\n\n\\end{document}\n"
+
+$bodyNotebook = latexToNotebook[ $bodySource ]
+
+$bodyCells = First[ $bodyNotebook ]
+
+(* Six cells where T2 made one: the definition's prose in three pieces, the equation it wrapped
+   around, and the nested axiom, which carries its own \begin/\end inside the definition's. *)
+VerificationTest[
+  Map[ #[[ 2 ]] &, $bodyCells ],
+  { "Definition", "DisplayFormulaNumbered", "Definition", "Theorem", "Definition", "Text" }
+]
+
+(* The equation inside the body is a real numbered cell now, so its \label is a tag and the \eqref
+   at it resolves to a counter instead of being left as literal source — 43 of hodgepaper's 72
+   unconverted references are of exactly this kind. *)
+VerificationTest[
+  Cases[ $bodyCells, Cell[ _, style_String, ___, CellTags -> key_String, ___ ] :> style -> key ],
+  { "Definition" -> "def:one", "DisplayFormulaNumbered" -> "eq:inner" }
+]
+
+VerificationTest[
+  Cases[ $bodyCells, _ButtonBox, Infinity ],
+  { ButtonBox[ RowBox @ { CounterBox[ "Section", "def:one" ], ".", CounterBox[ "Theorem", "def:one" ] },
+      BaseStyle -> "Citation", ButtonData -> "def:one" ],
+    ButtonBox[ RowBox @ { "(", CounterBox[ "DisplayFormulaNumbered", "eq:inner" ], ")" },
+      BaseStyle -> "Citation", ButtonData -> "eq:inner" ] }
+]
+
+(* The name, the number and the QED square belong to the block and not to each of its cells: the
+   first prose cell of a body opens it and the last closes it, and every cell between suppresses
+   both. Without this a definition whose body ran to three cells would be numbered three times and
+   would say "Definition" three times. Suppressing on the cell rather than declaring a continuation
+   style keeps a sheet swap working: "this cell continues the one above" is true under every
+   stylesheet, where writing the positive counter onto each cell would pin the numbering. *)
+VerificationTest[
+  Map[ { FreeQ[ #, CounterIncrements ], FreeQ[ #, CellFrameLabels ] } &,
+    Cases[ $bodyCells, Cell[ _, "Definition", ___ ] ] ],
+  { { True, False }, { False, False }, { False, True } }
+]
+
+(* Out and back, byte for byte, with the nested \begin{axiom} inside the definition's own. *)
+VerificationTest[
+  notebookToLaTeX[ $bodyNotebook ],
+  $bodySource
+]
+
+(* A nested environment opening a body is the case where the two wrappers meet on one cell: the
+   outer \begin is prepended to the inner one, and the outer \end appended to the inner's. *)
+$nestedSource = $preamble <> "\\begin{document}\n\n\\begin{proof}\n\\begin{axiom}\nThe only body.\n\\end{axiom}\n\\end{proof}\n\n\\end{document}\n"
+
+VerificationTest[
+  { Map[ #[[ 2 ]] &, First @ latexToNotebook[ $nestedSource ] ],
+    notebookToLaTeX @ latexToNotebook[ $nestedSource ] === $nestedSource },
+  { { "Theorem" }, True }
+]
+
+(* An empty body has no cell to hang the wrapper on, so one is made for it. *)
+VerificationTest[
+  notebookToLaTeX @ latexToNotebook[ $preamble <> "\\begin{document}\n\n\\begin{conv}\n\\end{conv}\n\n\\end{document}\n" ],
+  $preamble <> "\\begin{document}\n\n\\begin{conv}\n\\end{conv}\n\n\\end{document}\n"
+]
+
+(* A body that opens with a display equation is where the two ways a cell can carry a \label meet.
+   The equation's tag is a mirror of the \label already inside its stored source, where a section's
+   or an environment's tag is the origin of one — so writing the tag back out on the cell that also
+   carries the \begin emitted the label twice. What this cannot fix is the ordering: the name and
+   the number go on the body's first *prose* cell, so here they follow the equation rather than
+   precede it. Neither specimen paper has such a body — all 102 of their environments open with
+   prose — so it is left as a known limit rather than guessed at. *)
+$displayFirstSource = $preamble <> "\\begin{document}\n\n\\begin{defn}\n\\begin{equation}\\label{eq:x}\nx^2\n\\end{equation}\nAnd prose.\n\\end{defn}\n\n\\end{document}\n"
+
+VerificationTest[
+  { Map[ #[[ 2 ]] &, First @ latexToNotebook[ $displayFirstSource ] ],
+    StringCount[ notebookToLaTeX @ latexToNotebook[ $displayFirstSource ], "\\label{eq:x}" ],
+    notebookToLaTeX @ latexToNotebook[ $displayFirstSource ] === $displayFirstSource },
+  { { "DisplayFormulaNumbered", "Definition" }, 1, True }
+]

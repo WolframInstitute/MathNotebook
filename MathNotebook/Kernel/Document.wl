@@ -83,8 +83,10 @@ documentParts[ source_String ] :=
    most places and three in two of them, and a display equation lifted out of a paragraph rejoins
    with one. Riffling everything with "\n\n" was seven diff lines on the specimen. *)
 documentPieces[ body_String, environments_Association, entries_Association ] :=
-  Flatten @ Map[ Replace[ text_String :> paragraphPieces[ text ] ],
-    StringSplit[ body, structureRules[ environments, entries ] ] ]
+  splitPieces[ body, structureRules[ environments, entries ] ]
+
+splitPieces[ text_String, rules_List ] :=
+  Flatten @ Map[ Replace[ chunk_String :> paragraphPieces[ chunk ] ], StringSplit[ text, rules ] ]
 
 withSeparators[ pieces_List ] :=
   Cases[
@@ -118,31 +120,84 @@ structureRules[ environments_Association, entries_Association ] :=
         ( StartOfLine ~~ indent : ( " " | "\t" ) ... ~~ command ~~ "{" ~~ Shortest[ title___ ] ~~ "}" ~~
             trailing : Except[ "\n" ] ... :> sectionCell[ style, indent, title, trailing ] ) ],
       { { "\\subsubsection", "Subsubsection" }, { "\\subsection", "Subsection" }, { "\\section", "Section" } } ],
-    Map[ name |->
-        ( StartOfLine ~~ indent : ( " " | "\t" ) ... ~~ ( "\\begin{" <> name <> "}" ) ~~
-            title : ( "[" ~~ Except[ "]" ] ... ~~ "]" ) | "" ~~ trailing : Except[ "\n" ] ... ~~
-            Shortest[ inner___ ] ~~ StartOfLine ~~ closingIndent : ( " " | "\t" ) ... ~~ ( "\\end{" <> name <> "}" ) :>
-          environmentCell[ environments, name, indent, title, trailing, inner, closingIndent ] ),
-      Keys[ environments ] ] ]
+    environmentRules[ environments ] ]
+
+environmentRules[ environments_Association ] :=
+  Map[ name |->
+      ( StartOfLine ~~ indent : ( " " | "\t" ) ... ~~ ( "\\begin{" <> name <> "}" ) ~~
+          title : ( "[" ~~ Except[ "]" ] ... ~~ "]" ) | "" ~~ trailing : Except[ "\n" ] ... ~~
+          Shortest[ inner___ ] ~~ StartOfLine ~~ closingIndent : ( " " | "\t" ) ... ~~ ( "\\end{" <> name <> "}" ) :>
+        environmentCell[ environments, name, indent, title, trailing, inner, closingIndent ] ),
+    Keys[ environments ] ]
 
 sectionCell[ style_String, indent_String, title_String, trailing_String ] :=
   Cell[ inlineContent[ title ], style,
     TaggingRules -> <| "MathNotebook" -> <| "Indent" -> indent, "Trailing" -> trailing |> |> ]
 
-(* The body is deliberately NOT run through convertLaTeXCell: that would split a display equation
-   into its own cell, and an environment has to stay one cell or the \end{...} lands in the wrong
-   place on the way out. Only inline math is converted; a display environment inside a theorem
-   stays literal, which the round trip preserves. *)
+(* An environment body is split exactly as the document body is — the same display-math lift, the
+   same recursion into a nested environment — so a theorem holding three equations becomes seven
+   cells rather than one block of literal source. What kept it to one cell before was that the
+   \end{...} had nowhere else to go; it goes on the LAST cell of the group now, as a plain string,
+   with the \begin{...} on the first, so the export is still a StringJoin and the delimiters still
+   land where the source had them. Nesting composes by concatenation: an outer \begin is prepended
+   to whatever opening its first cell already carries and an outer \end appended to its closing. *)
 environmentCell[ environments_Association, name_String, indent_String, title_String, trailing_String,
     inner_String, closingIndent_String ] :=
-  Cell[ inlineContent @ StringDelete[ inner,
-      { StartOfString ~~ "\n" ~~ ( " " | "\t" ) ..., "\n" ~~ EndOfString } ],
-    environmentStyle @ environments[ name ],
-    Sequence @@ environmentDingbat[ environments[ name ] ],
-    TaggingRules -> <| "MathNotebook" -> <|
-      "Environment" -> name, "EnvironmentTitle" -> title, "Trailing" -> trailing, "Indent" -> indent,
-      "ClosingIndent" -> closingIndent,
-      "BodyIndent" -> First[ StringCases[ inner, StartOfString ~~ "\n" ~~ bodyIndent : ( " " | "\t" ) ... :> bodyIndent, 1 ], "" ] |> |> ]
+  environmentPieces[ environments[ name ], name, indent, title, trailing, closingIndent,
+    splitPieces[ inner, environmentRules[ environments ] ] ]
+
+environmentPieces[ printed_String, name_String, indent_String, title_String, trailing_String,
+    closingIndent_String, pieces_List ] :=
+  Module[ { positions = Flatten @ Position[ pieces, _Cell, { 1 }, Heads -> False ], first, last },
+    If[ positions === { },
+      environmentOpened[
+        environmentClosed[
+          Cell[ "", environmentStyle[ printed ], Sequence @@ environmentDingbat[ printed ] ],
+          closingIndent <> "\\end{" <> name <> "}" ],
+        name, indent <> "\\begin{" <> name <> "}" <> title, trailing, joinMarks[ pieces ] ],
+      first = First[ positions ]; last = Last[ positions ];
+      Take[
+        MapAt[ environmentClosed[ #,
+            joinMarks @ Drop[ pieces, last ] <> closingIndent <> "\\end{" <> name <> "}" ] &,
+          MapAt[ environmentOpened[ #, name, indent <> "\\begin{" <> name <> "}" <> title, trailing,
+              joinMarks @ Take[ pieces, first - 1 ] ] &,
+            environmentStyled[ pieces, printed ], first ],
+          last ],
+        { first, last } ] ]
+  ]
+
+environmentOpened[ cell_Cell, name_String, opening_String, trailing_String, leading_String ] :=
+  retagged[ cell,
+    If[ cellTagging[ cell, "EnvironmentOpen" ] === "",
+      <| "Environment" -> name, "EnvironmentOpen" -> opening, "Trailing" -> trailing,
+        "BodyIndent" -> leading |>,
+      <| "EnvironmentOpen" ->
+        opening <> trailing <> leading <> cellTagging[ cell, "EnvironmentOpen" ] |> ] ]
+
+environmentClosed[ cell_Cell, closing_String ] :=
+  retagged[ cell, <| "EnvironmentClose" -> cellTagging[ cell, "EnvironmentClose" ] <> closing |> ]
+
+(* Only the cells still styled "Text" at this level are the environment's own prose — a nested
+   environment has already restyled its own — so those are the ones that take the environment style
+   and go on looking like one block. The style carries the dingbat, the counter and, for Proof, the
+   QED square, all of which belong to the block and not to each of its cells: the first prose cell
+   keeps the name and the number, the last keeps the square, and the ones between suppress both.
+   Suppressing on the cell rather than declaring a continuation style is deliberate — "this cell
+   continues the one above" is true under every stylesheet, so retargeting a journal by swapping
+   sheets still works, which writing the positive counter onto each cell would break. *)
+environmentStyled[ pieces_List, printed_String ] :=
+  With[ { positions = Flatten @ Position[ pieces, Cell[ _, "Text", ___ ], { 1 }, Heads -> False ] },
+    Fold[ { current, index } |->
+        MapAt[ environmentStyledCell[ #, printed, index === 1, index === Length[ positions ] ] &,
+          current, positions[[ index ]] ],
+      pieces, Range @ Length[ positions ] ] ]
+
+environmentStyledCell[ Cell[ content_, "Text", options___ ], printed_String, firstQ_, lastQ_ ] :=
+  Cell[ content, environmentStyle[ printed ],
+    Sequence @@ If[ firstQ, environmentDingbat[ printed ],
+      { CellDingbat -> None, CounterIncrements -> { } } ],
+    Sequence @@ If[ lastQ, { }, { CellFrameLabels -> { { None, None }, { None, None } } } ],
+    options ]
 
 (* A declared environment whose printed name is none of the twelve — the specimen paper's ten
    Axioms — is written as a Theorem, which numbers it correctly, with a dingbat that says what it
@@ -404,10 +459,12 @@ textPieces[ chunk_String ] :=
         Cell[ inlineContent[ core ], "Text" ],
         separatorMark @ First[ StringCases[ chunk, space : WhitespaceCharacter .. ~~ EndOfString :> space, 1 ], "" ] } ] ]
 
+(* StringSplit of the empty string is {} and not {""}, so an empty environment body — or an empty
+   section title — would otherwise become TextData[{}], which no exporter reads back as text. *)
 inlineContent[ text_String ] :=
   Replace[
     mergeStrings @ Flatten @ Replace[ splitInlineMath[ text ], part_String :> citationSplit[ part ], { 1 } ],
-    { { unchanged_String } :> unchanged, parts_List :> TextData[ parts ] } ]
+    { { unchanged_String } :> unchanged, { } :> text, parts_List :> TextData[ parts ] } ]
 
 (* One pattern for what a citation is, used both to split the prose and to decide which .bib entries
    the paper cites, so the two halves cannot disagree. *)
@@ -473,7 +530,8 @@ referenceCell[ Cell[ content_, style_, options___ ], labels_Association ] :=
   Cell[ referenceContent[ content, labels ], style, options ]
 
 referenceContent[ text_String, labels_Association ] :=
-  Replace[ referenceSplit[ text, labels ], { { one_String } :> one, parts_List :> TextData[ parts ] } ]
+  Replace[ referenceSplit[ text, labels ],
+    { { one_String } :> one, { } :> text, parts_List :> TextData[ parts ] } ]
 
 referenceContent[ TextData[ parts_ ], labels_Association ] :=
   TextData[ mergeStrings @ Flatten @ Replace[ Flatten @ { parts }, text_String :> referenceSplit[ text, labels ], { 1 } ] ]
@@ -523,15 +581,28 @@ cellToLaTeX[ cell_Cell ] /; cellTagging[ cell, "FigureTeX" ] =!= "" :=
 cellToLaTeX[ cell_Cell ] /; cellTagging[ cell, "FigurePrefix" ] =!= "" :=
   cellTagging[ cell, "FigurePrefix" ] <> cellTeXText[ cell ] <> cellTrailing[ cell ]
 
-cellToLaTeX[ cell_Cell ] /; cellTagging[ cell, "Environment" ] =!= "" :=
-  With[ { name = cellTagging[ cell, "Environment" ] },
-    cellTagging[ cell, "Indent" ] <> "\\begin{" <> name <> "}" <> cellTagging[ cell, "EnvironmentTitle" ] <>
-      cellTrailing[ cell ] <> "\n" <> cellTagging[ cell, "BodyIndent" ] <> cellTeXText[ cell ] <>
-      "\n" <> cellTagging[ cell, "ClosingIndent" ] <> "\\end{" <> name <> "}" ]
+(* The two halves of an environment wrapper. A cell can carry both — a one-cell environment, or a
+   nested one whose body is a single cell — and a cell in the middle of a body carries neither and
+   simply writes itself out. *)
+cellToLaTeX[ cell_Cell ] /; cellTagging[ cell, "EnvironmentOpen" ] =!= "" :=
+  cellTagging[ cell, "EnvironmentOpen" ] <> cellTrailing[ cell ] <> cellTagging[ cell, "BodyIndent" ] <>
+    cellBodyLaTeX[ cell ] <> cellTagging[ cell, "EnvironmentClose" ]
+
+cellToLaTeX[ cell_Cell ] /; cellTagging[ cell, "EnvironmentClose" ] =!= "" :=
+  cellBodyLaTeX[ cell ] <> cellTagging[ cell, "EnvironmentClose" ]
 
 cellToLaTeX[ cell_Cell ] :=
+  cellBodyLaTeX[ cell ]
+
+cellBodyLaTeX[ cell_Cell ] :=
   Replace[ convertMathCell @ referencesToTeX[ cell ],
     { Cell[ text_String, ___ ] :> text, other_ :> ToString[ other, InputForm ] } ]
+
+(* A display formula's tag is a mirror of the \label already inside its stored source, not the
+   origin of one, so writing it back out again would emit the label twice — which is what happens
+   the moment such a cell is the first of an environment body and carries the \begin. *)
+cellTrailing[ cell : Cell[ _, "DisplayFormula" | "DisplayFormulaNumbered", ___ ] ] :=
+  cellTagging[ cell, "Trailing" ] <> cellTagging[ cell, "TrailingAfter" ]
 
 cellTrailing[ cell_Cell ] :=
   cellTagging[ cell, "Trailing" ] <>

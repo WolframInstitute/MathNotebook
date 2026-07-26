@@ -63,6 +63,20 @@ specimenProse[ cells_List ] :=
     Cell[ content_, Except[ "Input" | "Output" ], ___ ] :>
       StringJoin @ Cases[ content, _String, Infinity ] ]
 
+(* cellTagging is file-private for the same reason, so the rules are read out here. T7 replaced
+   "one environment is one cell" with "one cell of the group carries the \begin", and the invariant
+   that goes with it is that exactly one cell of each group is headed -- keeps its style's dingbat
+   and its counter increment. Numbering a body twice, or not at all, is invisible to both the round
+   trip and the style census: both read the stored source, and the continuation cells carry the
+   right style either way. *)
+specimenTagging[ cell_Cell, key_String ] :=
+  Replace[
+    Cases[ cell, ( TaggingRules -> tagging_ ) :>
+      Lookup[ Lookup[ Association @ tagging, "MathNotebook", <| |> ], key, "" ] ],
+    { { value_String, ___ } :> value, _ :> "" } ]
+
+$environmentStyles = Append[ Keys @ $theoremEnvironments, "Proof" ]
+
 specimenCensus[ file_String ] :=
   Module[ { source, notebook, cells, prose, written },
     source = Import[ file, "Text" ];
@@ -77,6 +91,9 @@ specimenCensus[ file_String ] :=
        "Tagged" -> Count[ cells, Cell[ __, CellTags -> _, ___ ] ],
        "Buttons" -> Count[ cells, _ButtonBox, Infinity ],
        "Counters" -> Count[ cells, _CounterBox, Infinity ],
+       "Environments" -> Count[ cells, cell_Cell /; specimenTagging[ cell, "EnvironmentOpen" ] =!= "" ],
+       "Headed" -> Count[ cells,
+         cell : Cell[ _, style_String, ___ ] /; MemberQ[ $environmentStyles, style ] && FreeQ[ cell, CounterIncrements -> { } ] ],
        "Literal" -> <|
          "Reference" -> StringCount[ prose, "\\ref{" | "\\eqref{" ],
          "Citation" -> StringCount[ prose, "\\cite{" ],
@@ -90,9 +107,17 @@ $measured = Map[ specimenCensus, $specimens ]
 
 (* The causal paper converts completely: no \ref, \cite, \includegraphics or display environment is
    left as literal text anywhere in its prose, and its 7 figures are 7 Input cells beside 7 captions.
-   Hodge's remainders are the two gaps the item still has open -- 72 references whose target is not a
-   converted cell, which is T3's rule and not a defect, and 55 equation/align blocks inside theorem
-   bodies, which is T7. *)
+   T7 left it untouched -- none of its 32 environments holds display math -- which is why its numbers
+   below are the same ones Session 6 pinned, and is the guard that T7 changed the converter and not
+   the pipeline.
+
+   Hodge is where T7 shows: 172 cells became 349 as 53 of its 55 display blocks were lifted out of
+   theorem bodies, and 43 of its 72 unconvertible references found the cell they point at. What is
+   left is named rather than rounded off. The 2 display blocks are the ones texToBoxes cannot read --
+   an equation* wrapping a tikzcd and an equation wrapping a gathered -- which are left as source
+   deliberately. Of the 29 references, 6 are at tables and the rest are at labels no cell carries:
+   an align with two \labels keeps only the first, and a \label on its own line inside a body is not
+   on the \begin line where labelledCell reads it. *)
 $expected = <|
   "Causal graphs" -> <|
     "Bytes" -> 36656,
@@ -103,17 +128,21 @@ $expected = <|
     "Tagged" -> 39,
     "Buttons" -> 14,
     "Counters" -> 25,
+    "Environments" -> 32,
+    "Headed" -> 32,
     "Literal" -> <| "Reference" -> 0, "Citation" -> 0, "Graphics" -> 0, "Display" -> 0 |> |>,
   "Hodge" -> <|
     "Bytes" -> 142877,
-    "Cells" -> 172,
-    "Styles" -> <| "Definition" -> 15, "DisplayFormula" -> 4, "DisplayFormulaNumbered" -> 9,
-      "Example" -> 8, "Lemma" -> 10, "Proof" -> 12, "Proposition" -> 5, "Remark" -> 11,
-      "Section" -> 6, "Text" -> 85, "Theorem" -> 7 |>,
-    "Tagged" -> 60,
-    "Buttons" -> 197,
-    "Counters" -> 222,
-    "Literal" -> <| "Reference" -> 72, "Citation" -> 0, "Graphics" -> 0, "Display" -> 55 |> |> |>
+    "Cells" -> 349,
+    "Styles" -> <| "Definition" -> 28, "DisplayFormula" -> 50, "DisplayFormulaNumbered" -> 33,
+      "Example" -> 21, "Lemma" -> 14, "Proof" -> 81, "Proposition" -> 7, "Remark" -> 13,
+      "Section" -> 6, "Text" -> 85, "Theorem" -> 11 |>,
+    "Tagged" -> 84,
+    "Buttons" -> 240,
+    "Counters" -> 269,
+    "Environments" -> 70,
+    "Headed" -> 70,
+    "Literal" -> <| "Reference" -> 29, "Citation" -> 0, "Graphics" -> 0, "Display" -> 2 |> |> |>
 
 (* Both halves of the round trip: the pure core, and the same thing through the public wrapper and a
    file. They are not the same claim -- Export could add or drop a byte the core never sees. Both are
@@ -126,7 +155,7 @@ Do[
       identical = $measured[ name, "Identical" ],
       written = $measured[ name, "Written" ],
       structure = KeyTake[ $measured[ name ], { "Bytes", "Cells", "Styles" } ],
-      references = KeyTake[ $measured[ name ], { "Tagged", "Buttons", "Counters" } ],
+      references = KeyTake[ $measured[ name ], { "Tagged", "Buttons", "Counters", "Environments", "Headed" } ],
       literal = $measured[ name, "Literal" ],
       expected = $expected[ name ] },
     VerificationTest[ identical, True,
@@ -135,7 +164,7 @@ Do[
       TestID -> id <> ": the written file is the imported source" ];
     VerificationTest[ structure, KeyTake[ expected, { "Bytes", "Cells", "Styles" } ],
       TestID -> id <> ": cells and styles" ];
-    VerificationTest[ references, KeyTake[ expected, { "Tagged", "Buttons", "Counters" } ],
+    VerificationTest[ references, KeyTake[ expected, { "Tagged", "Buttons", "Counters", "Environments", "Headed" } ],
       TestID -> id <> ": tags, citations and counters" ];
     VerificationTest[ literal, expected[ "Literal" ],
       TestID -> id <> ": what is still literal LaTeX" ] ],

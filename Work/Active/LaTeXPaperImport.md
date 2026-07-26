@@ -49,7 +49,6 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
 
 ## Tasks
 
-- [ ] T7 — Display math and nested environments *inside* a theorem-like environment body. T2 deliberately runs only the inline converter there, since an environment has to stay one cell; on `hodgepaper.tex` that leaves 53 `equation`/`align` blocks and two nested `sublemma*` as literal source inside otherwise converted cells.
 - [ ] T8 — Front matter: `\title`, `\author`, `\date`, `\maketitle`, `abstract` → the `Title`/`Author`/`Date`/`Abstract` styles the stylesheets define, and lists (`itemize`, `enumerate`, `description`) → the `Item` family.
 - [ ] T9 — Numbering. The Spec's "numbering must match" is measurably violated: the causal-graphs paper declares `\newtheorem{defn}{Definition}[subsection]` and numbers per subsection, while the imported notebook renders `Axiom 3.2`, `Definition 3.5` — per section, from the stylesheet's counters.
 - [ ] T10 — `thebibliography` written into the `.tex` ↔ `Reference` cells, and a report when a declared `.bib` is missing. T4 does the `.bib` route, which both specimens use; an in-source bibliography needs a per-item source and separator on each cell inside one environment wrapper, which is the same design problem as T7.
@@ -64,6 +63,7 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
 - [x] T4 — Citations and bibliography ↔ `Citation`/`Reference` cells. *(Session 4)*
 - [x] T5 — Figures: preserve TikZ, add generating Wolfram code with rendered output, for one real figure of the paper. *(Session 5)*
 - [x] T6 — Make both papers round-trip test fixtures under `MathNotebook/Tests/`. T2 already gets a byte-identical round trip on each; the fixture pins it. *(Session 6)*
+- [x] T7 — Display math and nested environments *inside* a theorem-like environment body. *(Session 7)*
 
 ## Progress
 
@@ -286,6 +286,52 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
   - Serena's `replace_content` inserts `\n` in a replacement **verbatim**, as backslash-n, not as a newline — it silently collapsed two lines of `Document.wl` into one broken line, and the bite check that followed reported nine failures that meant nothing. Restore from git and use a single-line edit.
 - **Next:** T7 — display math and nested environments inside a theorem-like environment body.
 
+### Session 7 — 2026-07-27 — T7
+
+- **Prompt:** `/next-session` continued.
+- **Did:** An environment body is split exactly as the document body is, so its display math and its nested environments become cells of their own, and the round trip is still exact on both papers.
+
+  | | causal graphs | hodgepaper |
+  |---|---|---|
+  | cells | 130 → 130 | 172 → **349** |
+  | display cells | 2 → 2 | 13 → **83** |
+  | literal `equation`/`align` left | 0 → 0 | 55 → **2** |
+  | literal `\ref` left | 0 → 0 | 72 → **29** |
+  | environments, headed exactly once | 32 / 32 | 70 / 70 |
+  | round trip, in kernel and through a save | identical | identical |
+
+  The causal paper does not move at all — none of its 32 environments holds display math — which is the guard that this session changed the converter and not the pipeline.
+
+  **What kept a body to one cell was that the `\end{...}` had nowhere else to go.**
+  It goes on the **last** cell of the group now and the `\begin{...}` on the first, both as plain strings in the tagging rules, so the export is still a `StringJoin` and the delimiters still land where the source had them.
+  Everything between is ordinary cells with ordinary separators, which is why the body needed no whitespace machinery of its own: `splitPieces` is the same function the document body goes through, one level down, and the recursion into a nested environment falls out of it.
+  Nesting composes by concatenation — an outer `\begin` is prepended to whatever opening its first cell already carries and an outer `\end` appended to its closing — which is the case where both wrappers meet on one cell.
+
+  **The name, the number and the QED square belong to the block, not to each of its cells.**
+  All three come from the style, so a three-cell theorem would have said "Theorem" three times, been numbered three times, and left the next theorem reading 1.4.
+  The first prose cell of a body opens it, the last closes it, and the cells between carry `CellDingbat -> None`, `CounterIncrements -> {}` and an empty `CellFrameLabels`.
+  Suppressing on the cell rather than declaring twelve continuation styles is deliberate: "this cell continues the one above" is true under every stylesheet, so retargeting a journal by swapping sheets still works — which is exactly what T11 says writing the *positive* counter onto each cell would break.
+
+  **Verified on the page.** The imported hodgepaper renders as a **22-page PDF** (25 before, the source blocks having become formulas) with **no `XXX`**, 33 numbered equations, **12 QED squares for 12 proofs**, and every environment headed once.
+  Both papers also go through `Export`/`NotebookOpen`/`NotebookGet` and still export their source byte for byte, which is T5's rule applied to a notebook where an environment now spans cells and the reopen groups them.
+
+  **Two latent bugs surfaced, both invisible until a body could be more than one cell.**
+  `StringSplit[""]` is `{}` and not `{""}`, so an empty environment body became `TextData[{}]`, which no exporter reads back as text — the `.tex` got the literal `Cell[...]` expression printed into it.
+  And a display formula's `CellTags` is a *mirror* of the `\label` already inside its stored source rather than the origin of one, so the moment such a cell could carry the `\begin` its tag was written back as a second `\label`; `cellTrailing` now has its own clause for the two display styles.
+
+  **What is left is named rather than rounded off.**
+  The 2 remaining display blocks are the ones `texToBoxes` cannot read — an `equation*` wrapping a `tikzcd` and an `equation` wrapping a `gathered` — left as source deliberately.
+  Of the 29 remaining references, 6 are at tables and the rest are at labels no cell carries: an `align` with two `\label`s keeps only the first, and a `\label` written on its own line inside a body is not on the `\begin` line where `labelledCell` reads it.
+
+  **Tests.** Six in `Tests/Document.wlt`, one in `Tests/FrontEnd.wlt`, and two new census keys in `Tests/Specimens.wlt` — `Environments` and `Headed`, the invariant that replaced "one environment is one cell"; 165 pass, and the one failure is T12, pre-existing and unrelated.
+  Three defects reintroduced: dropping the counter suppression fails 1 + 1 + 1 across the three files, dropping the nesting composition fails only the synthetic nested test, and dropping the display-formula trailing clause fails only the synthetic display-first test.
+- **Learned:**
+  - **A byte-identical round trip misses the nesting defect too.** Making an outer `\begin` overwrite the inner one instead of composing with it left *both* specimen papers exporting their source byte for byte and every census number intact — neither paper opens an environment body with a nested environment. Only the synthetic case caught it. That is the third time in this item that fidelity and correctness came apart, and it is why the two synthetic tests beside the fixtures earn their place.
+  - **A per-cell option can be the sheet-independent choice.** T11 records that writing `CounterIncrements` onto each cell would stop a sheet swap from retargeting a journal, and that is right for the *positive* option; the suppression is the opposite, because what it states is a fact about the cell's relation to the one above it and not about any sheet's numbering.
+  - **Count structure, not rendered text.** The PDF plaintext of the specimen reported 5 `Theorem N.N.` headings where the notebook has 9, because the extractor breaks a dingbat across a line as readily as not. The reliable assertion is in the kernel: exactly one cell per environment keeps its style's counter, 70 of 70.
+  - `Position[pieces, _Cell, {1}]` needs `Heads -> False`, and `Last[list, default]` rather than `Last[list]`, or an environment with no prose cell takes the whole import down with a message about `Last`.
+- **Next:** T8 — front matter and lists.
+
 ## Decisions
 
 | Date | Decision | Rationale |
@@ -301,3 +347,6 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
 | 2026-07-26 | Neither specimen paper is committed; `Tests/Specimens.wlt` finds them beside the loaded paclet or in `MATHNOTEBOOK_SPECIMENS`, and emits no tests for a paper it cannot find | Pavel's call — the causal-graphs paper is an unpublished draft with two co-authors and not on arXiv, and `PublishPaclet.wls` stages `Tests/`, so committing it would ship it in every published paclet; the cost is that a fresh clone pins nothing, which the printed notice makes visible rather than silent |
 | 2026-07-26 | The fixture pins a structure census beside the byte round trip, five tests per paper | two complementary bites showed each detector misses what the other catches — dropping the figure rules leaves the bytes identical, forcing the separators leaves the census intact — and a census that moves is then the record of what a later task changed |
 | 2026-07-26 | Every cell carries the source whitespace that followed it | it is the difference between a round trip that is exact and one that is approximately right, and the item's whole point is fidelity; it also means the exporter needs no rules about blocking |
+| 2026-07-27 | An environment spans cells; the `\begin` rides on the first cell of the group and the `\end` on the last, as plain strings | it is what lets the body be split by the same code the document body goes through — display math lifted, nested environments recursed into — while the export stays a `StringJoin` and the delimiters stay where the source had them; keeping the body to one cell was only ever a consequence of the `\end` having nowhere to go |
+| 2026-07-27 | A continuation cell suppresses the dingbat, the counter and the QED square on the cell, rather than the sheets gaining twelve continuation styles | "this cell continues the one above" is true under every stylesheet, so a sheet swap still retargets the journal — unlike writing the positive counter onto each cell, which T11 rules out — and it costs no stylesheet change at all |
+| 2026-07-27 | The heading goes on the body's first *prose* cell, so a body opening with display math is headed after the equation | all 102 environments of the two specimens open with prose; the alternative is writing an explicit dingbat and counter onto whatever cell opens the group, which is the per-cell counter T11 rules out, guessed at for a case no paper here has |
