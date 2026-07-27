@@ -31,9 +31,11 @@ Done when `InstallLaTeXFonts` and `InstallMaTeX` are known to work on Windows an
 
 ## Tasks
 
-- [ ] T2 — Linux: verify end to end, add `fc-cache` if needed.
-- [ ] T3 — Windows: verify the font store question, decide on registry vs manual install, verify `findExecutable` with MiKTeX and TeX Live.
-- [ ] T4 — Update the README's platform sentence to whatever T2 and T3 established.
+Dropped 2026-07-27 with T2–T4 not done — Pavel's call, and the Spec's *or* branch is already satisfied:
+
+- [ ] T2 — Linux: verify end to end, add `fc-cache` if needed. *(dropped)*
+- [ ] T3 — Windows: verify the font store question, decide on registry vs manual install, verify `findExecutable` with MiKTeX and TeX Live. *(dropped)*
+- [ ] T4 — Update the README's platform sentence to whatever T2 and T3 established. *(dropped — the sentence already reads "only macOS with TeX Live is tested", which is the honest claim T4 would have written)*
 
 ### Done
 
@@ -56,7 +58,15 @@ Done when `InstallLaTeXFonts` and `InstallMaTeX` are known to work on Windows an
   - A stub whose pattern is more general than the real definition never fires: `fe[_] := Missing[...]` sits behind the existing `findExecutable[name_String]`. Match the existing pattern exactly to replace it.
 - **Next:** T2, Linux end to end — which needs a Linux machine and cannot be done from here.
 
+### Dropped — 2026-07-27
+
+- **Prompt:** "do not care about cross platform, fuck it."
+- **State at drop:** T1 shipped and stands — `Tests/Fonts.wlt` is platform-neutral, and a machine with no TeX gets a message naming what to install instead of "Installed 0 fonts". T2–T4 never started; the Linux and Windows branches of `Fonts.wl` have still never run.
+- **Why this costs nothing outward-facing:** the Spec's *Done when* was a disjunction, and the second half already holds. `README.md` says "Programs are found through `PATH` and font directories through `kpsewhich`, so the distribution may live anywhere; only macOS with TeX Live is tested" — which is exactly the narrowed claim T4 existed to write. So the repo does not promise a platform it has not run on; it simply leaves the untested branches untested.
+- **What to reopen if it ever matters:** a Linux user reporting that `InstallLaTeXFonts` copies fonts the front end never sees, which is the `fc-cache -f` gap the Spec's first requirement names.
+
 ## Decisions
 
 | Date | Decision | Rationale |
 |---|---|---|
+| 2026-07-27 | Dropped rather than finished or moved to Backlog | Pavel's call; the two remaining tasks each need a machine this project does not have, and the README already makes the honest claim the item's *or* branch asked for, so there is no outstanding promise to retract |

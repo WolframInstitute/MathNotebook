@@ -21,8 +21,14 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 
 ## Active
 
-- [View and Reference Defects](Active/ViewAndReferenceDefects.md) — all implementation done (T1–T5: the text slider reaches every prose style, a tagged `Reference` shows its label, a citation to a theorem reads `Theorem 1.1`, front-end tests for all of it, tutorial updated); next: **T6**, Pavel re-checks on the document that produced the report — the Spec's last gate, and not something a session can close
-- [Cross-Platform TeX and Font Support](Active/CrossPlatformTeX.md) — T1 done (the suite no longer assumes macOS or a TeX install, and a machine with no TeX gets a message telling it what to do); next: **T2**, Linux end to end — needs a Linux machine
+*Nothing active.* All three items closed on 2026-07-27 — LaTeX Paper Import and View and Reference
+Defects into `Done/`, Cross-Platform TeX into `Dropped/`. Pick the next item from the Backlog below
+and `git mv` it into `Active/`, or use `/work` to write a new one.
+
+The one thing no backlog item states plainly: the working tree is **0.1.11** and the cloud version
+marker still reads **0.1.10** (checked 2026-07-27). So numbered citations, the whole LaTeX document
+importer and the fifth stylesheet exist only here — a user installing from the README's URL gets
+none of them. `First Public Release` is where that gets decided.
 
 ## Backlog
 - [LaTeX via Markdown](Backlog/MarkdownImportRoute.md) — whether `MarkdownToNotebook` plus a LaTeX-to-Markdown tool beats the direct importer; likely a one-way route with no round trip, but measure it

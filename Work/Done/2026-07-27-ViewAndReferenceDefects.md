@@ -52,9 +52,9 @@ Done when a text-size change moves every prose style on screen and in print on a
 
 ## Tasks
 
-- [ ] T6 — Pavel re-checks both fixes on the document that produced the report. This is the Spec's one remaining *Done when* gate; there is nothing left to implement, and no session can close it.
-
 ### Done
+
+- [x] T6 — Pavel re-checks both fixes on the document that produced the report. This is the Spec's one remaining *Done when* gate; there is nothing left to implement, and no session can close it. *(Pavel, 2026-07-27 — "rechecked")*
 
 - [x] T1 — Rebuild the font-size setters on resolved per-style sizes read from the document's own chain; assert every prose style moves, screen and print, on all five sheets. (landed during `PaletteUsability` T6's feedback round, 2026-07-26)
 - [x] T2 — Render the `Reference` label from the cell's `CellTags` at the beginning of the cell; make `InsertCitation` and the bibliography entry agree. *(Session 5)*
@@ -134,6 +134,14 @@ Done when a text-size change moves every prose style on screen and in print on a
   Regenerated `MathNotebookTutorial.nb` from the script; suite still 81.
 - **Learned:** A behaviour change to an exported function silently ages the tutorial, and nothing in the build or the suite notices — `BuildTutorial.wls` is prose, and prose has no test. Worth a look at the *Referencing* and *Document view* sections whenever `Referencing.wl` or `View.wl` changes what a button does.
 - **Next:** T6, which is Pavel's re-check. All implementation for this item is complete; the paclet has **not** been rebuilt or republished tonight (last published version is 0.1.10, from Session 5), since publishing is outward-facing and was not authorized for this run.
+
+### T6 — 2026-07-27 — Pavel's re-check
+
+- **Prompt:** "rechecked".
+- **Did:** Nothing — this task was never a session's to do. Pavel re-checked both fixes on the document that produced the original report and confirmed it, which closes the Spec's last *Done when* clause and the item with it.
+- **What that confirms**, in the words of the report that opened the item: the text-size slider now moves the theorem, proof, reference and list styles it used to skip, and a tagged `Reference` cell shows its label instead of an empty hanging indent. The third fix, a citation to a numbered environment reading `Theorem 1.1`, was Pavel's own follow-up request and is confirmed with them.
+- **Standing caveat, unchanged by the re-check:** the last published paclet is **0.1.10** (Session 5). T3's numbered citations, T4's `Tests/FrontEnd.wlt` and T5's tutorial sentence have never been published, so a user installing from the cloud URL does not have them. Publishing is outward-facing and has not been authorized; it belongs with the `First Public Release` backlog item.
+- **Next:** none — the item is complete.
 
 ## Decisions
 
