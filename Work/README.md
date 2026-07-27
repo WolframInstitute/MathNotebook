@@ -21,14 +21,10 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 
 ## Active
 
-- [First Public Release](Active/Release.md) — **the only thing standing between this repo and a
-  working paclet.** The cloud marker reads 0.1.10 and the working tree is 0.1.11, so the LaTeX
-  document importer, numbered citations and the `PlainArticle` stylesheet exist only here while the
-  README describes all three. T2 is done — 0.1.11 builds from a clean archive, installs, and cold
-  smoke-tests green: 196 shipped tests, 21/21 doc URIs resolving, the importer opening a sample on
-  `PlainArticle` and round-tripping it byte for byte. The `LICENSE` copyright line is settled —
-  `Pavel Hajek`, not the institute. Next: **T3**, publish — which waits on Pavel, as does the last
-  part of T1: read the regenerated tutorial, now open in the front end
+None. [First Public Release](Done/2026-07-27-Release.md) closed on 2026-07-27: **0.1.11 is
+published**, the version marker agrees, and the README's `PacletInstall` line installs it from the
+cloud onto a machine with no local copy. The cloud previews and the linked tutorial were re-deployed
+with it.
 
 ## Backlog
 
