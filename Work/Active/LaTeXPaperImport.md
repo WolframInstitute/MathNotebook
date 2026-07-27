@@ -49,7 +49,6 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
 
 ## Tasks
 
-- [ ] T10 — `thebibliography` written into the `.tex` ↔ `Reference` cells, and a report when a declared `.bib` is missing. T4 does the `.bib` route, which both specimens use; an in-source bibliography needs a per-item source and separator on each cell inside one environment wrapper, which is the same design problem as T7.
 - [ ] T11 — An imported paper opens with its environments live. *(T9 settled the boundary this task's warning draws: a per-cell counter is wrong when it duplicates the sheet's job and right when it states a fact the sheet cannot know. The numbering a `\newtheorem` declares is the second kind, so T9 writes it on the cell; what T11 must still not do is write the sheet's own default onto every cell.)* `latexToNotebook` sets no `StyleDefinitions` at all, so a fresh import lands on `Default.nb`, where the twelve environment styles do not exist and a reference reads `2.0`. Two halves: a fifth stylesheet that is `Default.nb` plus the environments — same base cell list, Default's typography, contributing only the environment/`Caption`/`Reference`/`Citation` styles and their counters — and `ImportLaTeXDocument` choosing a sheet from the source's `\documentclass` (`amsart` → `AMSArticle`, `revtex` → `RevTeXAPS`, else the new one). What must *not* be done is writing `CounterIncrements`/`CellDingbat` onto each cell to survive any sheet: per-cell options beat the sheet, so swapping sheets to retarget a journal would stop working, and that is the paclet's whole point. *(Pavel's question, Session 6)*
 - [ ] T12 — `FrontEnd.wlt`'s T2 display-ink test compares two measurement scales and fails at HEAD. `Starred` (7742) comes from a whole-notebook PNG render and `Literal` (2440) from a single-cell `Rasterize`, so `Starred < Literal` cannot hold; the clause beside it, `Starred < Unstarred` (56959), is sound and passes. Measure both sides the same way, or drop the clause — `Formula > 0` already says the formula renders. *(Found in Session 6, pre-existing)*
 
@@ -64,6 +63,7 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
 - [x] T7 — Display math and nested environments *inside* a theorem-like environment body. *(Session 7)*
 - [x] T8 — Front matter: `\title`, `\author`, `\date`, `\maketitle`, `abstract` → the `Title`/`Author`/`Date`/`Abstract` styles the stylesheets define, and lists (`itemize`, `enumerate`, `description`) → the `Item` family. *(Session 8)*
 - [x] T9 — Numbering: what the notebook shows is what LaTeX prints, read out of `\newtheorem`, `\numberwithin`, the document class and enumitem's `label=`. *(Session 9)*
+- [x] T10 — `thebibliography` written into the `.tex` ↔ `Reference` cells, and a report when a declared `.bib` is missing. *(Session 10)*
 
 ## Progress
 
@@ -436,6 +436,47 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
   - `\theoremstyle` is **not** read, and hodgepaper shows the cost: `sublemma` and `sublemma*` are declared under `\theoremstyle{remark}` and come out bold rather than italic-headed. That is appearance and not numbering, so it is named here rather than fixed.
 - **Next:** T10 — `thebibliography` written into the `.tex` ↔ `Reference` cells, and a report when a declared `.bib` is missing.
 
+### Session 10 — 2026-07-27 — T10
+
+- **Prompt:** `/next-session` continued.
+- **Did:** The second bibliography route, and a report for the gap the first one leaves.
+
+  | | causal graphs | hodgepaper | the four samples |
+  |---|---|---|---|
+  | bibliography | 14 `Reference` cells from `references.bib` | none, and now **reported** | 2 `Reference` cells each, from the `.tex` |
+  | round trip | identical | identical | **identical** |
+  | tests | | | 193 → **211** |
+
+  **A paper writes its bibliography one of two ways, and they are opposite about who owns the entries.**
+  T4 did the `.bib` route, where the entries are not in the source at all: the cells are suppressed, the `\bibliography` commands go back out verbatim, and the `.bib` stays the source of truth.
+  A `thebibliography` is the reverse — the entries *are* the source — so the notebook owns them and an edited entry reaches the `.tex`, exactly as an edited caption does.
+
+  **Mechanically it is T8's list one command down, and it needed no new export clause.**
+  `entryCells` is `listCells` with `itemChunks` pointed at `\bibitem` instead of `\item`: the `\begin{thebibliography}{99}` rides on the first cell of the group, each `\bibitem[Sm09]{key}` in that cell's `"EnvironmentOpen"` slot, the `\end` on the last, and the export is the `StringJoin` it already was.
+  The depth filter and the comment mask came with it, so a commented-out `\bibitem` stays literal.
+  What did have to change is one pattern: a `Reference` cell's `CellTags` is a **mirror** of the key in its marker, not the origin of a `\label`, so it joins `DisplayFormula` in `cellTrailing`'s exception — without that every entry exported a `\label` the source never had, and the round trip failed on all four samples.
+
+  **Both routes show the same `[key]` dingbat**, which is what makes an entry and the `\cite` pointing at it read alike, and is why a `\bibitem[Sm09]{key}`'s *printed* label rides in the marker rather than being shown: showing it would make the two disagree.
+
+  **The report is for the one gap in this converter that is invisible to every detector the repo has.**
+  A declared `.bib` that is not on disk gives a paper with no `Reference` cells and citations still reading as their keys — the round trip is exact either way, and no census key counts a bibliography that is not there.
+  `ImportLaTeXDocument::nobib` names the file, once per declared `.bib` rather than once per mention, and hodgepaper is the live case: it declares `\jobname.bib` and ships without it.
+
+  **The four `LaTeX/Sample-*.tex` are now fixtures**, and they are the first documents this repo pins that it actually contains.
+  They are also the only ones anywhere here with a `thebibliography` — both specimen papers use a `.bib` — and between them they carry a title block, an abstract, three sectioning levels, four theorem environments, numbered and unnumbered display math, a cross-reference and a bibliography.
+  A fresh clone with no specimens now asserts something.
+
+  **Verified on the page.** The imported `Sample-AMSArticle.tex` renders with `[matex]` and `[ollivier]` in the margin of their entries, `Definition 1.1`, `Theorem 1.2`, `Proof … □`, `(1.1)`, `(2.1)`, `3.1.1. A subsubsection`, and no `XXX` — and a synthetic paper renders `[smith] A.~Smith` beside `Prose citing [smith]`, with no `\bibitem`, no `thebibliography` and no `Sm09` anywhere in the plaintext.
+
+  **Tests.** Seven in `Tests/Document.wlt`, ten in `Tests/Specimens.wlt` (two report assertions and two per sample) and one in `Tests/FrontEnd.wlt`; 211 pass.
+  Three defects reintroduced: dropping `entryRules` fails 4 + 4 + 1, letting a `Reference` tag be written back as a `\label` fails 2 + 4, and dropping the report fails 1 + 1.
+- **Learned:**
+  - **Dropping `entryRules` leaves both specimen papers *and* the census untouched**, because neither has a `thebibliography` at all — the sixth time in this item that a detector was blind to a whole feature. It is only the sample fixtures that bite, which is the argument for having added them.
+  - **`VerificationTest` holds its arguments, so an expected-message spec cannot be passed in through a `With`.** `With[ { expected = Foo::bar }, VerificationTest[ …, …, expected ] ]` evaluates the `MessageName` to its own text before substituting; the test then fails `MessagesFailure` while reporting the right actual and expected values, which reads exactly like a converter bug. Write the message literally into each test and branch with `If`.
+  - `FirstCase` on a whole `Notebook` defaults to level 1, so a probe for a `CellDingbat` written that way answers `Missing["NotFound"]` for every cell — the same default that `CLAUDE.md` already records for `Cases`, met again from the test side.
+  - An entry is prose, so what prose carries verbatim it carries verbatim too: `A.~Smith`, `\emph{…}` and `\texttt{…}` are on the page as they are everywhere else in an imported paper. That is Session 3's `~` note, not a new defect.
+- **Next:** T11 — an imported paper opens with its environments live: a fifth stylesheet that is `Default.nb` plus the environment styles, and `ImportLaTeXDocument` choosing a sheet from the source's `\documentclass`.
+
 ## Decisions
 
 | Date | Decision | Rationale |
@@ -463,3 +504,7 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
 | 2026-07-27 | A counter's reset goes on the first cell that increments it after each resetting cell, not on the resetting cell | a `Section` style declares three `CounterAssignments` of its own and the front end has no additive form, so writing one on a section cell would silently stop resetting `Subsection`, `Subsubsection` and `Theorem`; a theorem style declares none, and this is T8's per-list reset one level up |
 | 2026-07-27 | `\theoremstyle` is not read | it decides the head's weight and slant and nothing about the number, so it belongs with whichever task takes on appearance; the cost is named — hodgepaper's `sublemma` is declared `remark` and comes out bold |
 | 2026-07-27 | No stylesheet change: lists use the `Item` family the chain already resolves from `Default.nb` | `$proseStyles` in `BuildStyleSheets.wls` already lists `Item`, `ItemNumbered` and `ItemParagraph`, so all four templates already set the paper's `FontFamily` on them and the view controls already reach them; the gap is that `Subitem`/`Subsubitem` are not in that list, which only shows on a nested list and neither specimen has one |
+| 2026-07-27 | A `thebibliography`'s entries are the notebook's to own and write back, where a `.bib`'s are not | the entries are in the `.tex`, so returning them from the cell is both possible and the only honest thing — the alternative, re-emitting stored source, would mean an author cannot fix a typo in a reference in the notebook the paper is being written in; the `.bib` case is different only because the entries are somewhere else |
+| 2026-07-27 | A `\bibitem[label]{key}` shows `[key]` and not `[label]` | the entry and the `\cite` pointing at it have to read alike, and a citation's label is the key (T4's decision); the printed label rides in the marker and round-trips verbatim, at the same cost a `.bib` entry already has |
+| 2026-07-27 | A missing declared `.bib` is reported by a message rather than by a cell in the notebook | it is a fact about the import and not about the document — putting it in the notebook would put it in the `.tex` on the way out — and it is the Spec's "say what it could not handle", which nothing else here can detect |
+| 2026-07-27 | The four `LaTeX/Sample-*.tex` join `Tests/Specimens.wlt` as fixtures | they are the only committed documents in the repo and the only ones with a `thebibliography`, so without them dropping the whole feature leaves every test green; the cost is that `Specimens.wlt` is no longer only about the two absent papers, which its header now says |

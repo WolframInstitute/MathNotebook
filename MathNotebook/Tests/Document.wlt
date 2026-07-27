@@ -689,3 +689,101 @@ VerificationTest[
     notebookToLaTeX[ $alphNotebook ] === $alphSource },
   { { { "(", "ItemNumbered", "b", ")" }, { "(", "ItemNumbered", "b", ")" } }, True }
 ]
+
+(* LaTeXPaperImport T10. The second bibliography route, and the opposite case to T4's: a
+   thebibliography written into the .tex itself, where the entries ARE the source. So the notebook
+   owns them and writes them back, where a .bib entry's cell is suppressed and the .bib stays the
+   source of truth. A \bibitem is recorded exactly as T8 records an \item, which is what makes the
+   export a StringJoin still: the \begin on the first cell of the group, each \bibitem on the cell it
+   opens, the \end on the last. *)
+
+$entrySource = $preamble <> "\\begin{document}\n\nProse citing~\\cite{smith} and~\\cite{jones}.\n\n\\begin{thebibliography}{99}\n\n\\bibitem[Sm09]{smith} A.~Smith, \\emph{A title, with a comma}, Journal \\textbf{7} (2009), 1--9.\n\n\\bibitem{jones}\nB.~Jones, \\emph{Another}.\n\nA second paragraph of the same entry.\n\n\\end{thebibliography}\n\n\\end{document}\n"
+
+$entryNotebook = latexToNotebook[ $entrySource ]
+
+(* Each \bibitem gives a Reference cell tagged with its key; a second paragraph of one entry is a
+   continuation Text cell, as it is inside an item. *)
+VerificationTest[
+  Cases[ First @ $entryNotebook, Cell[ _, style_String, options___ ] :>
+    { style, Lookup[ { options }, CellTags, None ] } ],
+  { { "Text", None }, { "Reference", "smith" }, { "Reference", "jones" }, { "Text", None } }
+]
+
+(* The dingbat is referenceLabel's [key], the same string the citation pointing at it shows, so the
+   two read alike — which is the whole reason the printed label of a \bibitem[Sm09]{smith} is not
+   shown but ridden along in the marker for the return trip. *)
+VerificationTest[
+  { Cases[ First @ $entryNotebook, Cell[ ___, CellDingbat -> dingbat_, ___ ] :> dingbat ],
+    Cases[ $entryNotebook, ButtonBox[ boxes_, ___ ] :> boxes, Infinity ] },
+  { { Cell[ TextData[ "[smith]" ] ], Cell[ TextData[ "[jones]" ] ] },
+    { RowBox @ { "[", "smith", "]" }, RowBox @ { "[", "jones", "]" } } }
+]
+
+(* The three strings that hold the block together, and where each one sits: the \begin on the first
+   cell, the \bibitem on every entry, the \end on the last cell of the group — the [Sm09] among them,
+   which is why an edited dingbat cannot reach the .tex and does not have to. *)
+VerificationTest[
+  Cases[ First @ $entryNotebook,
+    Cell[ _, _, TaggingRules -> <| "MathNotebook" -> tagging_ |>, ___ ] :>
+      Lookup[ tagging, { "EnvironmentOpen", "EnvironmentClose" }, "" ] ],
+  { { "", "" },
+    { "\\begin{thebibliography}{99}\n\n\\bibitem[Sm09]{smith} ", "" },
+    { "\\bibitem{jones}\n", "" },
+    { "", "\n\n\\end{thebibliography}" } }
+]
+
+(* A Reference cell's tag is a mirror of the key in its \bibitem — or, on the T4 route, of the .bib
+   entry it came from — and is not a \label. Writing it back as one is what the DisplayFormula clause
+   of cellTrailing already guards against, and an entry is the second cell that needs it. *)
+VerificationTest[
+  { notebookToLaTeX[ $entryNotebook ] === $entrySource,
+    StringContainsQ[ notebookToLaTeX[ $entryNotebook ], "\\label" ] },
+  { True, False }
+]
+
+(* A commented-out \bibitem stays literal, by the comment mask itemChunks already applies, and a
+   bibliography with no entries at all still has to come back out. *)
+VerificationTest[
+  With[ {
+      commented = "\\begin{document}\n\n\\begin{thebibliography}{9}\n\\bibitem{a} One.\n%\\bibitem{b} Two.\n\\end{thebibliography}\n\n\\end{document}\n",
+      empty = "\\begin{document}\n\n\\begin{thebibliography}{9}\n\\end{thebibliography}\n\n\\end{document}\n" },
+    { Count[ First @ latexToNotebook[ commented ], Cell[ _, "Reference", ___ ] ],
+      notebookToLaTeX @ latexToNotebook[ commented ] === commented,
+      Count[ First @ latexToNotebook[ empty ], Cell[ _, "Reference", ___ ] ],
+      notebookToLaTeX @ latexToNotebook[ empty ] === empty } ],
+  { 1, True, 1, True }
+]
+
+(* The other half of T10: a declared .bib that is not on disk is the one gap in this converter that
+   looks like nothing at all — the paper comes back with no Reference cells, its citations still
+   reading as their keys, and the round trip exact either way. The specimen hodgepaper declares
+   \jobname.bib and ships without it, so it is reported once per declared file rather than passed
+   over, and a .bib that is there stays silent. *)
+$missingDirectory = CreateDirectory[ ]
+
+$missingSource = "\\documentclass{article}\n\\bibliography{refs}\n\\begin{document}\n\nProse~\\cite{a}.\n\n\\bibliographystyle{plain}\n\\bibliography{refs}\n\n\\end{document}\n"
+
+$missingFile = Export[ FileNameJoin @ { $missingDirectory, "paper.tex" }, $missingSource, "Text" ]
+
+(* The message is the assertion: VerificationTest fails a test that emits one it was not told to
+   expect, so the silent case below needs no counting of its own. The file declares refs.bib twice,
+   as a paper does — \bibliography in the preamble and again where the list is printed — and is
+   reported once. *)
+VerificationTest[
+  With[ { notebook = ImportLaTeXDocument[ $missingFile ] },
+    { Count[ First @ notebook, Cell[ _, "Reference", ___ ] ],
+      Count[ notebook, _ButtonBox, Infinity ],
+      notebookToLaTeX[ notebook ] === Import[ $missingFile, "Text" ] } ],
+  { 0, 1, True },
+  { ImportLaTeXDocument::nobib }
+]
+
+$presentFile = Export[ FileNameJoin @ { $missingDirectory, "refs.bib" },
+  "@article{a, author={A. Smith}, title={A title}, year={2009}}", "Text" ]
+
+VerificationTest[
+  With[ { notebook = ImportLaTeXDocument[ $missingFile ] },
+    { Count[ First @ notebook, Cell[ _, "Reference", ___ ] ],
+      notebookToLaTeX[ notebook ] === Import[ $missingFile, "Text" ] } ],
+  { 1, True }
+]

@@ -146,6 +146,13 @@ $bibliographySource = "\\documentclass{article}\n\\begin{document}\n\nProse citi
 
 $bibliographyBib = "@article{ehlers,\n  title={The geometry of free fall},\n  author={Ehlers, J{\\\"u}rgen},\n  year={2012}\n}\n\n@article{andreka,\n  title={A logic road},\n  author={Andr{\\'e}ka, Hajnal},\n  year={2012}\n}\n";
 
+(* LaTeXPaperImport T10: the other bibliography, and the same reason it needs the page. Here the
+   entries do reach the .tex — they are the source — so the round trip says they survived, and says
+   nothing at all about whether the block renders as a bibliography or as two paragraphs of prose
+   with a stray marker in front of each. Only the rendered document separates those. *)
+
+$entrySource = "\\documentclass{article}\n\\begin{document}\n\nProse citing \\cite{smith}.\n\n\\begin{thebibliography}{9}\n\\bibitem[Sm09]{smith} A.~Smith, \\emph{A title}, 2009.\n\\bibitem{jones} B.~Jones, \\emph{Another}, 2011.\n\\end{thebibliography}\n\n\\end{document}\n";
+
 (* LaTeXPaperImport T5: what only the page can show is the numbering — a caption numbers itself from
    its own counter, and article counts figures straight through the document rather than per section,
    so a \ref at a figure has to read "2" and not "2.1" or the front end's XXX. The evaluated figure's
@@ -267,6 +274,7 @@ $measured = UsingFrontEnd @ <|
   "Saved" -> savedRoundTrip[ $savedSource ],
   "Body" -> importedText @ latexToNotebook[ $bodyPaper ],
   "Bibliography" -> importedText @ latexToNotebook[ $bibliographySource, bibliographyDatabase[ $bibliographyBib ] ],
+  "Entries" -> importedText[ $entrySource ],
   "InlineInk" -> AssociationMap[ inlineInk, { "A pair $(V, E)$ here.", "A list $x_1, x_2$ here." } ],
   "DisplayInk" -> displayInk[ $displayParagraph ],
   "LetterInk" -> letterInk[ ],
@@ -387,6 +395,21 @@ VerificationTest[
     StringContainsQ[ $measured[ "Bibliography" ], "[andreka, Theorem~1.1]" ],
     StringContainsQ[ $measured[ "Bibliography" ], "\\bibliography" ],
     StringContainsQ[ $measured[ "Bibliography" ], "XXX" ] },
+  { True, True, True, False, False }
+]
+
+(* LaTeXPaperImport T10: a thebibliography written into the .tex is on the page as a bibliography —
+   each entry under its own [key] dingbat, the citation reading as the same label, and none of the
+   markup that produced it left as text. The [Sm09] the source prints instead of a number is
+   deliberately not shown: it would make the entry and the citation to it disagree. An entry is prose,
+   so what prose carries verbatim it carries verbatim too — the ~ and the \emph are on the page as
+   they are everywhere else in an imported paper. *)
+VerificationTest[
+  { StringContainsQ[ $measured[ "Entries" ], "[smith] A.~Smith" ],
+    StringContainsQ[ $measured[ "Entries" ], "[jones] B.~Jones" ],
+    StringContainsQ[ $measured[ "Entries" ], "citing [smith]" ],
+    StringContainsQ[ $measured[ "Entries" ], "bibitem" | "thebibliography" | "Sm09" ],
+    StringContainsQ[ $measured[ "Entries" ], "XXX" ] },
   { True, True, True, False, False }
 ]
 

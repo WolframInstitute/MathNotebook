@@ -215,6 +215,7 @@ cellSeparator[ cell_Cell ] :=
 structureRules[ numbering_Association, entries_Association ] :=
   Join[
     bibliographyRules[ entries ],
+    entryRules[ ],
     figureRules[ ],
     commandRules[ ],
     nestedRules[ numbering, 1 ] ]
@@ -528,10 +529,19 @@ listStyle[ base_String, depth_Integer ] :=
    line-initial delimiters drove the depth negative and made items (b), (c) and (d) of that list
    continuation paragraphs of item (a). What the comment mask replaces is the StartOfLine anchor's
    other job — keeping a commented-out %\item, and both halves of a commented-out %\begin{enumerate},
-   from counting; hodgepaper has three such blocks. *)
+   from counting; hodgepaper has three such blocks.
+
+   The command and the length of what follows it that belongs to the marker are arguments because a
+   thebibliography is the same shape one command down: its items are \bibitem[label]{key} rather than
+   \item[label], and everything else — the depth filter, the comment mask, the slicing — is the same.
+   \bibitem is not matched by the \item pattern: after the indent the next characters must be \item,
+   and \bibitem's are \bibi. *)
 itemChunks[ inner_String ] :=
+  itemChunks[ inner, "\\item", itemLabelLength ]
+
+itemChunks[ inner_String, command_String, markerLength_ ] :=
   Module[ { text = uncommented[ inner ], markers, delimiters, starts },
-    markers = StringPosition[ text, StartOfLine ~~ ( " " | "\t" ) ... ~~ "\\item" ];
+    markers = StringPosition[ text, StartOfLine ~~ ( " " | "\t" ) ... ~~ command ];
     delimiters = Join[
       Map[ { First[ # ], 1 } &, StringPosition[ text, "\\begin{" ] ],
       Map[ { First[ # ], -1 } &, StringPosition[ text, "\\end{" ] ] ];
@@ -541,7 +551,7 @@ itemChunks[ inner_String ] :=
     If[ markers === { },
       { inner },
       Prepend[
-        MapThread[ itemChunk[ inner, #1, #2 ] &,
+        MapThread[ itemChunk[ inner, #1, #2, markerLength ] &,
           { markers, Append[ Rest[ starts ] - 1, StringLength[ inner ] ] } ],
         stringSlice[ inner, 1, First[ starts ] - 1 ] ] ]
   ]
@@ -553,8 +563,8 @@ uncommented[ text_String ] :=
   StringReplace[ text,
     comment : RegularExpression[ "(?<!\\\\)%[^\n]*" ] :> StringRepeat[ " ", StringLength[ comment ] ] ]
 
-itemChunk[ inner_String, { from_Integer, to_Integer }, until_Integer ] :=
-  With[ { length = itemLabelLength @ stringSlice[ inner, to + 1, until ] },
+itemChunk[ inner_String, { from_Integer, to_Integer }, until_Integer, markerLength_ ] :=
+  With[ { length = markerLength @ stringSlice[ inner, to + 1, until ] },
     { stringSlice[ inner, from, to + length ], stringSlice[ inner, to + length + 1, until ] } ]
 
 itemLabelLength[ rest_String ] :=
@@ -651,6 +661,80 @@ bibliographyCell[ key_String, entry_Association ] :=
     Sequence @@ referenceDingbat[ key ],
     TaggingRules -> <| "MathNotebook" -> <| "Suppressed" -> "True" |> |> ]
 
+(* The other bibliography, and the opposite case: one written into the .tex itself, which is what a
+   paper with no .bib does and what all four of the paclet's sample documents do. Here the entries
+   ARE the source, so the notebook owns them and writes them back — editing an entry reaches the
+   .tex, where a .bib entry's cell is suppressed and the .bib stays the source of truth.
+
+   A \bibitem is recorded exactly as T8 records an \item: the \begin{thebibliography} rides on the
+   first cell of the group, each \bibitem on the cell it opens, the \end{thebibliography} on the
+   last, all of them plain strings in the tagging rules, so the export is still a StringJoin and
+   entryCells is listCells with the item machinery pointed at a different command. *)
+entryRules[ ] :=
+  { StartOfLine ~~ indent : ( " " | "\t" ) ... ~~ "\\begin{thebibliography}" ~~
+      widest : ( ( "{" ~~ Except[ "}" ] ... ~~ "}" ) | "" ) ~~ trailing : Except[ "\n" ] ... ~~
+      Shortest[ inner___ ] ~~ StartOfLine ~~ closingIndent : ( " " | "\t" ) ... ~~
+      "\\end{thebibliography}" :>
+    entryCells[ indent <> "\\begin{thebibliography}" <> widest, trailing, inner,
+      closingIndent <> "\\end{thebibliography}" ] }
+
+entryCells[ opening_String, trailing_String, inner_String, closing_String ] :=
+  Module[ { chunks = itemChunks[ inner, "\\bibitem", bibitemMarkerLength ], leading, pieces,
+      positions, first, last },
+    leading = First[ chunks ];
+    pieces = Flatten @ Map[ entryPieces, Rest[ chunks ] ];
+    positions = Flatten @ Position[ pieces, _Cell, { 1 }, Heads -> False ];
+    If[ positions === { },
+      { environmentOpened[ environmentClosed[ Cell[ "", "Reference" ], closing ],
+          "thebibliography", opening, trailing, leading <> joinMarks[ pieces ] ] },
+      first = First[ positions ]; last = Last[ positions ];
+      Take[
+        MapAt[ environmentClosed[ #, joinMarks @ Drop[ pieces, last ] <> closing ] &,
+          MapAt[ environmentOpened[ #, "thebibliography", opening, trailing,
+              leading <> joinMarks @ Take[ pieces, first - 1 ] ] &,
+            pieces, first ],
+          last ],
+        { first, last } ] ]
+  ]
+
+(* An entry is prose and nothing else — no environment of the document's can open inside one — so its
+   content goes through paragraphPieces rather than splitPieces, and a blank line inside an entry
+   makes a continuation cell exactly as it does inside an item. *)
+entryPieces[ { marker_String, content_String } ] :=
+  Module[ { pieces = paragraphPieces[ content ], positions, first },
+    positions = Flatten @ Position[ pieces, _Cell, { 1 }, Heads -> False ];
+    If[ positions === { },
+      Prepend[ pieces, itemOpened[ entryCell[ Cell[ "", "Text" ], marker ], marker, "" ] ],
+      first = First[ positions ];
+      Drop[
+        MapAt[ itemOpened[ entryCell[ #, marker ], marker, joinMarks @ Take[ pieces, first - 1 ] ] &,
+          pieces, first ],
+        first - 1 ] ]
+  ]
+
+(* The dingbat is referenceLabel's [key], as it is for a .bib entry, so an entry and the citation
+   pointing at it read alike; the printed label of a \bibitem[label]{key} rides in the marker for the
+   return trip rather than being shown, because showing it would make the two disagree. The tag is
+   therefore a mirror of the key stored in the marker, not the origin of a \label — cellTrailing must
+   not write it back, or every entry exports a \label it never had. *)
+entryCell[ Cell[ content_, "Text", options___ ], marker_String ] :=
+  With[ { key = bibitemKey[ marker ] },
+    Cell[ content, "Reference", CellTags -> key, Sequence @@ referenceDingbat[ key ], options ] ]
+
+entryCell[ cell_Cell, _String ] :=
+  cell
+
+bibitemMarkerLength[ rest_String ] :=
+  First[
+    StringCases[ rest,
+      StartOfString ~~
+        marker : ( ( ( "[" ~~ Except[ "]" ] ... ~~ "]" ) | "" ) ~~ "{" ~~ Except[ "}" ] .. ~~ "}" ) :>
+          StringLength[ marker ], 1 ],
+    0 ]
+
+bibitemKey[ marker_String ] :=
+  First[ StringCases[ marker, "{" ~~ key : Except[ "}" ] .. ~~ "}" ~~ EndOfString :> key, 1 ], "" ]
+
 (* No bibliography style is emulated: the fields are riffled in a fixed order, and the entries come
    in the order of the .bib rather than in the order the style would sort them. What matters for
    reading is that the dingbat is referenceLabel's [key], so an entry and the citation pointing at it
@@ -678,9 +762,21 @@ bibliographyVolume[ entry_Association ] :=
   Replace[ Lookup[ entry, "volume", "" ],
     { "" -> "", volume_ :> volume <> Replace[ Lookup[ entry, "number", "" ], { "" -> "", number_ :> "(" <> number <> ")" } ] } ]
 
+(* A declared .bib that is not on disk is the one gap in this converter that looks like nothing at
+   all: the paper simply comes back with no Reference cells, its citations still reading as their
+   keys, and the round trip is exact either way — the specimen hodgepaper declares \jobname.bib and
+   ships without it. So it is reported rather than passed over, which is the Spec's "say what it
+   could not handle". *)
 bibliographyEntries[ source_String, file_String ] :=
-  Association @ Map[ Normal @ bibliographyDatabase @ Import[ #, "Text" ] &,
-    Select[ bibliographyFiles[ source, file ], FileExistsQ ] ]
+  With[ { declared = DeleteDuplicates @ bibliographyFiles[ source, file ] },
+    Scan[ Message[ ImportLaTeXDocument::nobib, #, FileNameTake[ file ] ] &,
+      Select[ declared, ! FileExistsQ[ # ] & ] ];
+    Association @ Map[ Normal @ bibliographyDatabase @ Import[ #, "Text" ] &,
+      Select[ declared, FileExistsQ ] ] ]
+
+ImportLaTeXDocument::nobib =
+  "The bibliography file `1` declared by `2` was not found: its entries are not imported, and a \
+citation to one of them reads as its key.";
 
 bibliographyFiles[ source_String, file_String ] :=
   Map[ bibliographyFile[ #, file ] &,
@@ -1041,8 +1137,10 @@ cellBodyLaTeX[ cell_Cell ] :=
 
 (* A display formula's tag is a mirror of the \label already inside its stored source, not the
    origin of one, so writing it back out again would emit the label twice — which is what happens
-   the moment such a cell is the first of an environment body and carries the \begin. *)
-cellTrailing[ cell : Cell[ _, "DisplayFormula" | "DisplayFormulaNumbered", ___ ] ] :=
+   the moment such a cell is the first of an environment body and carries the \begin. A Reference
+   cell's tag is the same kind of mirror, of the key inside its \bibitem or of the .bib entry it
+   came from, and neither is a \label at all. *)
+cellTrailing[ cell : Cell[ _, "DisplayFormula" | "DisplayFormulaNumbered" | "Reference", ___ ] ] :=
   cellTagging[ cell, "Trailing" ] <> cellTagging[ cell, "TrailingAfter" ]
 
 cellTrailing[ cell_Cell ] :=

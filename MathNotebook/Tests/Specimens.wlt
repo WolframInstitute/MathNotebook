@@ -12,6 +12,11 @@ AppendTo[ $ContextPath, "WolframInstitute`MathNotebook`PackageScope`" ]
    and the notice below names what was missing. When the paclet is installed from an archive rather
    than loaded from the working tree, nothing is found and nothing is asserted.
 
+   T10 adds a third group at the end of the file, and it is not one of those two papers: the paclet's
+   own four LaTeX samples, which the repo does contain. They are the only documents here with a
+   thebibliography written into the .tex, so without them a task could drop that whole converter and
+   leave every test green.
+
    Kernel-only, as every .wlt but FrontEnd.wlt is. The save-and-reopen half of the round trip -- the
    button splitting T5 found, which no in-kernel comparison can see -- needs a front end and is
    asserted there, on a synthetic source.
@@ -102,7 +107,9 @@ $listNames = "itemize" | "enumerate" | "description"
 specimenCensus[ file_String ] :=
   Module[ { source, notebook, cells, prose, opens, written },
     source = Import[ file, "Text" ];
-    notebook = ImportLaTeXDocument[ file ];
+    (* hodgepaper declares a .bib it does not ship, which T10 reports; the report is asserted below
+       rather than here, so that the census run stays a measurement and not a message storm. *)
+    notebook = Quiet[ ImportLaTeXDocument[ file ], ImportLaTeXDocument::nobib ];
     cells = First[ notebook ];
     prose = specimenProse[ cells ];
     opens = Map[ specimenTagging[ #, "EnvironmentOpen" ] &, cells ];
@@ -245,3 +252,51 @@ Do[
     VerificationTest[ literal, expected[ "Literal" ],
       TestID -> id <> ": what is still literal LaTeX" ] ],
   { name, Keys @ $measured } ]
+
+(* LaTeXPaperImport T10. A declared .bib that is not on disk is the one gap in this converter that
+   neither detector above can see: the paper comes back with no Reference cells and its citations
+   still reading as their keys, the round trip is exact either way, and no census key counts a
+   bibliography that is not there. hodgepaper is the real case -- it declares its .bib as
+   \jobname.bib and ships without the file -- so the report is asserted on the papers themselves,
+   and the causal paper, which ships references.bib, must stay silent.
+
+   The expected message has to be written literally into each VerificationTest: the test holds its
+   arguments, but a With that binds ImportLaTeXDocument::nobib to a variable evaluates the MessageName
+   to its own text first and then matches nothing. *)
+Do[
+  With[ { id = name, file = $specimens[ name ] },
+    If[ name === "Hodge",
+      VerificationTest[ Head @ ImportLaTeXDocument[ file ], Notebook, { ImportLaTeXDocument::nobib },
+        TestID -> id <> ": a declared .bib that is not there is reported" ],
+      VerificationTest[ Head @ ImportLaTeXDocument[ file ], Notebook,
+        TestID -> id <> ": a .bib that is there is converted in silence" ] ] ],
+  { name, Keys @ $specimens } ]
+
+(* The paclet's own four LaTeX samples are the only documents this repo actually contains, and the
+   only ones anywhere here with a thebibliography written into the .tex -- both specimen papers use a
+   .bib. They are small, they are committed, and between them they carry a title block, an abstract,
+   three sectioning levels, four theorem environments, numbered and unnumbered display math, a
+   cross-reference and a bibliography, so a fresh clone with no specimens still pins something. They
+   sit beside the paclet directory rather than inside it, so an installed paclet finds nothing and
+   asserts nothing, exactly as the two papers above. *)
+$samples =
+  If[ $specimenDirectory === None, { },
+    FileNames[ "Sample-*.tex", FileNameJoin @ { $specimenDirectory, "LaTeX" } ] ]
+
+If[ $samples === { },
+  Print[ "Specimens.wlt: no tests emitted for the LaTeX samples -- LaTeX/Sample-*.tex was not found ",
+    "beside the paclet directory." ] ]
+
+Do[
+  Module[ { id = FileBaseName[ file ], source = Import[ file, "Text" ], notebook },
+    notebook = ImportLaTeXDocument[ file ];
+    VerificationTest[ notebookToLaTeX[ notebook ], source,
+      TestID -> id <> ": the exported source is the imported source" ];
+    VerificationTest[
+      Cases[ First @ notebook,
+        cell : Cell[ _, "Reference", ___, CellTags -> key_String, ___ ] :>
+          key -> FirstCase[ cell, ( CellDingbat -> Cell[ TextData[ label_ ], ___ ] ) :> label,
+            None, Infinity ] ],
+      { "matex" -> "[matex]", "ollivier" -> "[ollivier]" },
+      TestID -> id <> ": the thebibliography entries" ] ],
+  { file, $samples } ]
