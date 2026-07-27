@@ -5,6 +5,8 @@ build/
 .DS_Store
 ClaudePluginMarketplace/
 
-# Scratch documents kept in the working tree, not part of the paclet
-Axiomatic_Relativity_from_Causal_Graphs.zip
-hodgepaper.tex
+# Incoming material — specimen papers and downloads. Kept in the working tree, never in history:
+# the two papers Tests/Specimens.wlt measures are not the paclet's to redistribute, and
+# PublishPaclet.wls stages Tests/, so anything tracked here would ship.
+Resources/*
+!Resources/.gitkeep

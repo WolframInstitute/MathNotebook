@@ -7,7 +7,7 @@ AppendTo[ $ContextPath, "WolframInstitute`MathNotebook`PackageScope`" ]
 
    Neither paper is in the repo -- one is an unpublished draft with two co-authors and the other a
    published paper of Pavel's, and neither is the paclet's to redistribute -- so this file looks for
-   them beside the loaded paclet, or in the directory named by MATHNOTEBOOK_SPECIMENS, and emits no
+   them in the repo's gitignored Resources/, or in the directory named by MATHNOTEBOOK_SPECIMENS, and emits no
    tests for a paper it cannot find. A run without them reports fewer tests rather than green ones,
    and the notice below names what was missing. When the paclet is installed from an archive rather
    than loaded from the working tree, nothing is found and nothing is asserted.
@@ -27,11 +27,18 @@ AppendTo[ $ContextPath, "WolframInstitute`MathNotebook`PackageScope`" ]
    of what each task did. "Bytes" is the guard on that reading: if it moves, the paper changed and not
    the converter. *)
 
+(* RepoOrganization T2. Two directories, and they are not the same one: the repo root, where the
+   LaTeX samples at the end of this file live, and the specimen home Resources/, which
+   MATHNOTEBOOK_SPECIMENS overrides. One symbol served as both until the papers moved into
+   Resources/, at which point pointing it there silently took the samples group with it. *)
+$repoDirectory =
+  Replace[ PacletObject[ "WolframInstitute/MathNotebook" ][ "Location" ],
+    { location_String :> ParentDirectory[ location ], _ :> None } ]
+
 $specimenDirectory =
   SelectFirst[
     { Environment[ "MATHNOTEBOOK_SPECIMENS" ],
-      Replace[ PacletObject[ "WolframInstitute/MathNotebook" ][ "Location" ],
-        { location_String :> ParentDirectory[ location ], _ :> None } ] },
+      Replace[ $repoDirectory, { root_String :> FileNameJoin @ { root, "Resources" }, _ :> None } ] },
     StringQ[ # ] && DirectoryQ[ # ] &, None ]
 
 specimenFile[ file_String ] :=
@@ -58,7 +65,7 @@ $specimens = DeleteMissing[ $candidates ]
 If[ Length[ $specimens ] < Length[ $candidates ],
   Print[ "Specimens.wlt: no tests emitted for ",
     StringRiffle[ Last /@ Values @ Select[ $candidates, MissingQ ], ", " ],
-    " -- put the paper beside the paclet directory, or point MATHNOTEBOOK_SPECIMENS at it." ] ]
+    " -- put the paper in the repo's Resources/, or point MATHNOTEBOOK_SPECIMENS at it." ] ]
 
 (* $evaluationStyles is file-private in Document.wl, and an undeclared symbol read from here would be
    a distinct symbol with no value, so the two styles the importer actually emits are written out.
@@ -280,8 +287,8 @@ Do[
    sit beside the paclet directory rather than inside it, so an installed paclet finds nothing and
    asserts nothing, exactly as the two papers above. *)
 $samples =
-  If[ $specimenDirectory === None, { },
-    FileNames[ "Sample-*.tex", FileNameJoin @ { $specimenDirectory, "LaTeX" } ] ]
+  If[ ! StringQ[ $repoDirectory ], { },
+    FileNames[ "Sample-*.tex", FileNameJoin @ { $repoDirectory, "LaTeX" } ] ]
 
 If[ $samples === { },
   Print[ "Specimens.wlt: no tests emitted for the LaTeX samples -- LaTeX/Sample-*.tex was not found ",

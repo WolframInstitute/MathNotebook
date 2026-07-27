@@ -24,12 +24,15 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 None. [First Public Release](Done/2026-07-27-Release.md) closed on 2026-07-27: **0.1.11 is
 published**, the version marker agrees, and the README's `PacletInstall` line installs it from the
 cloud onto a machine with no local copy. The cloud previews and the linked tutorial were re-deployed
-with it.
+with it. [Repo Organization](Done/2026-07-27-RepoOrganization.md) closed the same day: the root holds
+five files beside `Images/`, `LaTeX/`, `MathNotebook/`, `Notebooks/`, `Resources/`, `Scripts/` and
+`Work/`, and there is deliberately no `Wiki/` — durable knowledge is `CLAUDE.md`.
 
 ## Backlog
 
 Reduced from eight items to three on 2026-07-27 — the four in `Dropped/` each carry a note saying
-why and what would reopen them. Two survivors are parked rather than queued: neither blocks anything.
+why and what would reopen them. Both remaining items are parked rather than queued: neither blocks
+anything.
 
 - [Conversion and MaTeX UX](Backlog/ConversionUX.md) — four near-identical conversion labels an author
   cannot tell apart, and a newly converted MaTeX cell that ignores the math slider. Trimmed to those
@@ -38,5 +41,3 @@ why and what would reopen them. Two survivors are parked rather than queued: nei
   template from the journal's own class file, and a "publish to Complex Systems / arXiv" bundle;
   Pavel's explicit request, so kept, but it is feature expansion and the bundle half wants the export
   path proven in real use first
-- [Repo Organization](Backlog/RepoOrganization.md) — *parked.* Root cleanup; the `Wiki/` question is
-  now decided (no) rather than open
