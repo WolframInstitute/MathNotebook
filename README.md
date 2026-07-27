@@ -17,6 +17,8 @@ Restart the front end, then open **Palettes ▸ MathNotebook**.
 
 Start with the **[Tutorial](https://www.wolframcloud.com/obj/hajek_pavel/MathNotebook/Tutorial.nb)**, or `OpenTutorial[]`.
 
+Every exported symbol has a reference page: **[Documentation](https://www.wolframcloud.com/obj/hajek_pavel/MathNotebook/Documentation/index.html)** in the browser, or the same pages in the Documentation Center (F1) once the paclet is installed.
+
 After that, **Setup ▸ Update from cloud** in the palette — or `UpdateMathNotebook[]` — checks the published version and installs it only when it is newer, then rebuilds the menus and reopens the palette so the new palette and stylesheets are live without a restart.
 
 ## 🎨 Stylesheets

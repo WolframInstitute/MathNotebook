@@ -23,7 +23,8 @@ archive = With[ { staging = FileNameJoin[ { $TemporaryDirectory, "MathNotebook-p
   CreateDirectory[ staging ];
   CopyFile[ FileNameJoin[ { pacletDirectory, "PacletInfo.wl" } ], FileNameJoin[ { staging, "PacletInfo.wl" } ] ];
   Scan[ { name } |-> CopyDirectory[ FileNameJoin[ { pacletDirectory, name } ], FileNameJoin[ { staging, name } ] ],
-    { "Kernel", "FrontEnd", "Assets", "Tests" } ];
+    Select[ { "Kernel", "FrontEnd", "Assets", "Tests", "Documentation" },
+      DirectoryQ @ FileNameJoin[ { pacletDirectory, # } ] & ] ];
   Scan[ DeleteFile, FileNames[ ".DS_Store", staging, Infinity ] ];
   CreatePacletArchive[ staging, $TemporaryDirectory ] ];
 
