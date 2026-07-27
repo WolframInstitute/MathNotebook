@@ -40,7 +40,8 @@ Done when `PacletInstall` from the README installs 0.1.11 on a machine that has 
 
 - The paclet ships `MathNotebook/Assets/MathNotebookTutorial.nb`, so `OpenTutorial[]` shows whatever was current at build time — rebuild the tutorial before archiving, not after.
 - First install needs a front end restart or `FrontEnd`ResetMenusPacket` before the palette and stylesheet menus appear; the README says so and the release notes should too.
-- Out of scope: a GitHub remote for this repo (there is none yet) and any CI.
+- ~~Out of scope: a GitHub remote for this repo (there is none yet)~~ — **stale.** `origin` is `git@github.com:WolframInstitute/MathNotebook.git` and `main` tracks it. CI remains out of scope.
+- **The 21 symbol reference pages ship with 0.1.11.** They landed on `origin/main` in a parallel session (`3735912`), together with the `PublishPaclet.wls` fix (`e088d72`) that stages `Documentation/` — without which this release would have published the extension and none of the pages. Smoke-testing an installed build (T2) now has to include F1 / `paclet:` URI resolution, not only the palette buttons.
 
 ## Tasks
 
