@@ -46,7 +46,7 @@ Done when `PacletInstall` from the README installs 0.1.11 on a machine that has 
 ## Tasks
 
 - [ ] T1 — **Two of three parts done (2026-07-27, see Progress).** Tutorial hand edits resolved and `LICENSE` added. What remains is Pavel's and only Pavel's: read the regenerated tutorial, and confirm the copyright line.
-- [ ] T2 — Rebuild all generated artifacts, run the tests, build and install from a clean archive, smoke-test the palette buttons cold — the importer and `PlainArticle` have never been exercised from an installed build, only from `PacletDirectoryLoad` on the working tree.
+- [x] T2 — Rebuild all generated artifacts, run the tests, build and install from a clean archive, smoke-test the palette buttons cold. *(2026-07-27)*
 - [ ] T3 — Publish 0.1.11, verify the install URL and the version marker from a fresh kernel, re-run `Scripts/DeployPreviews.wls`, bump and push the marketplace entry.
 
 ### Done
@@ -63,6 +63,31 @@ Done when `PacletInstall` from the README installs 0.1.11 on a machine that has 
 - **`LICENSE` added**, MIT, closing the one defect here that is legal rather than technical. The copyright line reads `Pavel Hajek`, matching `PacletInfo.wl`'s `"Creator"` — the only attribution the repo actually states. The repo lives under the `WolframInstitute` org and `"PublisherID"` is `WolframInstitute`, so if the copyright belongs to the institute this is a one-line change and belongs before publishing, not after.
 - 218 tests pass. Pushed to `origin/main` (`439416c`).
 - **Next:** T1 closes when Pavel reads the regenerated tutorial and confirms the copyright line. T2 — build and install from a clean archive and smoke-test cold — needs neither.
+
+### 2026-07-27 — T2
+
+- **Prompt:** "do that then."
+- **Did:** built 0.1.11 from a clean staging copy and exercised it from the installed location, with no `PacletDirectoryLoad` anywhere — the point being that the importer and `PlainArticle` had only ever run from the working tree.
+
+  | check | result |
+  |---|---|
+  | generated artifacts vs their build scripts | **already in sync** — regenerating all 8 gave UUID-only churn, reverted |
+  | archive | 250,175 bytes, 5 directories staged incl. `Documentation` |
+  | install location | `.../Paclets/Repository/WolframInstitute__MathNotebook-0.1.11`, not the repo |
+  | exported symbols | 21 / 21, each with a usage string |
+  | `paclet:` doc URIs | **21 / 21 resolve to a real file** — F1 works from an installed build |
+  | stylesheets shipped | all six, `PlainArticle.nb` among them; palette and tutorial ship |
+  | importer, cold | `Sample-ArXivArticle.tex` → 20 cells, opens on **PlainArticle**, round-trip byte-identical |
+  | installed test suite | **196 passed, 0 failed** |
+  | palette buttons | 17 actions, 15 distinct symbols, **all exported**; `Needs` and `Method -> "Queued"` present |
+
+  **The 22-test gap between 218 and 196 is entirely `Specimens.wlt`, and it is worth knowing rather than shrugging at.** It locates documents relative to `PacletObject[…]["Location"]`, which from an installed build is the Paclets Repository directory — so it finds neither absent specimen paper *nor* the four committed `LaTeX/Sample-*.tex`, because `LaTeX/` is not staged into the archive. The shipped fixtures therefore assert **nothing**; they only bite from the working tree. That is not a regression and the printed notice makes it visible, but "the paclet ships its tests" and "the shipped tests cover the converter" are different claims and only the first is true.
+
+  **The palette audit is the check that matters cold**, because the failure mode is silent: a button naming a `PackagePrivate` helper stays unevaluated with no message. Every fully qualified symbol the 17 actions name is one of the 21 exported.
+- **Learned:** two of my own probes reported false defects before I caught them, both worth recognising since each *reads* exactly like a paclet fault.
+  - **`MessageName` is `HoldFirst`**, so `MessageName[ Symbol[ name ], "usage" ]` raises `Message::name` and returns unevaluated rather than reading the usage — it reported all 21 symbols as having no usage string. `ToExpression[ name <> "::usage" ]` is the working form; all 21 do have one.
+  - A `Shortest[ a__ ] ~~ "Method"` capture **excludes everything from `Method` onward**, so counting `"Queued"` inside the captured span answered 0 of 17. The option is there 19 times; the probe had cut the string immediately before it.
+- **Next:** T3, the publish — outward-facing, and waiting on Pavel's go-ahead plus the two T1 confirmations.
 
 ## Decisions
 
