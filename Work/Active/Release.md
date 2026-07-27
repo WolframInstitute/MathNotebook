@@ -45,7 +45,7 @@ Done when `PacletInstall` from the README installs 0.1.11 on a machine that has 
 
 ## Tasks
 
-- [ ] T1 — Resolve the tutorial's uncommitted hand edits (discard or fold into `BuildTutorial.wls`), then tutorial review with Pavel; fold in corrections. Add the `LICENSE` file with the copyright line Pavel names.
+- [ ] T1 — **Two of three parts done (2026-07-27, see Progress).** Tutorial hand edits resolved and `LICENSE` added. What remains is Pavel's and only Pavel's: read the regenerated tutorial, and confirm the copyright line.
 - [ ] T2 — Rebuild all generated artifacts, run the tests, build and install from a clean archive, smoke-test the palette buttons cold — the importer and `PlainArticle` have never been exercised from an installed build, only from `PacletDirectoryLoad` on the working tree.
 - [ ] T3 — Publish 0.1.11, verify the install URL and the version marker from a fresh kernel, re-run `Scripts/DeployPreviews.wls`, bump and push the marketplace entry.
 
@@ -55,7 +55,14 @@ Done when `PacletInstall` from the README installs 0.1.11 on a machine that has 
 
 ## Progress
 
-(no sessions yet)
+### 2026-07-27 — T1, the two parts that are not Pavel's
+
+- **Prompt:** "commit and push and go on."
+- **The tutorial's hand edits were scratchpad and are discarded.** Four cells of filler — `"A graph is blalbab"`, `"Two graphs are blalbal"`, `"Let G and H be two graphs."` and a bare `\sum _{i=1}^kn(i)^2` string — plus an evaluated `Output` and a live reference button, left from testing the environments and the referencing palette against a real document. The paclet ships `Assets/MathNotebookTutorial.nb`, so `OpenTutorial[]` was one build away from showing filler to users. A copy of the scratchpad state was kept outside the repo before regenerating, in case any of it is wanted back.
+- **Regenerating mattered for a second reason nobody had noticed: the committed `.nb` was stale against its own build script.** T8–T11 edited `Scripts/BuildTutorial.wls` and never rebuilt, so the shipped tutorial described neither `PlainArticle` nor what the importer does with `\label`, `\ref` and `\cite`. 133 non-UUID diff lines, all of them the script catching up. This is the failure mode Session 8 of `ViewAndReferenceDefects` predicted — "a behaviour change silently ages the tutorial, and nothing in the build or the suite notices" — arriving on schedule. **Worth a guard:** nothing checks that `MathNotebookTutorial.nb` matches what `BuildTutorial.wls` currently produces, and a test could.
+- **`LICENSE` added**, MIT, closing the one defect here that is legal rather than technical. The copyright line reads `Pavel Hajek`, matching `PacletInfo.wl`'s `"Creator"` — the only attribution the repo actually states. The repo lives under the `WolframInstitute` org and `"PublisherID"` is `WolframInstitute`, so if the copyright belongs to the institute this is a one-line change and belongs before publishing, not after.
+- 218 tests pass. Pushed to `origin/main` (`439416c`).
+- **Next:** T1 closes when Pavel reads the regenerated tutorial and confirms the copyright line. T2 — build and install from a clean archive and smoke-test cold — needs neither.
 
 ## Decisions
 
