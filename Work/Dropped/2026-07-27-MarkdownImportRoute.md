@@ -88,3 +88,10 @@ loses, and whether `MarkdownToNotebook` is worth adopting for any part of the pi
 
 | Date | Decision | Rationale |
 |---|---|---|
+
+## Dropped — 2026-07-27
+
+- **Prompt:** "we should probably reduce, and concentrate on doing what is needed to have a working paclet."
+- **Why:** this item proposes *measuring an alternative to a converter that is now finished*. When it was written `LaTeXPaperImport` was mid-flight; by T12 it round-trips both specimen papers and all four repo samples byte-identically, through a real save and reopen, with sectioning, environments, labels, cross-references, citations, numbering, figures, front matter, lists and both bibliographies. A two-hop route through Markdown cannot beat that on the axis that matters, and the Spec above already says why in its own words: Markdown "has no place to *put*" `\label`, a numbered theorem, or the verbatim source the byte-identical round trip is built on.
+- **What it would have cost:** a Pandoc run, two specimen conversions and a write-up — cheap, but the output is a paragraph confirming a hypothesis the Spec already states.
+- **Reopen if:** the direct importer meets a paper it cannot parse *and* Pandoc handles that construct, or `MarkdownToNotebook` grows math and theorem support. Neither is true today.

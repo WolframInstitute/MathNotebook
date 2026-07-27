@@ -47,3 +47,10 @@ Done when the decision is recorded with a side-by-side comparison behind it, and
 
 | Date | Decision | Rationale |
 |---|---|---|
+
+## Dropped — 2026-07-27
+
+- **Prompt:** "we should probably reduce, and concentrate on doing what is needed to have a working paclet."
+- **Why:** typeface matching is the last thing wrong with this paclet, not the first. The templates already look like the journals they imitate — the gap is Palatino against TeX Gyre Pagella, which is a metric-compatible clone of the same design. Nothing here blocks writing, importing, exporting or publishing a paper.
+- **The one real defect it names is kept, downgraded to a sentence:** `ArXivArticle`'s deployed sample renders in a substituted serif in the browser, because the Wolfram Cloud has no Latin Modern. That is a preview blemish with a one-line README fix, not a two-task investigation. Whoever next touches the README should add it beside the existing Springer caveat.
+- **Reopen if:** a journal rejects a submission over typography, or the decision is ever needed to answer "which fonts must a reader install" in the tutorial.

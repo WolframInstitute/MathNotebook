@@ -59,3 +59,10 @@ kpsewhich svjour3.cls
 
 | Date | Decision | Rationale |
 |---|---|---|
+
+## Dropped — 2026-07-27
+
+- **Prompt:** "we should probably reduce, and concentrate on doing what is needed to have a working paclet."
+- **Why:** the entire payoff is one README table cell gaining a `pdf` link. The item has been blocked since it was written on a manual `svjour3.cls` download that every automated route fails to reach, and the README already carries the honest caveat — "`svjour3` comes from Springer rather than TeX Live, so that sample has no PDF until you install the class" — so nothing is broken or misleading in the meantime. A blocked item whose cost of staying blocked is zero should not sit in a backlog being re-read every session.
+- **Note:** the `SpringerJournal` *stylesheet* is unaffected and ships; this was only ever about compiling its LaTeX counterpart to a PDF.
+- **Reopen if:** Pavel downloads the class, at which point the Progress notes above make it five minutes of work — install to `~/Library/texmf/tex/latex/svjour3/`, `pdflatex` twice, redeploy, drop the caveat.

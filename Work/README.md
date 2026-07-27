@@ -21,21 +21,23 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 
 ## Active
 
-*Nothing active.* All three items closed on 2026-07-27 — LaTeX Paper Import and View and Reference
-Defects into `Done/`, Cross-Platform TeX into `Dropped/`. Pick the next item from the Backlog below
-and `git mv` it into `Active/`, or use `/work` to write a new one.
-
-The one thing no backlog item states plainly: the working tree is **0.1.11** and the cloud version
-marker still reads **0.1.10** (checked 2026-07-27). So numbered citations, the whole LaTeX document
-importer and the fifth stylesheet exist only here — a user installing from the README's URL gets
-none of them. `First Public Release` is where that gets decided.
+- [First Public Release](Active/Release.md) — **the only thing standing between this repo and a
+  working paclet.** The cloud marker reads 0.1.10 and the working tree is 0.1.11, so the LaTeX
+  document importer, numbered citations and the `PlainArticle` stylesheet exist only here while the
+  README describes all three. Next: **T1**, resolve the tutorial's uncommitted hand edits, review it
+  with Pavel, add the missing `LICENSE`
 
 ## Backlog
-- [LaTeX via Markdown](Backlog/MarkdownImportRoute.md) — whether `MarkdownToNotebook` plus a LaTeX-to-Markdown tool beats the direct importer; likely a one-way route with no round trip, but measure it
-- [Conversion and MaTeX UX](Backlog/ConversionUX.md) — four near-identical conversion labels; what a MaTeX conversion should leave behind; whether per-selection LaTeX conversion survives whole-document export
-- [Adopt WolframInstituteTools Practices](Backlog/WolframInstituteToolsPractices.md) — real documentation pages for the exported symbols, and their notebook tooling
-- [Complex Systems Stylesheet and Submission Buttons](Backlog/JournalSubmission.md) — a fifth template from the journal's own class file, and a "publish to Complex Systems / arXiv" bundle
-- [Springer Journal Sample PDF](Backlog/SpringerJournalSample.md) — blocked on a manual `svjour3.cls` download
-- [First Public Release](Backlog/Release.md) — tutorial and palette review, then publish; the README's install URL is dead until then
-- [Repo Organization](Backlog/RepoOrganization.md) — root cleanup, and the `Wiki/` yes-or-no decision
-- [Stylesheet Font Fidelity](Backlog/StylesheetFontFidelity.md) — TeX Gyre vs system fonts; why `ArXivArticle` substitutes in the browser
+
+Reduced from eight items to three on 2026-07-27 — the four in `Dropped/` each carry a note saying
+why and what would reopen them. Two survivors are parked rather than queued: neither blocks anything.
+
+- [Conversion and MaTeX UX](Backlog/ConversionUX.md) — four near-identical conversion labels an author
+  cannot tell apart, and a newly converted MaTeX cell that ignores the math slider. Trimmed to those
+  two; the MaTeX display form went back on the pile as a design call needing Pavel at a notebook
+- [Complex Systems Stylesheet and Submission Buttons](Backlog/JournalSubmission.md) — *parked.* A fifth
+  template from the journal's own class file, and a "publish to Complex Systems / arXiv" bundle;
+  Pavel's explicit request, so kept, but it is feature expansion and the bundle half wants the export
+  path proven in real use first
+- [Repo Organization](Backlog/RepoOrganization.md) — *parked.* Root cleanup; the `Wiki/` question is
+  now decided (no) rather than open

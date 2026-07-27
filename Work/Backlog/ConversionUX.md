@@ -26,12 +26,11 @@ Today it is always a bare image with the TeX hidden in tagging rules, which is i
 A folded, evaluated code cell would make the TeX the editable source of truth and the image its output, which is how a notebook normally works.
 Decide between the two forms — or offer both and say which is the default — and handle inline separately, since an inline cell has no code-cell affordance.
 
-**Why per-cell LaTeX conversion exists at all.**
-Pavel is right that the valuable operation is exporting the whole document.
-That operation **does not exist**: the paclet exports no LaTeX, and `Math → TeX` on a selection is the only LaTeX-producing path there is.
-So the button is doing duty for a missing feature rather than serving a purpose of its own.
-Decide whether it survives as an author-facing button once whole-document export exists, becomes a developer aid, or is dropped.
-Note `LaTeXPaperImport` (backlog) is the import direction and `CrossPlatformTeX` (backlog) touches the same area; whole-document export should be specced against both rather than bolted on here.
+**Why per-cell LaTeX conversion exists at all — answered 2026-07-27, and the answer changed.**
+The Spec said the valuable operation, exporting the whole document, **does not exist**.
+It does now: `ExportLaTeXDocument` shipped in `LaTeXPaperImport` T2 and is an exported symbol in `PacletInfo.wl`, and by T12 both specimen papers and all four repo samples round-trip byte-identically through it.
+So the original T4 — "decide whether the button survives *once whole-document export exists*, and spec that export as a separate item" — is answered on both halves: the export exists, and it needed no decision from this item.
+What is left of the question is small and belongs with the labelling: `Math → TeX` on a selection is now a *convenience* beside a real export path rather than a stand-in for a missing one, and the palette should say which is which.
 
 Done when an author who has never read the source can tell from the palette what each conversion does, a MaTeX conversion leaves the form Pavel asked for, the fate of per-selection LaTeX conversion is decided and recorded, and Pavel confirms on a real document.
 
@@ -53,11 +52,15 @@ Done when an author who has never read the source can tell from the palette what
 
 ## Tasks
 
-- [ ] T1 — Write down what each of the four conversions does and what an author actually wants, then settle the labelling and grouping with Pavel before touching code.
-- [ ] T2 — Decide and implement the MaTeX display form (folded evaluated code cell vs graphics box), inline included, preserving the `"SourceTeX"` contract.
-- [ ] T3 — Make a newly converted MaTeX cell honour the document's current math size.
-- [ ] T4 — Resolve the fate of per-selection LaTeX conversion; spec whole-document export as a separate item if it survives that decision.
-- [ ] T5 — Rewrite the tutorial's conversion section and add tests; Pavel confirms on a real document.
+**Trimmed 2026-07-27** from five tasks to two, in the backlog reduction. What survives is the defect Pavel actually reported — four labels he could not tell apart — and the one rough edge that is a bug rather than a design question. The MaTeX *display form* (T2 below, now dropped from scope) is a design decision needing Pavel at a notebook, not a session; it goes back on the pile if he still wants it after the labels are readable.
+
+- [ ] T1 — Write down what each of the four conversions does and what an author actually wants, then settle the labelling and grouping with Pavel before touching code. Include where `ExportLaTeXDocument` belongs in the palette, since it now exists and the per-selection buttons should not look like the only LaTeX path. Rewrite the tutorial's conversion section to match.
+- [ ] T2 — Make a newly converted MaTeX cell honour the document's current math size. It renders at the hardcoded `$maTeXBaseFontSize` of 14 until the math slider is touched, which is a plain bug and independent of every open design question here.
+
+### Dropped from scope 2026-07-27
+
+- ~~Decide and implement the MaTeX display form (folded evaluated code cell vs graphics box), inline included.~~ Pavel's request, and still a fair one, but it is a design call that needs him driving a notebook; reopen it when that is what the session is for.
+- ~~Resolve the fate of per-selection LaTeX conversion; spec whole-document export as a separate item.~~ Answered by `LaTeXPaperImport` — see the Spec above.
 
 ### Done
 

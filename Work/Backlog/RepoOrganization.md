@@ -34,8 +34,10 @@ Done when the root holds only what belongs there and the layout decision is reco
 
 ## Tasks
 
-- [ ] T1 — Decide `Wiki/` yes or no, and `.serena/` tracked or ignored; record both.
-- [ ] T2 — `git mv` the prototypes into `Notebooks/`, add `Resources/` with its gitignore entry, move the paper specimens there, update `CLAUDE.md` and any path references.
+**Parked 2026-07-27** in the backlog reduction — cosmetic, and it blocks nothing. T1's main question is answered below rather than left open, because leaving a decided question on a checklist is what makes a backlog unreadable.
+
+- [x] T1 — Decide `Wiki/` yes or no. **No.** *(2026-07-27 — see Decisions)*
+- [ ] T2 — `git mv` the prototypes into `Notebooks/`, add `Resources/` with its gitignore entry, move the paper specimens there, update `CLAUDE.md` and any path references. Also settle `.serena/`, tracked or ignored — still open, and genuinely trivial.
 
 ### Done
 
@@ -49,3 +51,4 @@ Done when the root holds only what belongs there and the layout decision is reco
 
 | Date | Decision | Rationale |
 |---|---|---|
+| 2026-07-27 | **No `Wiki/`.** Durable knowledge stays in `CLAUDE.md`, with `Work/` items holding the per-effort record | not a judgement made in advance but one read off twelve sessions of practice: every durable finding this project produced went into `CLAUDE.md`'s Conventions section and was read back from there by the next session, and it worked. The Spec's own warning decides the rest — "half a wiki is worse than none", and a wiki nobody is doing research *in* would be exactly that. `Work/README.md` already says durable knowledge lives in `CLAUDE.md` and the tutorial; this makes that the decision rather than the default |
