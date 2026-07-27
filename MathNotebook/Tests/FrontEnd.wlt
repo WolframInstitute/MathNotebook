@@ -228,9 +228,41 @@ listMeasurements[ source_String ] :=
     <| "Counters" -> counters, "Text" -> importedText @ latexToNotebook[ source ] |>
   ]
 
+(* LaTeXPaperImport T9: the numbering. Every part of this is invisible to the kernel and to the round
+   trip — both read the stored source, and the numbering is declared in the preamble, which is carried
+   verbatim — so the only place it can be asserted is a live document. The counters are read off the
+   cells rather than out of the page for the same reason T8 reads them: "1.1.1" collides with too much
+   of a PDF's plaintext to count reliably, and a resolved counter is exact. The page is then read too,
+   because the counter says nothing about which counters the dingbat actually prints.
+   Four claims at once. A per-subsection definition restarts in the second subsection (1, 2, then 1).
+   A lemma sharing the theorem counter numbers with the theorems and not with the definitions. A starred
+   environment consumes nothing, so the lemma after the convention is 1.2 and not 1.3 — this is the one
+   that was wrong on hodgepaper. And amsart numbers equations within the section, so the equation in the
+   second section is (2.1) and not (2). *)
+
+$numberingPaper = "\\documentclass{amsart}\n\\newtheorem{thm}{Theorem}[section]\n\\newtheorem{lem}[thm]{Lemma}\n\\newtheorem{defn}{Definition}[subsection]\n\\newtheorem*{conv}{Convention}\n\\begin{document}\n\n\\section{First}\n\n\\subsection{One}\n\n\\begin{defn}\\label{Def:a}\nA first definition.\n\\end{defn}\n\n\\begin{defn}\nA second definition.\n\\end{defn}\n\n\\begin{thm}\nA theorem.\n\\end{thm}\n\n\\begin{conv}\nA convention.\n\\end{conv}\n\n\\begin{lem}\\label{Lem:a}\nA lemma.\n\\end{lem}\n\n\\begin{equation}\\label{Eq:a}\nx^2\n\\end{equation}\n\n\\subsection{Two}\n\n\\begin{defn}\nA third definition.\n\\end{defn}\n\n\\section{Second}\n\n\\begin{equation}\\label{Eq:b}\ny^2\n\\end{equation}\n\n\\begin{enumerate}[label=(\\alph*)]\n\\item Lettered.\n\\item Also lettered.\n\\end{enumerate}\n\nSee Definition~\\ref{Def:a}, Lemma~\\ref{Lem:a}, \\eqref{Eq:a} and \\eqref{Eq:b}.\n\n\\end{document}\n";
+
+numberingMeasurements[ source_String ] :=
+  Module[ { notebook, counters },
+    notebook = NotebookPut[
+      Append[ latexToNotebook[ source ],
+        StyleDefinitions -> Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ] ],
+      Visible -> False ];
+    counters = <|
+      "Definition" -> Map[ CurrentValue[ #, { "CounterValue", "TheoremDefn" } ] &,
+        Cells[ notebook, CellStyle -> "Definition" ] ],
+      "Theorem" -> Map[ CurrentValue[ #, { "CounterValue", "Theorem" } ] &,
+        Join[ Cells[ notebook, CellStyle -> "Theorem" ], Cells[ notebook, CellStyle -> "Lemma" ] ] ],
+      "Equation" -> Map[ CurrentValue[ #, { "CounterValue", "DisplayFormulaNumbered" } ] &,
+        Cells[ notebook, CellStyle -> "DisplayFormulaNumbered" ] ] |>;
+    NotebookClose[ notebook ];
+    <| "Counters" -> counters, "Text" -> importedText @ latexToNotebook[ source ] |>
+  ]
+
 $measured = UsingFrontEnd @ <|
   "Imported" -> importedText[ $importedSource ],
   "Lists" -> listMeasurements[ $listPaper ],
+  "Numbering" -> numberingMeasurements[ $numberingPaper ],
   "Figures" -> figureMeasurements[ $figurePaper ],
   "Saved" -> savedRoundTrip[ $savedSource ],
   "Body" -> importedText @ latexToNotebook[ $bodyPaper ],
@@ -426,4 +458,29 @@ VerificationTest[
     StringCount[ $measured[ "Lists", "Text" ], "\\maketitle" ],
     StringContainsQ[ $measured[ "Lists", "Text" ], "XXX" ] },
   { True, True, 1, True, False, 1, False }
+]
+
+(* LaTeXPaperImport T9: the resolved counters. The definitions restart in the second subsection, the
+   lemma numbers with the theorems rather than with the definitions, the starred convention consumes
+   nothing so the lemma after it is 2 and not 3, and the equation restarts in the second section. *)
+VerificationTest[
+  $measured[ "Numbering", "Counters" ],
+  <| "Definition" -> { 1, 2, 1 }, "Theorem" -> { 1, 1, 2 }, "Equation" -> { 1, 1 } |>
+]
+
+(* ... and what the dingbats print, which no counter value can say. Three counters for a definition
+   where the sheets print two, an unnumbered Convention, an equation number carrying its section, an
+   enumerate lettered by its label= rather than numbered by the style, and every reference reading its
+   target's own number. *)
+VerificationTest[
+  With[ { text = $measured[ "Numbering", "Text" ] },
+    { StringCount[ text, "Definition 1.1.1." ], StringCount[ text, "Definition 1.1.2." ],
+      StringCount[ text, "Definition 1.2.1." ],
+      StringCount[ text, "Theorem 1.1." ], StringCount[ text, "Lemma 1.2." ],
+      StringCount[ text, "Convention." ], StringContainsQ[ text, "Convention 1" ],
+      StringCount[ text, "(1.1)" ], StringCount[ text, "(2.1)" ],
+      StringContainsQ[ text, "(a) Lettered." ], StringContainsQ[ text, "(b) Also lettered." ],
+      StringContainsQ[ text, "See Definition~1.1.1, Lemma~1.2, (1.1) and (2.1)." ],
+      StringContainsQ[ text, "XXX" ] } ],
+  { 1, 1, 1, 1, 1, 1, False, 2, 2, True, True, True, False }
 ]

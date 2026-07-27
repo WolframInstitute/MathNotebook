@@ -49,9 +49,8 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
 
 ## Tasks
 
-- [ ] T9 — Numbering. The Spec's "numbering must match" is measurably violated: the causal-graphs paper declares `\newtheorem{defn}{Definition}[subsection]` and numbers per subsection, while the imported notebook renders `Axiom 3.2`, `Definition 3.5` — per section, from the stylesheet's counters.
 - [ ] T10 — `thebibliography` written into the `.tex` ↔ `Reference` cells, and a report when a declared `.bib` is missing. T4 does the `.bib` route, which both specimens use; an in-source bibliography needs a per-item source and separator on each cell inside one environment wrapper, which is the same design problem as T7.
-- [ ] T11 — An imported paper opens with its environments live. `latexToNotebook` sets no `StyleDefinitions` at all, so a fresh import lands on `Default.nb`, where the twelve environment styles do not exist and a reference reads `2.0`. Two halves: a fifth stylesheet that is `Default.nb` plus the environments — same base cell list, Default's typography, contributing only the environment/`Caption`/`Reference`/`Citation` styles and their counters — and `ImportLaTeXDocument` choosing a sheet from the source's `\documentclass` (`amsart` → `AMSArticle`, `revtex` → `RevTeXAPS`, else the new one). What must *not* be done is writing `CounterIncrements`/`CellDingbat` onto each cell to survive any sheet: per-cell options beat the sheet, so swapping sheets to retarget a journal would stop working, and that is the paclet's whole point. *(Pavel's question, Session 6)*
+- [ ] T11 — An imported paper opens with its environments live. *(T9 settled the boundary this task's warning draws: a per-cell counter is wrong when it duplicates the sheet's job and right when it states a fact the sheet cannot know. The numbering a `\newtheorem` declares is the second kind, so T9 writes it on the cell; what T11 must still not do is write the sheet's own default onto every cell.)* `latexToNotebook` sets no `StyleDefinitions` at all, so a fresh import lands on `Default.nb`, where the twelve environment styles do not exist and a reference reads `2.0`. Two halves: a fifth stylesheet that is `Default.nb` plus the environments — same base cell list, Default's typography, contributing only the environment/`Caption`/`Reference`/`Citation` styles and their counters — and `ImportLaTeXDocument` choosing a sheet from the source's `\documentclass` (`amsart` → `AMSArticle`, `revtex` → `RevTeXAPS`, else the new one). What must *not* be done is writing `CounterIncrements`/`CellDingbat` onto each cell to survive any sheet: per-cell options beat the sheet, so swapping sheets to retarget a journal would stop working, and that is the paclet's whole point. *(Pavel's question, Session 6)*
 - [ ] T12 — `FrontEnd.wlt`'s T2 display-ink test compares two measurement scales and fails at HEAD. `Starred` (7742) comes from a whole-notebook PNG render and `Literal` (2440) from a single-cell `Rasterize`, so `Starred < Literal` cannot hold; the clause beside it, `Starred < Unstarred` (56959), is sound and passes. Measure both sides the same way, or drop the clause — `Formula > 0` already says the formula renders. *(Found in Session 6, pre-existing)*
 
 ### Done
@@ -64,6 +63,7 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
 - [x] T6 — Make both papers round-trip test fixtures under `MathNotebook/Tests/`. T2 already gets a byte-identical round trip on each; the fixture pins it. *(Session 6)*
 - [x] T7 — Display math and nested environments *inside* a theorem-like environment body. *(Session 7)*
 - [x] T8 — Front matter: `\title`, `\author`, `\date`, `\maketitle`, `abstract` → the `Title`/`Author`/`Date`/`Abstract` styles the stylesheets define, and lists (`itemize`, `enumerate`, `description`) → the `Item` family. *(Session 8)*
+- [x] T9 — Numbering: what the notebook shows is what LaTeX prints, read out of `\newtheorem`, `\numberwithin`, the document class and enumitem's `label=`. *(Session 9)*
 
 ## Progress
 
@@ -381,6 +381,61 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
   - **`MathNotebook/Assets/MathNotebookTutorial.nb` carries hand edits in the working tree** — 7 cells that are not in the build script's output, including an evaluated `Output` cell and a "As explained in Equation (n)" cell with a live reference button, i.e. someone using the tutorial as a scratchpad for the referencing palette. Regenerating discards them. `Scripts/BuildTutorial.wls` is updated for T8 and the `.nb` is **not** regenerated; that is Pavel's call, and until it is made the shipped tutorial still says lists and front matter are carried verbatim.
 - **Next:** T9 — numbering: the causal paper declares `\newtheorem{defn}{Definition}[subsection]` and numbers per subsection where the stylesheets number per section. T8 adds one case to it: `\begin{enumerate}[label=(\alph*)]` renders `1.` where LaTeX renders `(a)`, twice in hodgepaper.
 
+### Session 9 — 2026-07-27 — T9
+
+- **Prompt:** `/next-session` continued.
+- **Did:** The number the notebook shows is the number LaTeX prints, read out of the preamble, with the round trip still exact on both papers.
+
+  | | causal graphs | hodgepaper |
+  |---|---|---|
+  | cells | 169 → 169 | 378 → 378 |
+  | environments with a counter of their own | **32** of 33 | 0 of 71 |
+  | starred environments, now unnumbered | 0 | **4** |
+  | equations numbered within their section | 0 | **33** of 33 |
+  | items lettered by an enumitem `label=` | 0 | **5** |
+  | counter resets the sheets do not do | **16** | **4** |
+  | counters | 25 → **101** | 269 → **394** |
+  | round trip | identical | identical |
+
+  Not one cell and not one style moved on either paper: this task changes what a cell *says about its number* and nothing else.
+
+  **A `\newtheorem` declares three things at once, and the sheets can be right about only one of them.**
+  Which counter the environment shares (its own by default, another's in the `\newtheorem{lem}[thm]{Lemma}` form), which sectioning level resets that counter and is printed before it, and — the starred form — whether it is numbered at all.
+  The sheets declare one `Theorem` counter for all twelve styles, reset by `Section` and printed `Section.Theorem`, so exactly one of a document's counter groups can be left to them: the first one declared numbered per section.
+  Every other group deviates, and the deviation is written onto the cell that heads the environment.
+
+  **The two specimens are the two halves of that, and neither alone would have shown it.**
+  Hodgepaper declares `theorem[section]` first and shares it with `proposition`, `lemma`, `definition`, `remark` and `example`, so 67 of its 71 environments are exactly what the sheets already do and carry nothing at all — the reason its numbering *looked* right for seven sessions.
+  What was wrong there is its four starred environments: `convention`, `assumption` and two `sublemma*` were being numbered and were **consuming the shared counter**, so every theorem after each of them read one too high.
+  The causal paper is the opposite: four independent counters, all `[subsection]`, so all 32 of its environments deviate and read `Definition 3.5.2` where the sheets said `Definition 3.5` — and an `Axiom` and a `Definition` are now numbered independently, as `\newtheorem{axiom}{Axiom}[subsection]` says, where one shared counter ran them together.
+
+  **The reset goes on the cell that increments the counter, not on the cell that resets it.**
+  A `Section` style declares three `CounterAssignments` of its own and the front end offers no way to add to a style's list, so a per-cell option there would silently stop resetting `Subsection`, `Subsubsection` and `Theorem`; a theorem style declares none, so there is nothing to clobber.
+  So a linear pass over the finished cells marks the first cell to increment each counter after each resetting cell — which is T8's per-list reset one level up, and the same reason.
+
+  **Two more numbering facts came with it.**
+  `amsart` numbers equations within the section and never says so, so hodgepaper's 33 equations read `(3.7)` and not `(7)`; the class is read, and `\numberwithin{equation}{...}` overrides it for any class.
+  And enumitem's `label=(\alph*)` prints `(a)`, `(b)`, `(c)` where `ItemNumbered` prints `1.`, `2.`, `3.` — twice in hodgepaper, five items.
+
+  **A reference prints what its target prints**, so the counter chain is read off the target cell's own dingbat or equation number rather than looked up from its style: three counters for a per-subsection definition where T3 gave two, and `(2.3)` for an `\eqref` under `amsart`.
+
+  **Verified on the page.**
+  The causal paper renders as an **8-page PDF** with `Definition 2.1.1`, `Axiom 3.1.1` standing beside `Definition 3.1.1`, `Construction 3.5.1` beside `Definition 3.5.1`, and no `XXX`.
+  Hodgepaper renders as a **23-page PDF** whose theorem family is one consecutive per-section run with no gaps — `Definition 3.1, 3.2, 3.3, Lemma 3.4, … Lemma 3.21` — with `Convention.`, `Assumption.` and `Sublemma.` unnumbered, equations `(1.4)` and `(3.1)`–`(3.13)`, and `(a)`/`(b)`/`(c)` on its two lettered lists.
+
+  **Tests.** Seven in `Tests/Document.wlt`, two in `Tests/FrontEnd.wlt`, and a `Numbering` census group of five keys in `Tests/Specimens.wlt`; the suite is 193 and the final run is green — T12 passed it, which is itself the finding below.
+  Four defects reintroduced: dropping the per-cell numbering fails 3 + 2 + 2, dropping the reset pass 2 + 2 + 2, dropping the equation prefix 2 + 2 + 2, and dropping the `label=` format 1 + 1 + 2.
+- **Learned:**
+  - **`CounterFunction` on a `CounterBox` is real and front-end-evaluated, and almost nothing evaluates there.** Measured: `RomanNumeral` works and `Part` on a **literal** list works; `FromCharacterCode`, `StringTake`, `ToLowerCase` and even ``FEPrivate`FromCharacterCode`` each render as their own unevaluated expression, in full, in the dingbat. So every `label=` format is a literal 26- or 40-element table indexed by the counter, built by letting `With` substitute the table into the held `Function` body.
+  - **A per-cell `CounterIncrements` replaces the style's rather than adding to it**, which is exactly what makes an independent counter possible; and an arbitrary counter name — `"TheoremDefn"` — works with no declaration anywhere. Both measured on live cells before any of this was written.
+  - **`Headed` had to stop meaning "carries a positive counter".** A starred environment legitimately carries `CounterIncrements -> {}`, so T7's census key read 67 of hodgepaper's 71 and looked exactly like a T7 regression. It keys on `CellDingbat -> None` now, which is what "this cell continues the one above" actually means.
+  - **The reset pass is invisible to the round trip *and* to every census key that existed.** Dropping it left both papers byte-identical with every other number intact — a `CounterAssignments` is read by no exporter and counted by nothing else. That is the fifth time in this item that fidelity and correctness came apart, and it is why `Resets` is now a census key of its own.
+  - **`(\alph*)` inside a Wolfram comment closes it**: `*)` is `*)` wherever it stands, so the whole file after that comment was a syntax error. One load to find, and the fix is to spell the star out in prose.
+  - `StringCases` tries its rules **in the order given** at each position, not longest-first — verified explicitly, because the `\newtheorem{x}{X}[section]` rule has to precede the bare `\newtheorem{x}{X}` one or every declaration loses its level.
+  - `FrontEnd.wlt`'s T12 clause is **marginal rather than steadily false**: it passed in one of the four bite runs and failed in the other three. Same conclusion — two measurement scales are being compared — with the added evidence that it is flaky.
+  - `\theoremstyle` is **not** read, and hodgepaper shows the cost: `sublemma` and `sublemma*` are declared under `\theoremstyle{remark}` and come out bold rather than italic-headed. That is appearance and not numbering, so it is named here rather than fixed.
+- **Next:** T10 — `thebibliography` written into the `.tex` ↔ `Reference` cells, and a report when a declared `.bib` is missing.
+
 ## Decisions
 
 | Date | Decision | Rationale |
@@ -403,4 +458,8 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
 | 2026-07-27 | `\maketitle` stays as literal prose | it has no content, so it has no notebook counterpart — the Title/Author/Date cells *are* the title block — and hiding it while `\sloppy`, `\tableofcontents` and `\newpage` stay visible would be arbitrary; a cell that renders as nothing and exports a command is the general fix and belongs with whichever task decides to take on all of them |
 | 2026-07-27 | An `\item[label]`'s dingbat is a mirror of the `[label]` stored in the marker, not the origin of one | recovering an edited dingbat means re-serializing boxes to TeX, which is what the bibliography decision already declined; the label round-trips verbatim either way, and the cost — editing the label in the notebook does not reach the `.tex` — is the same cost a `.bib` entry has |
 | 2026-07-27 | An item with no prose cell is headed by writing the dingbat, and if unlabelled the counter, onto whatever cell opens it | 6 of the two papers' 31 items are an `align` and nothing else, and they rendered with no marker at all — for a `description` item the `[label]` is the whole content; restyling a display formula as an `Item` would cost its centering and its equation number, and inserting an empty head cell would inject a `"\n\n"` the separator machinery cannot suppress |
+| 2026-07-27 | The numbering a `\newtheorem` declares is written onto the cell that heads the environment, not into a stylesheet | the numbering is declared in the preamble and the preamble is carried verbatim, so swapping sheets to retarget a journal cannot change what the compiled paper prints and must not change what the notebook shows either — the sheet owns typography and the preamble owns numbering, which is the boundary T11's warning was really drawing; the alternative, a private stylesheet per document, collides with `View.wl`'s and cannot express a per-environment counter the sheet never declared |
+| 2026-07-27 | Exactly one counter group is left to the sheets: the first declared numbered per section | it keeps 67 of hodgepaper's 71 environments carrying no per-cell option at all, where giving every group its own counter would have written one onto all of them for no change in what is printed |
+| 2026-07-27 | A counter's reset goes on the first cell that increments it after each resetting cell, not on the resetting cell | a `Section` style declares three `CounterAssignments` of its own and the front end has no additive form, so writing one on a section cell would silently stop resetting `Subsection`, `Subsubsection` and `Theorem`; a theorem style declares none, and this is T8's per-list reset one level up |
+| 2026-07-27 | `\theoremstyle` is not read | it decides the head's weight and slant and nothing about the number, so it belongs with whichever task takes on appearance; the cost is named — hodgepaper's `sublemma` is declared `remark` and comes out bold |
 | 2026-07-27 | No stylesheet change: lists use the `Item` family the chain already resolves from `Default.nb` | `$proseStyles` in `BuildStyleSheets.wls` already lists `Item`, `ItemNumbered` and `ItemParagraph`, so all four templates already set the paper's `FontFamily` on them and the view controls already reach them; the gap is that `Subitem`/`Subsubitem` are not in that list, which only shows on a nested list and neither specimen has one |

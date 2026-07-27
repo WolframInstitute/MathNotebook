@@ -44,12 +44,15 @@ VerificationTest[ (* the source environment name is kept, not the style it was m
 ]
 
 (* An environment whose printed name is none of the twelve the stylesheets define — the specimen
-   paper's ten Axioms — is written as a Theorem so that it numbers with them, and carries a dingbat
-   saying what it really is. Leaving it as literal text would have dropped a third of that paper's
-   environments. *)
+   paper's ten Axioms — is written as a Theorem so that it is numbered, and carries a dingbat saying
+   what it really is. Leaving it as literal text would have dropped a third of that paper's
+   environments. T9 gives it a counter of its own, because \newtheorem{axiom}{Axiom}[section] declares
+   one: an Axiom and a Definition declared this way are numbered independently in LaTeX, where the one
+   Theorem counter the sheets declare would run them together. *)
 VerificationTest[
   FirstCase[ $cells, Cell[ _, "Theorem", options___ ] :> FirstCase[ { options }, ( CellDingbat -> dingbat_ ) :> dingbat ] ],
-  Cell[ TextData[ { "Axiom ", CounterBox[ "Section" ], ".", CounterBox[ "Theorem" ], "." } ], FontWeight -> "Bold" ]
+  Cell[ TextData[ { "Axiom ", CounterBox[ "Section" ], ".", CounterBox[ "TheoremAxiom" ], "." } ],
+    FontWeight -> "Bold", FontSlant -> "Plain" ]
 ]
 
 VerificationTest[ (* a declared environment matching one of the twelve gets no dingbat override *)
@@ -559,4 +562,130 @@ VerificationTest[
   notebookToLaTeX @ latexToNotebook[
     $preamble <> "\\begin{document}\n\n\\begin{itemize}\n\\end{itemize}\n\n\\end{document}\n" ],
   $preamble <> "\\begin{document}\n\n\\begin{itemize}\n\\end{itemize}\n\n\\end{document}\n"
+]
+
+(* LaTeXPaperImport T9. Numbering: what the notebook shows is what LaTeX prints, which is not what the
+   stylesheets number unless the document happens to agree with them. A \newtheorem declares which
+   counter an environment shares, which sectioning level resets that counter and is printed before it,
+   and — the starred form — whether it is numbered at all. The sheets declare one Theorem counter for
+   all twelve styles, reset by Section and printed Section.Theorem, so exactly one of a document's
+   counter groups can be left to them and every other one is written onto the cell that heads the
+   environment. That is where the document, and not the sheet, owns the number: the numbering is
+   declared in the preamble and the preamble is carried verbatim, so swapping sheets to retarget a
+   journal cannot change what the compiled paper prints and must not change what the notebook shows. *)
+
+$numberingPreamble = "\\documentclass{article}\n\\usepackage{amsthm}\n\\newtheorem{thm}{Theorem}[section]\n\\newtheorem{lem}[thm]{Lemma}\n\\newtheorem{defn}{Definition}[subsection]\n\\newtheorem*{conv}{Convention}\n"
+
+(* All four \newtheorem forms, and what each declares about the number. thm is the first group numbered
+   per section, so it is the one the sheets are already right about; lem shares its counter and is right
+   for free. *)
+VerificationTest[
+  Map[ KeyDrop[ "Printed" ],
+    KeyTake[ environmentNumbering[ $numberingPreamble ], { "thm", "lem", "defn", "conv" } ] ],
+  <| "thm" -> <| "Counter" -> "Theorem", "Prefix" -> { "Section" }, "Reset" -> "Section",
+       "Numbered" -> True, "Default" -> True |>,
+     "lem" -> <| "Counter" -> "Theorem", "Prefix" -> { "Section" }, "Reset" -> "Section",
+       "Numbered" -> True, "Default" -> True |>,
+     "defn" -> <| "Counter" -> "TheoremDefn", "Prefix" -> { "Section", "Subsection" },
+       "Reset" -> "Subsection", "Numbered" -> True, "Default" -> False |>,
+     "conv" -> <| "Counter" -> "TheoremConv", "Prefix" -> { }, "Reset" -> None,
+       "Numbered" -> False, "Default" -> False |> |>
+]
+
+$numberingSource = $numberingPreamble <> "\\begin{document}\n\n\\section{One}\n\n\\subsection{First}\n\n\\begin{defn}\nA definition.\n\\end{defn}\n\n\\begin{lem}\nA lemma.\n\\end{lem}\n\n\\subsection{Second}\n\n\\begin{defn}\nAnother definition.\n\\end{defn}\n\n\\begin{conv}\nA convention.\n\\end{conv}\n\n\\end{document}\n"
+
+$numberingNotebook = latexToNotebook[ $numberingSource ]
+
+(* The three cases side by side. A per-subsection definition spells out its whole chain and increments a
+   counter of its own; a lemma sharing the per-section counter carries nothing at all, because the style
+   is already right; and a starred environment carries a label with no number and must stop incrementing
+   the counter its style claims, or it steals a number from the theorems it shares it with — which is
+   what four of hodgepaper's environments were doing. *)
+VerificationTest[
+  Map[
+    { #[[ 2 ]],
+      FirstCase[ #, ( CellDingbat -> Cell[ content_, ___ ] ) :> content, None ],
+      FirstCase[ #, ( CounterIncrements -> value_ ) :> value, None ] } &,
+    Cases[ First @ $numberingNotebook, Cell[ _, "Definition" | "Lemma" | "Theorem", ___ ] ] ],
+  { { "Definition",
+      TextData[ { "Definition ", CounterBox[ "Section" ], ".", CounterBox[ "Subsection" ], ".",
+        CounterBox[ "TheoremDefn" ], "." } ], "TheoremDefn" },
+    { "Lemma", None, None },
+    { "Definition",
+      TextData[ { "Definition ", CounterBox[ "Section" ], ".", CounterBox[ "Subsection" ], ".",
+        CounterBox[ "TheoremDefn" ], "." } ], "TheoremDefn" },
+    { "Theorem", TextData[ "Convention." ], { } } }
+]
+
+(* The reset goes on the first cell that increments the counter after each resetting cell, not on the
+   resetting cell itself: a Section style declares three CounterAssignments of its own and a per-cell
+   option would replace them, where a theorem style declares none. Both definitions carry it, so the
+   second subsection restarts at 1 as LaTeX does. *)
+VerificationTest[
+  Map[ FirstCase[ #, ( CounterAssignments -> value_ ) :> value, None ] &,
+    Cases[ First @ $numberingNotebook, Cell[ _, "Definition" | "Subsection", ___ ] ] ],
+  { None, { { "TheoremDefn", 0 } }, None, { { "TheoremDefn", 0 } } }
+]
+
+VerificationTest[ (* out and back, byte for byte: none of it is in the source, it is all in the preamble *)
+  notebookToLaTeX[ $numberingNotebook ],
+  $numberingSource
+]
+
+(* A \ref prints what the target's own number prints, so the chain is read off the target cell rather
+   than looked up from its style — three counters for a per-subsection definition where T3 gave two. *)
+VerificationTest[
+  Cases[
+    latexToNotebook[
+      $numberingPreamble <> "\\begin{document}\n\n\\section{One}\n\n\\subsection{First}\n\n\\begin{defn} \\label{def:a}\nA definition.\n\\end{defn}\n\n\\begin{lem} \\label{lem:a}\nA lemma.\n\\end{lem}\n\nSee \\ref{def:a} and \\ref{lem:a}.\n\n\\end{document}\n" ],
+    ButtonBox[ RowBox[ boxes_ ], ___ ] :> boxes, Infinity ],
+  { { CounterBox[ "Section", "def:a" ], ".", CounterBox[ "Subsection", "def:a" ], ".",
+      CounterBox[ "TheoremDefn", "def:a" ] },
+    { CounterBox[ "Section", "lem:a" ], ".", CounterBox[ "Theorem", "lem:a" ] } }
+]
+
+(* article numbers equations straight through the document, which is what the sheets do; amsart numbers
+   them within the section without saying so, and \numberwithin says so for any class. *)
+VerificationTest[
+  Map[ equationNumbering,
+    { "\\documentclass{article}\n", "\\documentclass[10pt,a4paper]{amsart}\n",
+      "\\documentclass{article}\n\\numberwithin{equation}{subsection}\n" } ],
+  { <| "Prefix" -> { }, "Reset" -> None |>,
+    <| "Prefix" -> { "Section" }, "Reset" -> "Section" |>,
+    <| "Prefix" -> { "Section", "Subsection" }, "Reset" -> "Subsection" |> }
+]
+
+$equationSource = "\\documentclass{amsart}\n\\begin{document}\n\n\\section{One}\n\n\\begin{equation}\\label{eq:a}\nx^2\n\\end{equation}\n\nSee \\eqref{eq:a}.\n\n\\end{document}\n"
+
+(* An equation number lives in CellFrameLabels and not in a dingbat, so that is where the section
+   prefix goes; the reset lands on the same cell, by the same rule as a theorem counter. *)
+VerificationTest[
+  { Cases[ First @ latexToNotebook[ $equationSource ],
+      Cell[ _, "DisplayFormulaNumbered", ___,
+        CellFrameLabels -> { { None, Cell[ content_, ___ ] }, { None, None } }, ___ ] :> content ],
+    Cases[ First @ latexToNotebook[ $equationSource ],
+      Cell[ _, "DisplayFormulaNumbered", ___, CounterAssignments -> value_, ___ ] :> value ],
+    Cases[ latexToNotebook[ $equationSource ], ButtonBox[ RowBox[ boxes_ ], ___ ] :> boxes, Infinity ],
+    notebookToLaTeX @ latexToNotebook[ $equationSource ] === $equationSource },
+  { { TextData[ { "(", CounterBox[ "Section" ], ".", CounterBox[ "DisplayFormulaNumbered" ], ")" } ] },
+    { { { "DisplayFormulaNumbered", 0 } } },
+    { { "(", CounterBox[ "Section", "eq:a" ], ".", CounterBox[ "DisplayFormulaNumbered", "eq:a" ], ")" } },
+    True }
+]
+
+$alphSource = $preamble <> "\\begin{document}\n\n\\begin{enumerate}[label=(\\alph*)]\n\\item First.\n\\item Second.\n\\end{enumerate}\n\n\\end{document}\n"
+
+$alphNotebook = latexToNotebook[ $alphSource ]
+
+(* enumitem's label= is the other half of the same requirement: this list prints (a), (b) where the
+   ItemNumbered style prints 1., 2. The front end still owns the counting — the marker is a CounterBox
+   with a CounterFunction — but the function has to be one the front end can evaluate with no kernel,
+   and almost none are, so every format is a literal table indexed by the counter. *)
+VerificationTest[
+  { Cases[ First @ $alphNotebook,
+      Cell[ ___, CellDingbat -> Cell[ TextData[ parts_ ], ___ ], ___ ] :>
+        Replace[ parts, { before_, CounterBox[ counter_, CounterFunction :> function_ ], after_ } :>
+          { before, counter, function[ 2 ], after } ] ],
+    notebookToLaTeX[ $alphNotebook ] === $alphSource },
+  { { { "(", "ItemNumbered", "b", ")" }, { "(", "ItemNumbered", "b", ")" } }, True }
 ]

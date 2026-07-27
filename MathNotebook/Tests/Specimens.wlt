@@ -17,9 +17,10 @@ AppendTo[ $ContextPath, "WolframInstitute`MathNotebook`PackageScope`" ]
    asserted there, on a synthetic source.
 
    A census that moves is this fixture working, not a bug in it. T7 lifted the display math out of
-   theorem bodies and T8 converted the front matter and the lists, so both changed these numbers, and
-   the diff is the record of what each task did. "Bytes" is the guard on that reading: if it moves,
-   the paper changed and not the converter. *)
+   theorem bodies, T8 converted the front matter and the lists, and T9 made the numbering the
+   document's rather than the sheets', so all three changed these numbers, and the diff is the record
+   of what each task did. "Bytes" is the guard on that reading: if it moves, the paper changed and not
+   the converter. *)
 
 $specimenDirectory =
   SelectFirst[
@@ -85,7 +86,19 @@ $listNames = "itemize" | "enumerate" | "description"
    cell (Items), and every one of those cells shows a marker (ItemsHeaded) -- either from an Item-family
    style or, for an item whose whole content is display math, from the dingbat itemHead writes on it.
    An item that lost its number or its [label] is invisible to the round trip, which reads the stored
-   source, and to the style counts, which see the cell either way. *)
+   source, and to the style counts, which see the cell either way.
+
+   T9 counts numbering separately, because it is the one thing here that neither the round trip nor any
+   of the counts above can see: all five keys read options that no exporter reads back. Numbered is an
+   environment counted by a counter of its own; Unnumbered one the source declares starred, which must
+   therefore stop incrementing the counter its style claims; EquationNumbers a display formula numbered
+   within its section rather than straight through the document; ItemFormats an item of an enumerate whose
+   label= prints something other than the style's arabic number; Resets a counter restarted at a
+   sectioning level the sheets do not restart it at, the item resets T8 owns being left out so that what
+   is counted is T9's own. The two papers cover the five between them and neither covers all five.
+   Resets earns its place: dropping the whole reset pass leaves both papers exporting byte for byte AND
+   every other number here intact, because a reset is a CounterAssignments that no exporter reads and no
+   other count looks at. It is the fifth time in this item that fidelity and correctness came apart. *)
 specimenCensus[ file_String ] :=
   Module[ { source, notebook, cells, prose, opens, written },
     source = Import[ file, "Text" ];
@@ -106,12 +119,24 @@ specimenCensus[ file_String ] :=
            ! StringContainsQ[ opening, "\\begin{" ~~ $listNames ~~ "}" ] ],
        "Lists" -> Count[ opens, opening_ /; StringContainsQ[ opening, "\\begin{" ~~ $listNames ~~ "}" ] ],
        "Headed" -> Count[ cells,
-         cell : Cell[ _, style_String, ___ ] /; MemberQ[ $environmentStyles, style ] && FreeQ[ cell, CounterIncrements -> { } ] ],
+         cell : Cell[ _, style_String, ___ ] /; MemberQ[ $environmentStyles, style ] && FreeQ[ cell, CellDingbat -> None ] ],
        "Items" -> Total @ Map[ StringCount[ #, "\\item" ] &, opens ],
        "ItemsHeaded" -> Count[ cells,
          cell : Cell[ _, style_String, ___ ] /;
            StringContainsQ[ specimenTagging[ cell, "EnvironmentOpen" ], "\\item" ] &&
            ( MemberQ[ $itemStyles, style ] || ! FreeQ[ cell, CellDingbat -> _ ] ) ],
+       "Numbering" -> <|
+         "Numbered" -> Count[ cells,
+           Cell[ _, style_String, ___, CounterIncrements -> Except[ { } ], ___ ] /;
+             MemberQ[ $environmentStyles, style ] ],
+         "Unnumbered" -> Count[ cells,
+           cell : Cell[ _, style_String, ___, CounterIncrements -> { }, ___ ] /;
+             MemberQ[ $environmentStyles, style ] && FreeQ[ cell, CellDingbat -> None ] ],
+         "EquationNumbers" -> Count[ cells, Cell[ _, "DisplayFormulaNumbered", ___, CellFrameLabels -> _, ___ ] ],
+         "ItemFormats" -> Count[ cells, cell_Cell /; ! FreeQ[ cell, CounterFunction ] ],
+         "Resets" -> Length @ Select[
+           Flatten[ Cases[ cells, ( CounterAssignments -> value_ ) :> value, Infinity ], 1 ],
+           ! MemberQ[ $itemStyles, First[ # ] ] & ] |>,
        "Literal" -> <|
          "Reference" -> StringCount[ prose, "\\ref{" | "\\eqref{" ],
          "Citation" -> StringCount[ prose, "\\cite{" ],
@@ -141,7 +166,14 @@ $measured = Map[ specimenCensus, $specimens ]
    references, 6 are at tables and the rest are at labels no cell carries: an align with two \labels
    keeps only the first, and a \label on its own line inside a body is not on the \begin line where
    labelledCell reads it. The 6 literal \items are the three commented-out enumerate blocks, which must
-   stay literal: the comment mask in itemChunks is what keeps them out of the live lists. *)
+   stay literal: the comment mask in itemChunks is what keeps them out of the live lists.
+
+   T9 moves only the numbering keys and the counter count, not one cell or style: the causal paper
+   declares four independent per-subsection counters, so all 32 of its environments carry one, while
+   hodgepaper shares one per-section counter across six environment names -- which is exactly what the
+   sheets do -- so none of its 71 carry anything and what moves there is its four starred environments,
+   its 33 equations numbered within the section as amsart numbers them, and the five items of its two
+   enumerates opened with a label= format. *)
 $expected = <|
   "Causal graphs" -> <|
     "Bytes" -> 36656,
@@ -152,12 +184,14 @@ $expected = <|
       "Title" -> 1 |>,
     "Tagged" -> 39,
     "Buttons" -> 14,
-    "Counters" -> 25,
+    "Counters" -> 101,
     "Environments" -> 33,
     "Lists" -> 12,
     "Headed" -> 33,
     "Items" -> 41,
     "ItemsHeaded" -> 41,
+    "Numbering" -> <| "Numbered" -> 32, "Unnumbered" -> 0, "EquationNumbers" -> 0, "ItemFormats" -> 0,
+      "Resets" -> 16 |>,
     "Literal" -> <| "Reference" -> 0, "Citation" -> 0, "Graphics" -> 0, "Display" -> 0, "Item" -> 0,
       "FrontMatter" -> 0 |> |>,
   "Hodge" -> <|
@@ -169,12 +203,14 @@ $expected = <|
       "Theorem" -> 11, "Title" -> 1 |>,
     "Tagged" -> 84,
     "Buttons" -> 240,
-    "Counters" -> 269,
+    "Counters" -> 394,
     "Environments" -> 71,
     "Lists" -> 11,
     "Headed" -> 71,
     "Items" -> 31,
     "ItemsHeaded" -> 31,
+    "Numbering" -> <| "Numbered" -> 0, "Unnumbered" -> 4, "EquationNumbers" -> 33, "ItemFormats" -> 5,
+      "Resets" -> 4 |>,
     "Literal" -> <| "Reference" -> 29, "Citation" -> 0, "Graphics" -> 0, "Display" -> 2, "Item" -> 6,
       "FrontMatter" -> 0 |> |> |>
 
@@ -192,6 +228,7 @@ Do[
       references = KeyTake[ $measured[ name ],
         { "Tagged", "Buttons", "Counters", "Environments", "Lists", "Headed", "Items", "ItemsHeaded" } ],
       literal = $measured[ name, "Literal" ],
+      numbering = $measured[ name, "Numbering" ],
       expected = $expected[ name ] },
     VerificationTest[ identical, True,
       TestID -> id <> ": the exported source is the imported source" ];
@@ -203,6 +240,8 @@ Do[
       KeyTake[ expected,
         { "Tagged", "Buttons", "Counters", "Environments", "Lists", "Headed", "Items", "ItemsHeaded" } ],
       TestID -> id <> ": tags, citations and counters" ];
+    VerificationTest[ numbering, expected[ "Numbering" ],
+      TestID -> id <> ": how it is numbered" ];
     VerificationTest[ literal, expected[ "Literal" ],
       TestID -> id <> ": what is still literal LaTeX" ] ],
   { name, Keys @ $measured } ]

@@ -6,6 +6,8 @@ PackageExport[ExportLaTeXDocument]
 PackageScope["latexToNotebook"]
 PackageScope["notebookToLaTeX"]
 PackageScope["theoremEnvironments"]
+PackageScope["environmentNumbering"]
+PackageScope["equationNumbering"]
 PackageScope["environmentCell"]
 PackageScope["documentTagging"]
 PackageScope["bibliographyDatabase"]
@@ -28,11 +30,13 @@ latexToNotebook[ source_String ] :=
   latexToNotebook[ source, <| |> ]
 
 latexToNotebook[ source_String, entries_Association ] :=
-  Module[ { preamble, body, postamble, pieces, cells },
+  Module[ { preamble, body, postamble, numbering, equation, pieces, cells },
     { preamble, body, postamble } = documentParts[ source ];
-    pieces = documentPieces[ body, theoremEnvironments[ preamble ], citedEntries[ body, entries ] ];
-    cells = Map[ labelledCell, withSeparators[ pieces ] ];
-    Notebook[ Map[ referenceCell[ #, labelStyles[ cells ] ] &, cells ],
+    numbering = environmentNumbering[ preamble ];
+    equation = equationNumbering[ preamble ];
+    pieces = documentPieces[ body, numbering, citedEntries[ body, entries ] ];
+    cells = numberedCells[ Map[ labelledCell, withSeparators[ pieces ] ], numbering, equation ];
+    Notebook[ Map[ referenceCell[ #, labelCounters[ cells ] ] &, cells ],
       TaggingRules -> <| "MathNotebook" -> <|
         "Preamble" -> preamble,
         "Postamble" -> postamble,
@@ -57,22 +61,116 @@ exportedCellQ[ cell_Cell ] :=
     ( cellTagging[ cell, "FigureTeX" ] =!= "" ||
       ! MemberQ[ $evaluationStyles, Replace[ cell, { Cell[ _, style_String, ___ ] :> style, _ :> None } ] ] )
 
-(* Which source environment names this document uses, and what each is printed as. The amsthm
-   defaults are the twelve style names lowercased; a \newtheorem declaration overrides or adds to
-   them, in either of its two forms — \newtheorem{name}{Printed}[counter] and, when the environment
-   shares another's counter, \newtheorem{name}[shared]{Printed}. The specimen paper declares four
-   of its own, so a fixed table of English names would have matched none of them.
-   proof and abstract are declared by the document class rather than by a \newtheorem, and each has a
-   style of its own, so both are here unconditionally. *)
+(* Which source environment names this document uses, and what each is printed as — the printed name
+   half of the numbering table below, which is where the \newtheorem lines are actually read. *)
 theoremEnvironments[ preamble_String ] :=
-  Join[
-    AssociationMap[ Capitalize, Map[ ToLowerCase, Keys @ $theoremEnvironments ] ],
-    <| "proof" -> "Proof", "abstract" -> "Abstract" |>,
-    Association @ StringCases[ preamble,
-      { "\\newtheorem" ~~ "*" | "" ~~ "{" ~~ name : Except[ "}" ] .. ~~ "}{" ~~ printed : Except[ "}" ] .. ~~ "}" :>
-          name -> printed,
-        "\\newtheorem" ~~ "*" | "" ~~ "{" ~~ name : Except[ "}" ] .. ~~ "}[" ~~ Except[ "]" ] .. ~~ "]{" ~~
-            printed : Except[ "}" ] .. ~~ "}" :> name -> printed } ] ]
+  Map[ Lookup[ "Printed" ], environmentNumbering[ preamble ] ]
+
+(* How the document numbers each of those environments, which is not what the stylesheets do unless
+   the document happens to agree with them. A \newtheorem declares three things at once: the printed
+   name, which counter the environment shares (its own by default, another's in the
+   \newtheorem{cor}[thm]{Corollary} form), and — the optional [section] — which sectioning level
+   resets that counter and is printed before it. The starred form declares an environment that is
+   never numbered at all.
+
+   The sheets declare one Theorem counter for all twelve styles, reset by Section and printed
+   Section.Theorem, so exactly one of the document's counter groups can be the one the sheets are
+   already right about: the first declared group that is numbered per section. Every other group
+   deviates, and a deviation is written onto the cell that heads the environment — which is the one
+   place the document, and not the sheet, owns the number. That is not the per-cell counter T11 rules
+   out: the numbering is declared in the preamble, the preamble is carried verbatim, so swapping
+   sheets to retarget a journal does not change what the compiled paper prints and must not change
+   what the notebook shows either. The sheet owns typography; the preamble owns numbering.
+
+   The two specimens are the two halves of this. Hodgepaper declares theorem[section] first and
+   shares it with proposition, lemma, definition, remark and example, so 67 of its 71 environments are
+   the sheets' own default and carry nothing; what moves is its four starred ones, which were being
+   numbered and were stealing the shared counter, so every theorem after them read one too high. The
+   causal paper declares four independent counters, all [subsection], so all 32 of its environments
+   deviate and read Definition 3.5.2 where the sheets said Definition 3.5. *)
+environmentNumbering[ preamble_String ] :=
+  Module[ { declarations = theoremDeclarations[ preamble ], levels, master },
+    levels = Join[ <| "theorem" -> "section" |>,
+      Association @ Map[ #[ "Counter" ] -> #[ "Within" ] &,
+        Select[ declarations, #[ "Own" ] && #[ "Numbered" ] & ] ] ];
+    master = FirstCase[ Select[ declarations, #[ "Numbered" ] & ],
+      declaration_ /; declarationLevel[ levels, declaration ] === "section" :> declaration[ "Counter" ],
+      "theorem" ];
+    Join[
+      Association @ Map[ ToLowerCase[ # ] -> numberingSpec[ #, "theorem", "section", True, master ] &,
+        Keys @ $theoremEnvironments ],
+      <| "proof" -> plainNumbering[ "Proof" ], "abstract" -> plainNumbering[ "Abstract" ] |>,
+      Association @ Map[
+        #[ "Name" ] -> numberingSpec[ #[ "Printed" ], #[ "Counter" ], declarationLevel[ levels, # ],
+          #[ "Numbered" ], master ] &,
+        declarations ] ]
+  ]
+
+(* An environment with a counter of its own says its own level; one sharing another's inherits that
+   counter's. A shared counter the preamble never declares — \newtheorem{cor}[thm]{Corollary} with no
+   thm — is an error in LaTeX, and falls back to the sheets' own level rather than to "never reset". *)
+declarationLevel[ levels_Association, declaration_Association ] :=
+  If[ declaration[ "Own" ],
+    declaration[ "Within" ],
+    Lookup[ levels, declaration[ "Counter" ], "section" ] ]
+
+(* Four rules, and their order is what tells the forms apart: StringCases tries them in the order
+   given at each position, so the [within] form has to precede the bare one or every declaration
+   would match as bare and lose its level. *)
+theoremDeclarations[ preamble_String ] :=
+  StringCases[ preamble, {
+    "\\newtheorem*{" ~~ name : Except[ "}" ] .. ~~ "}{" ~~ printed : Except[ "}" ] .. ~~ "}" :>
+      theoremDeclaration[ name, printed, name, True, None, False ],
+    "\\newtheorem{" ~~ name : Except[ "}" ] .. ~~ "}[" ~~ shared : Except[ "]" ] .. ~~ "]{" ~~
+        printed : Except[ "}" ] .. ~~ "}" :>
+      theoremDeclaration[ name, printed, shared, False, None, True ],
+    "\\newtheorem{" ~~ name : Except[ "}" ] .. ~~ "}{" ~~ printed : Except[ "}" ] .. ~~ "}[" ~~
+        within : Except[ "]" ] .. ~~ "]" :>
+      theoremDeclaration[ name, printed, name, True, within, True ],
+    "\\newtheorem{" ~~ name : Except[ "}" ] .. ~~ "}{" ~~ printed : Except[ "}" ] .. ~~ "}" :>
+      theoremDeclaration[ name, printed, name, True, None, True ] } ]
+
+theoremDeclaration[ name_String, printed_String, counter_String, ownQ_, within_, numberedQ_ ] :=
+  <| "Name" -> name, "Printed" -> printed, "Counter" -> counter, "Own" -> ownQ,
+     "Within" -> within, "Numbered" -> numberedQ |>
+
+numberingSpec[ printed_String, counter_String, within_, numberedQ_, master_String ] :=
+  With[ { name = If[ counter === master, "Theorem", "Theorem" <> Capitalize[ counter ] ],
+      prefix = withinChain[ within ] },
+    <| "Printed" -> printed, "Counter" -> name, "Prefix" -> prefix, "Reset" -> withinStyle[ within ],
+       "Numbered" -> TrueQ[ numberedQ ],
+       "Default" -> TrueQ[ numberedQ ] && name === "Theorem" && prefix === { "Section" } |> ]
+
+(* Proof and Abstract are the two names outside the twelve that the sheets do declare a style for.
+   Neither is numbered and each carries its own label, so there is nothing for a cell to say. *)
+plainNumbering[ printed_String ] :=
+  <| "Printed" -> printed, "Counter" -> None, "Prefix" -> { }, "Reset" -> None,
+     "Numbered" -> False, "Default" -> True |>
+
+$sectionLevels = { "section", "subsection", "subsubsection" }
+
+(* \thesubsection is \thesection.\arabic{subsection} in both article and amsart, so the counters
+   printed before a per-subsection one are the whole chain down to it and not just the level named. *)
+withinChain[ within_ ] :=
+  Map[ Capitalize,
+    Take[ $sectionLevels,
+      Replace[ FirstPosition[ $sectionLevels, within ], { { position_ } :> position, _ :> 0 } ] ] ]
+
+withinStyle[ within_ ] :=
+  If[ MemberQ[ $sectionLevels, within ], Capitalize[ within ], None ]
+
+(* article numbers equations straight through the document, which is what the sheets do; amsart,
+   amsbook and amsproc number them within the section, and \numberwithin says so explicitly for any
+   class. Figures are left alone deliberately — both specimens are numbered straight through. *)
+equationNumbering[ preamble_String ] :=
+  With[ { within =
+      First[
+        StringCases[ preamble, "\\numberwithin{equation}{" ~~ level : Except[ "}" ] .. ~~ "}" :> level, 1 ],
+        If[ StringContainsQ[ preamble,
+            "\\documentclass" ~~ ( "[" ~~ Except[ "]" ] ... ~~ "]" ) | "" ~~ "{" ~~
+              ( "amsart" | "amsbook" | "amsproc" ) ~~ "}" ],
+          "section", None ] ] },
+    <| "Prefix" -> withinChain[ within ], "Reset" -> withinStyle[ within ] |> ]
 
 documentParts[ source_String ] :=
   First[ StringCases[ source,
@@ -84,8 +182,8 @@ documentParts[ source_String ] :=
    StringJoin and the blocking survives exactly: the paper separates blocks with two newlines in
    most places and three in two of them, and a display equation lifted out of a paragraph rejoins
    with one. Riffling everything with "\n\n" was seven diff lines on the specimen. *)
-documentPieces[ body_String, environments_Association, entries_Association ] :=
-  splitPieces[ body, structureRules[ environments, entries ] ]
+documentPieces[ body_String, numbering_Association, entries_Association ] :=
+  splitPieces[ body, structureRules[ numbering, entries ] ]
 
 splitPieces[ text_String, rules_List ] :=
   Flatten @ Map[ Replace[ chunk_String :> paragraphPieces[ chunk ] ], StringSplit[ text, rules ] ]
@@ -114,18 +212,18 @@ cellSeparator[ cell_Cell ] :=
    pattern will not take a back-reference to a named Alternatives, and answers
    StringExpression::invld rather than failing to match. Only declared names are matched, so
    \begin{figure} and \begin{table} pass through as text. *)
-structureRules[ environments_Association, entries_Association ] :=
+structureRules[ numbering_Association, entries_Association ] :=
   Join[
     bibliographyRules[ entries ],
     figureRules[ ],
     commandRules[ ],
-    nestedRules[ environments, 1 ] ]
+    nestedRules[ numbering, 1 ] ]
 
 (* The rules that may apply inside another block's body as well as at document level: an environment,
    and a list. The depth is the list nesting, which is what chooses between Item, Subitem and
    Subsubitem; a theorem inside an item does not change it. *)
-nestedRules[ environments_Association, depth_Integer ] :=
-  Join[ listRules[ environments, depth ], environmentRules[ environments, depth ] ]
+nestedRules[ numbering_Association, depth_Integer ] :=
+  Join[ listRules[ numbering, depth ], environmentRules[ numbering, depth ] ]
 
 (* One rule shape for every command whose braced argument is the cell's content — the three
    sectioning commands and the three front-matter ones. The style name lowercased is the command it
@@ -147,13 +245,13 @@ $braceGroup = "{" ~~ ( Except[ "{" | "}" ] | ( "{" ~~ Except[ "{" | "}" ] ... ~~
 
 $braceBody = ( Except[ "{" | "}" ] | $braceGroup ) ...
 
-environmentRules[ environments_Association, depth_Integer ] :=
+environmentRules[ numbering_Association, depth_Integer ] :=
   Map[ name |->
       ( StartOfLine ~~ indent : ( " " | "\t" ) ... ~~ ( "\\begin{" <> name <> "}" ) ~~
           title : ( "[" ~~ Except[ "]" ] ... ~~ "]" ) | "" ~~ trailing : Except[ "\n" ] ... ~~
           Shortest[ inner___ ] ~~ StartOfLine ~~ closingIndent : ( " " | "\t" ) ... ~~ ( "\\end{" <> name <> "}" ) :>
-        environmentCell[ environments, depth, name, indent, title, trailing, inner, closingIndent ] ),
-    Keys[ environments ] ]
+        environmentCell[ numbering, depth, name, indent, title, trailing, inner, closingIndent ] ),
+    Keys[ numbering ] ]
 
 sectionCell[ style_String, indent_String, title_String, trailing_String ] :=
   Cell[ inlineContent[ title ], style,
@@ -166,18 +264,18 @@ sectionCell[ style_String, indent_String, title_String, trailing_String ] :=
    with the \begin{...} on the first, so the export is still a StringJoin and the delimiters still
    land where the source had them. Nesting composes by concatenation: an outer \begin is prepended
    to whatever opening its first cell already carries and an outer \end appended to its closing. *)
-environmentCell[ environments_Association, depth_Integer, name_String, indent_String, title_String,
+environmentCell[ numbering_Association, depth_Integer, name_String, indent_String, title_String,
     trailing_String, inner_String, closingIndent_String ] :=
-  environmentPieces[ environments[ name ], name, indent, title, trailing, closingIndent,
-    splitPieces[ inner, nestedRules[ environments, depth ] ] ]
+  environmentPieces[ numbering[ name ], name, indent, title, trailing, closingIndent,
+    splitPieces[ inner, nestedRules[ numbering, depth ] ] ]
 
-environmentPieces[ printed_String, name_String, indent_String, title_String, trailing_String,
+environmentPieces[ spec_Association, name_String, indent_String, title_String, trailing_String,
     closingIndent_String, pieces_List ] :=
   Module[ { positions = Flatten @ Position[ pieces, _Cell, { 1 }, Heads -> False ], first, last },
     If[ positions === { },
       environmentOpened[
         environmentClosed[
-          Cell[ "", environmentStyle[ printed ], Sequence @@ environmentDingbat[ printed ] ],
+          Cell[ "", environmentStyle @ spec[ "Printed" ], Sequence @@ environmentDingbat[ spec ] ],
           closingIndent <> "\\end{" <> name <> "}" ],
         name, indent <> "\\begin{" <> name <> "}" <> title, trailing, joinMarks[ pieces ] ],
       first = First[ positions ]; last = Last[ positions ];
@@ -186,7 +284,7 @@ environmentPieces[ printed_String, name_String, indent_String, title_String, tra
             joinMarks @ Drop[ pieces, last ] <> closingIndent <> "\\end{" <> name <> "}" ] &,
           MapAt[ environmentOpened[ #, name, indent <> "\\begin{" <> name <> "}" <> title, trailing,
               joinMarks @ Take[ pieces, first - 1 ] ] &,
-            environmentStyled[ pieces, printed ], first ],
+            environmentStyled[ pieces, spec ], first ],
           last ],
         { first, last } ] ]
   ]
@@ -210,16 +308,16 @@ environmentClosed[ cell_Cell, closing_String ] :=
    Suppressing on the cell rather than declaring a continuation style is deliberate — "this cell
    continues the one above" is true under every stylesheet, so retargeting a journal by swapping
    sheets still works, which writing the positive counter onto each cell would break. *)
-environmentStyled[ pieces_List, printed_String ] :=
+environmentStyled[ pieces_List, spec_Association ] :=
   With[ { positions = Flatten @ Position[ pieces, Cell[ _, "Text", ___ ], { 1 }, Heads -> False ] },
     Fold[ { current, index } |->
-        MapAt[ environmentStyledCell[ #, printed, index === 1, index === Length[ positions ] ] &,
+        MapAt[ environmentStyledCell[ #, spec, index === 1, index === Length[ positions ] ] &,
           current, positions[[ index ]] ],
       pieces, Range @ Length[ positions ] ] ]
 
-environmentStyledCell[ Cell[ content_, "Text", options___ ], printed_String, firstQ_, lastQ_ ] :=
-  Cell[ content, environmentStyle[ printed ],
-    Sequence @@ If[ firstQ, environmentDingbat[ printed ],
+environmentStyledCell[ Cell[ content_, "Text", options___ ], spec_Association, firstQ_, lastQ_ ] :=
+  Cell[ content, environmentStyle @ spec[ "Printed" ],
+    Sequence @@ If[ firstQ, environmentDingbat[ spec ],
       { CellDingbat -> None, CounterIncrements -> { } } ],
     Sequence @@ If[ lastQ, { }, { CellFrameLabels -> { { None, None }, { None, None } } } ],
     options ]
@@ -235,11 +333,33 @@ environmentStyle[ printed_String ] :=
   If[ KeyExistsQ[ $theoremEnvironments, printed ] || MemberQ[ $plainEnvironments, printed ],
     printed, "Theorem" ]
 
-environmentDingbat[ printed_String ] :=
-  If[ environmentStyle[ printed ] === printed,
-    { },
-    { CellDingbat -> Cell[ TextData[ { printed <> " ", CounterBox[ "Section" ], ".", CounterBox[ "Theorem" ], "." } ],
-        FontWeight -> "Bold" ] } ]
+(* Nothing is written when the style already prints exactly the right thing: one of the twelve, or Proof
+   or Abstract, numbered the way the sheets number it. Anything else — a printed name outside the twelve
+   (the causal paper's ten Axioms), a counter of its own, a level other than the section, or no number at
+   all (hodgepaper's four starred environments) — needs the label spelled out on the cell that heads the
+   group, and with it the counter that label reads. An unnumbered environment must also stop incrementing
+   the counter its style claims, or it steals a number from the theorems it shares it with. *)
+environmentDingbat[ spec_Association ] :=
+  With[ { printed = spec[ "Printed" ] },
+    If[ TrueQ @ spec[ "Default" ] && environmentStyle[ printed ] === printed,
+      { },
+      Join[
+        { CellDingbat -> environmentDingbatCell[ spec ] },
+        Which[
+          ! TrueQ @ spec[ "Numbered" ], { CounterIncrements -> { } },
+          TrueQ @ spec[ "Default" ], { },
+          True, { CounterIncrements -> spec[ "Counter" ] } ] ] ] ]
+
+environmentDingbatCell[ spec_Association ] :=
+  With[ { printed = spec[ "Printed" ], numberedQ = TrueQ @ spec[ "Numbered" ],
+      class = Lookup[ $theoremEnvironments, spec[ "Printed" ], "Plain" ] },
+    Cell[
+      If[ numberedQ,
+        TextData @ Flatten @ { printed <> " ",
+          Riffle[ Map[ CounterBox, Append[ spec[ "Prefix" ], spec[ "Counter" ] ] ], "." ], "." },
+        TextData[ printed <> "." ] ],
+      FontWeight -> If[ class === "Remark", "Plain", "Bold" ],
+      FontSlant -> If[ class === "Remark", "Italic", "Plain" ] ] ]
 
 (* A list is an environment whose items are its cells, and it is recorded exactly as T7 records a
    theorem: the \begin{itemize} rides on the first cell of the group, the \end{itemize} on the last,
@@ -252,22 +372,23 @@ environmentDingbat[ printed_String ] :=
    item's dingbat, which is the same thing an \item[(E)] inside an enumerate wants. *)
 $listEnvironments = <| "itemize" -> "Item", "enumerate" -> "ItemNumbered", "description" -> "Item" |>
 
-listRules[ environments_Association, depth_Integer ] :=
+listRules[ numbering_Association, depth_Integer ] :=
   KeyValueMap[ { name, base } |->
       ( StartOfLine ~~ indent : ( " " | "\t" ) ... ~~ ( "\\begin{" <> name <> "}" ) ~~
           options : ( "[" ~~ Except[ "]" ] ... ~~ "]" ) | "" ~~ trailing : Except[ "\n" ] ... ~~
           Shortest[ inner___ ] ~~ StartOfLine ~~ closingIndent : ( " " | "\t" ) ... ~~
           ( "\\end{" <> name <> "}" ) :>
-        listCells[ environments, depth, name, indent <> "\\begin{" <> name <> "}" <> options, trailing,
+        listCells[ numbering, depth, name, itemFormat[ options ],
+          indent <> "\\begin{" <> name <> "}" <> options, trailing,
           inner, closingIndent <> "\\end{" <> name <> "}" ] ),
     $listEnvironments ]
 
-listCells[ environments_Association, depth_Integer, name_String, opening_String, trailing_String,
-    inner_String, closing_String ] :=
+listCells[ numbering_Association, depth_Integer, name_String, format_String, opening_String,
+    trailing_String, inner_String, closing_String ] :=
   Module[ { chunks = itemChunks[ inner ], leading, pieces, positions, first, last },
     leading = First[ chunks ];
     pieces = Flatten @ MapIndexed[
-      itemPieces[ environments, depth, name, First[ #2 ] === 1, #1 ] &, Rest[ chunks ] ];
+      itemPieces[ numbering, depth, name, format, First[ #2 ] === 1, #1 ] &, Rest[ chunks ] ];
     positions = Flatten @ Position[ pieces, _Cell, { 1 }, Heads -> False ];
     If[ positions === { },
       { environmentOpened[
@@ -287,17 +408,18 @@ listCells[ environments_Association, depth_Integer, name_String, opening_String,
    separator belongs to the cell before it and the marker is what precedes this one; the whitespace
    that FOLLOWS the item's last cell is left as pieces, so it becomes that cell's separator and the
    next \item lands where the source had it. *)
-itemPieces[ environments_Association, depth_Integer, name_String, firstQ_,
+itemPieces[ numbering_Association, depth_Integer, name_String, format_String, firstQ_,
     { marker_String, content_String } ] :=
-  Module[ { pieces = splitPieces[ content, nestedRules[ environments, depth + 1 ] ], positions, first },
+  Module[ { pieces = splitPieces[ content, nestedRules[ numbering, depth + 1 ] ], positions, first },
     positions = Flatten @ Position[ pieces, _Cell, { 1 }, Heads -> False ];
     If[ positions === { },
       Prepend[ pieces,
-        itemOpened[ itemStyledCell[ Cell[ "", "Text" ], name, depth, marker, firstQ, True ], marker, "" ] ],
+        itemOpened[ itemStyledCell[ Cell[ "", "Text" ], name, format, depth, marker, firstQ, True ],
+          marker, "" ] ],
       first = First[ positions ];
       Drop[
         MapAt[ itemOpened[ #, marker, joinMarks @ Take[ pieces, first - 1 ] ] &,
-          itemStyled[ pieces, name, depth, marker, firstQ ],
+          itemStyled[ pieces, name, format, depth, marker, firstQ ],
           first ],
         first - 1 ] ]
   ]
@@ -309,26 +431,29 @@ itemOpened[ cell_Cell, marker_String, leading_String ] :=
    prose: the first is the item, the rest are its continuation paragraphs. An item with no prose at all
    is the case T7's rule about environments left open, and here it is real — three of hodgepaper's
    description items are a \begin{align*} and nothing else — so it falls back to itemHead. *)
-itemStyled[ pieces_List, name_String, depth_Integer, marker_String, firstQ_ ] :=
+itemStyled[ pieces_List, name_String, format_String, depth_Integer, marker_String, firstQ_ ] :=
   With[ { positions = Flatten @ Position[ pieces, Cell[ _, "Text", ___ ], { 1 }, Heads -> False ] },
     If[ positions === { },
-      MapAt[ itemHead[ #, name, depth, marker, firstQ ] &, pieces,
+      MapAt[ itemHead[ #, name, format, depth, marker, firstQ ] &, pieces,
         First @ Flatten @ Position[ pieces, _Cell, { 1 }, Heads -> False ] ],
       Fold[ { current, index } |->
-          MapAt[ itemStyledCell[ #, name, depth, marker, firstQ, index === 1 ] &, current, positions[[ index ]] ],
+          MapAt[ itemStyledCell[ #, name, format, depth, marker, firstQ, index === 1 ] &, current, positions[[ index ]] ],
         pieces, Range @ Length[ positions ] ] ] ]
 
 (* \item[label] prints the label instead of the bullet or the number and consumes no counter, so the
    label becomes the cell's dingbat — a mirror of the [label] stored in the marker, like a display
    formula's CellTags, not the origin of one. And LaTeX restarts every list, while the front end's
    counters run on until a section resets them, so the first item of a list carries the reset. *)
-itemStyledCell[ Cell[ content_, "Text", options___ ], name_String, depth_Integer, marker_String,
-    firstQ_, headQ_ ] :=
+itemStyledCell[ Cell[ content_, "Text", options___ ], name_String, format_String, depth_Integer,
+    marker_String, firstQ_, headQ_ ] :=
   With[ { style = listStyle[ $listEnvironments[ name ], depth ], label = itemLabel[ marker ] },
     If[ headQ,
       Cell[ content, style,
-        Sequence @@ If[ label === "", { },
-          { CellDingbat -> itemDingbat[ label, name === "description" ], CounterIncrements -> { } } ],
+        Sequence @@ Which[
+          label =!= "",
+            { CellDingbat -> itemDingbat[ label, name === "description" ], CounterIncrements -> { } },
+          format =!= "", { CellDingbat -> itemFormatDingbat[ format, style ] },
+          True, { } ],
         Sequence @@ If[ firstQ, { CounterAssignments -> { { style, 0 } } }, { } ],
         options ],
       Cell[ content, listStyle[ "ItemParagraph", depth ], options ] ] ]
@@ -340,19 +465,46 @@ itemStyledCell[ Cell[ content_, "Text", options___ ], name_String, depth_Integer
    to rather than replaced. This is the one place a *positive* counter goes on a cell, which T11 rules
    out in general; it is bounded to a cell that has no other way to be headed, and without it a
    description item loses the label that is the whole of its content. *)
-itemHead[ cell : Cell[ content_, style_String, options___ ], name_String, depth_Integer,
-    marker_String, firstQ_ ] :=
+itemHead[ cell : Cell[ content_, style_String, options___ ], name_String, format_String,
+    depth_Integer, marker_String, firstQ_ ] :=
   With[ { counter = listStyle[ $listEnvironments[ name ], depth ], label = itemLabel[ marker ],
       numberedQ = $listEnvironments[ name ] === "ItemNumbered" },
     Cell[ content, style,
       CellDingbat -> Which[
         label =!= "", itemDingbat[ label, name === "description" ],
+        format =!= "", itemFormatDingbat[ format, counter ],
         numberedQ, Cell[ TextData[ { CounterBox[ counter ], "." } ], FontWeight -> "Bold" ],
         True, Cell[ TextData[ "\[FilledSmallSquare]" ] ] ],
       Sequence @@ If[ label === "" && numberedQ,
         { CounterIncrements -> Flatten @ { cellCounters[ cell ], counter } }, { } ],
       Sequence @@ If[ firstQ, { CounterAssignments -> { { counter, 0 } } }, { } ],
       Sequence @@ DeleteCases[ { options }, ( CellDingbat | CounterIncrements | CounterAssignments ) -> _ ] ] ]
+
+(* enumitem's label= is the other half of "the numbering must match": an enumerate opened with
+   label=(\alph[star]) prints (a), (b), (c) where the ItemNumbered style prints 1., 2., 3. — twice in
+   hodgepaper. The marker is a CounterBox with a
+   CounterFunction, so the front end still owns the counting and a \ref to the item still resolves — but
+   the function has to be one the front end can evaluate with no kernel, and almost none are: measured,
+   RomanNumeral and Part on a literal list work, while FromCharacterCode, StringTake, ToLowerCase and
+   FEPrivate`FromCharacterCode each render as their own unevaluated expression. So every format is a
+   literal table indexed by the counter. *)
+itemFormat[ options_String ] :=
+  First[ StringCases[ options, "label=" ~~ format : Except[ "," | "]" ] .. :> format, 1 ], "" ]
+
+itemFormatDingbat[ format_String, counter_String ] :=
+  Cell[
+    TextData @ Flatten @ StringSplit[ format,
+      KeyValueMap[ #1 :> CounterBox[ counter, CounterFunction :> Evaluate[ #2 ] ] &, $counterFormats ] ] ]
+
+$counterFormats = <|
+  "\\alph*" -> counterTable @ Alphabet[],
+  "\\Alph*" -> counterTable @ ToUpperCase @ Alphabet[],
+  "\\roman*" -> counterTable @ Map[ ToLowerCase @ RomanNumeral[ # ] &, Range[ 40 ] ],
+  "\\Roman*" -> counterTable @ Map[ RomanNumeral, Range[ 40 ] ],
+  "\\arabic*" -> Identity |>
+
+counterTable[ values_List ] :=
+  With[ { table = values }, Function[ table[[ # ]] ] ]
 
 cellCounters[ cell_Cell ] :=
   Replace[ FirstCase[ cell, ( CounterIncrements -> counters_ ) :> counters ], _Missing -> { } ]
@@ -720,8 +872,93 @@ retagged[ cell : Cell[ content_, style_, options___ ], extra_Association ] :=
   Cell[ content, style, TaggingRules -> <| "MathNotebook" -> Join[ storedTagging[ cell ], extra ] |>,
     Sequence @@ DeleteCases[ { options }, TaggingRules -> _ ] ]
 
-labelStyles[ cells_List ] :=
-  Association @ Cases[ cells, Cell[ _, style_String, ___, CellTags -> key_String, ___ ] :> key -> style ]
+(* What a \ref to a cell has to print is exactly what that cell's own number prints, so the chain is
+   read off the cell rather than looked up from its style: a definition numbered per subsection carries
+   Section, Subsection and its own counter in its dingbat, and the reference is those same three boxes
+   resolved at the tag instead of at the reference's own position. A cell carrying no number of its own
+   — which is most of them — falls back to the style's spec in Referencing.wl. *)
+labelCounters[ cells_List ] :=
+  Association @ Cases[ cells,
+    cell : Cell[ _, style_String, ___, CellTags -> key_String, ___ ] :> key -> cellCounterBoxes[ cell, style ] ]
+
+cellCounterBoxes[ cell : Cell[ _, "DisplayFormula" | "DisplayFormulaNumbered", ___ ], style_String ] :=
+  counterBoxChain[ FirstCase[ cell, ( CellFrameLabels -> value_ ) :> value, None ], style ]
+
+cellCounterBoxes[ cell_Cell, style_String ] :=
+  counterBoxChain[ FirstCase[ cell, ( CellDingbat -> value_ ) :> value, None ], style ]
+
+counterBoxChain[ value_, style_String ] :=
+  Replace[ Cases[ value, _CounterBox, Infinity ],
+    { { } :> Map[ CounterBox, referenceCounters[ style ] ], boxes_List :> boxes } ]
+
+(* A counter the sheets reset at the wrong level is reset on the first cell that increments it after each
+   resetting cell, which is the shape T8 already uses for a list rather than a per-cell option on the
+   sectioning cell: a theorem style declares no CounterAssignments of its own where a Section style
+   declares three, and the front end has no way to add to a style's list — writing one on the cell would
+   replace it and quietly stop resetting Subsection, Subsubsection and Theorem. An equation numbered
+   within the section needs the same reset plus a CellFrameLabels of its own, because that is where its
+   number lives and not in a dingbat. *)
+numberedCells[ cells_List, numbering_Association, equation_Association ] :=
+  Module[ { resets = counterResets[ numbering, equation ], pending = { } },
+    Map[
+      cell |->
+        With[ { assignments = Cases[ resets,
+              { counter_, _ } /; MemberQ[ pending, counter ] && incrementsQ[ cell, counter ] :> { counter, 0 } ] },
+          pending = Union[
+            Complement[ pending, Map[ First, assignments ] ],
+            Cases[ resets, { counter_, cellStyle[ cell ] } :> counter ] ];
+          numberedCell[ cell, assignments, equation ] ],
+      cells ] ]
+
+counterResets[ numbering_Association, equation_Association ] :=
+  DeleteDuplicates @ Join[
+    Cases[ Values[ numbering ],
+      spec_ /; ! TrueQ[ spec[ "Default" ] ] && TrueQ[ spec[ "Numbered" ] ] && spec[ "Reset" ] =!= None :>
+        { spec[ "Counter" ], spec[ "Reset" ] } ],
+    If[ equation[ "Reset" ] === None, { }, { { "DisplayFormulaNumbered", equation[ "Reset" ] } } ] ]
+
+(* A cell increments what its own CounterIncrements says, and a cell that says nothing increments its
+   style's counter — which for DisplayFormulaNumbered is its own name. *)
+incrementsQ[ cell : Cell[ _, style_String, ___ ], counter_String ] :=
+  Replace[ FirstCase[ cell, ( CounterIncrements -> counters_ ) :> Flatten @ { counters } ],
+    { counters_List :> MemberQ[ counters, counter ], _ :> style === counter } ]
+
+incrementsQ[ _, _ ] :=
+  False
+
+cellStyle[ Cell[ _, style_String, ___ ] ] :=
+  style
+
+cellStyle[ _ ] :=
+  None
+
+numberedCell[ cell : Cell[ content_, style_, options___ ], assignments_List, equation_Association ] :=
+  With[ {
+      existing = FirstCase[ cell, ( CounterAssignments -> value_ ) :> value, { } ],
+      labels = If[ style === "DisplayFormulaNumbered" && equation[ "Prefix" ] =!= { } &&
+          incrementsQ[ cell, "DisplayFormulaNumbered" ],
+        { CellFrameLabels -> equationFrameLabels @ equation[ "Prefix" ] }, { } ] },
+    If[ assignments === { } && labels === { },
+      cell,
+      Cell[ content, style,
+        Sequence @@ labels,
+        Sequence @@ If[ assignments === { }, { },
+          { CounterAssignments -> Join[ existing, assignments ] } ],
+        Sequence @@ DeleteCases[ { options },
+          Alternatives @@ Join[
+            If[ assignments === { }, { }, { CounterAssignments -> _ } ],
+            If[ labels === { }, { }, { CellFrameLabels -> _ } ] ] ] ] ] ]
+
+numberedCell[ cell_, _, _ ] :=
+  cell
+
+equationFrameLabels[ prefix_List ] :=
+  { { None,
+      Cell[
+        TextData @ Flatten @ { "(",
+          Riffle[ Map[ CounterBox, Append[ prefix, "DisplayFormulaNumbered" ] ], "." ], ")" },
+        "DisplayFormulaEquationNumber" ] },
+    { None, None } }
 
 (* \ref and \eqref become the front end's own cross-reference: a CounterBox chain resolved at the
    labelled cell, so the number follows the target when cells move and is right in the PDF with no
@@ -746,10 +983,10 @@ referenceSplit[ text_String, labels_Association ] :=
     command : ( "\\eqref" | "\\ref" ) ~~ "{" ~~ key : Except[ "}" ] .. ~~ "}" :>
       referenceBox[ command, key, Lookup[ labels, key, None ] ] ]
 
-referenceBox[ command_String, key_String, style_String ] :=
+referenceBox[ command_String, key_String, counters_List ] :=
   ButtonBox[
     RowBox @ Join[ If[ command === "\\eqref", { "(" }, { } ],
-      Riffle[ Map[ CounterBox[ #, key ] &, referenceCounters[ style ] ], "." ],
+      Riffle[ Map[ Insert[ #, key, 2 ] &, counters ], "." ],
       If[ command === "\\eqref", { ")" }, { } ] ],
     BaseStyle -> "Citation", ButtonData -> key ]
 
