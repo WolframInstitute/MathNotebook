@@ -21,10 +21,15 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 
 ## Active
 
-- [Conversion and MaTeX UX](Active/ConversionUX.md) — next: **T1**, settle the labelling and grouping of the
-  four conversion buttons with Pavel and say where `ExportLaTeXDocument` belongs in the palette. A design
-  conversation, so it wants him at a notebook. T2 closed on 2026-07-27: a newly converted MaTeX cell now
-  renders at the document's current math size
+Nothing. Start the next item from `Backlog/`, or `/work` a new one.
+
+[Conversion and MaTeX UX](Done/2026-07-28-ConversionUX.md) closed on 2026-07-28, the last item to:
+the palette's four near-identical conversion labels became six verbs under three headings that carry
+the direction, each with a tooltip, and `Import .tex file…` / `Export to .tex…` joined them — the
+whole-paper route had no palette presence at all, which is what made the per-selection buttons look
+like the only way out to LaTeX. Closed with one clause waived: Pavel has not yet read the new palette
+on a real paper. **The tutorial changed with it, so the cloud copy is a version behind and the next
+release must run `Scripts/DeployPreviews.wls`.**
 
 [First Public Release](Done/2026-07-27-Release.md) closed on 2026-07-27: **0.1.11 is
 published**, the version marker agrees, and the README's `PacletInstall` line installs it from the

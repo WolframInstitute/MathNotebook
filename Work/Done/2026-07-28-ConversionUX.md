@@ -54,7 +54,7 @@ Done when an author who has never read the source can tell from the palette what
 
 **Trimmed 2026-07-27** from five tasks to two, in the backlog reduction. What survives is the defect Pavel actually reported — four labels he could not tell apart — and the one rough edge that is a bug rather than a design question. The MaTeX *display form* (T2 below, now dropped from scope) is a design decision needing Pavel at a notebook, not a session; it goes back on the pile if he still wants it after the labels are readable.
 
-*Both tasks are now done. The item stays Active on one clause of the Spec's "done when": Pavel has not yet driven the new palette on a real document. Nothing is left to build for it.*
+*Both tasks are done and the item is closed. See the closing note at the end of Progress for the one clause of the Spec's "done when" that was waived.*
 
 ### Dropped from scope 2026-07-27
 
@@ -112,10 +112,19 @@ Done when an author who has never read the source can tell from the palette what
   - `CLAUDE.md`'s warning that `MathNotebookTutorial.nb` carries hand edits the build script does not produce is **stale** — the file is back in sync, and a regeneration removed only the section being rewritten. Verified by filtering the diff for non-`ExpressionUUID` lines rather than by trusting the line count.
 - **Next:** nothing to build. Pavel drives the new palette on a real paper; if it reads, the item closes, and the dropped MaTeX display-form question goes back on the pile only if he still wants it. One thing this session leaves stale for whoever releases next: the tutorial changed, so the cloud copy `Scripts/DeployPreviews.wls` publishes is now a version behind — the same trap that nearly shipped in 0.1.11.
 
+### Closed — 2026-07-28
+
+Closed at Pavel's call, with one clause of the Spec's "done when" waived: he has **not** driven the new palette on a real document. Everything else is met — the labels and headings separate the conversions, `ImportLaTeXDocument`/`ExportLaTeXDocument` are on the palette, the fate of the per-selection buttons is decided and recorded here and in the tutorial, and the MaTeX size bug is fixed. The MaTeX *display form* stays dropped.
+
+What that waiver leaves at risk is only readability, and it is cheap to test: open a paper, look at the three conversion groups, hover a button. If the wording does not read, this is a labelling change in `Scripts/BuildPalette.wls` and its six assertions in `Tests/Palette.wlt` — reopen rather than patch the generated `.nb`.
+
+One thing this item leaves for the next release: the tutorial changed, so the cloud copy `Scripts/DeployPreviews.wls` publishes is a version behind — the trap that nearly shipped in 0.1.11.
+
 ## Decisions
 
 | Date | Decision | Rationale |
 |---|---|---|
+| 2026-07-28 | Closed without the live confirmation the Spec asked for | Pavel's call. Nothing was left to build, and the only clause outstanding was his own reading of the new palette — which he can do at any time, and which reopens the item cheaply if the wording does not work |
 | 2026-07-27 | The group heading carries the direction; each conversion button is named by its verb alone | Pavel's choice of three layouts put to him. Four labels built from three interchangeable words is the defect, and the shortest fix that removes the ambiguity entirely is to stop repeating the nouns on the buttons: `Typeset`, `Show source`, `Render`, `Restore` share no word with each other, and the heading above them says what they move between |
 | 2026-07-27 | Every conversion button carries a hover tooltip | costs nothing in palette width and answers "what does this one do" where the question is actually asked, rather than in the tutorial |
 | 2026-07-27 | `Import .tex file…` and `Export to .tex…` get their path from a dialog inside the button | the kernel functions take paths and the palette needed the whole-document route visible; a dialog in the button gives it one with no new exported symbol and no kernel API change |
