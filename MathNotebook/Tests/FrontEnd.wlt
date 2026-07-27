@@ -85,9 +85,13 @@ inlineInk[ text_String ] := <|
    below comes from notebookInk, "Literal" included; the one cell raster left, "Formula", is only
    ever asked whether it is positive. notebookInk takes the notebook rather than the source text,
    so the unconverted paragraph goes through exactly the same measurement as the converted one.
-   Background -> White is the second half of "the same way": inkOf counts every pixel that is not
-   white, so a front end rendering in a dark appearance counts the whole canvas as ink and the
-   numbers stop meaning anything. (WindowSize is not pinned because it cannot be — the export
+   The appearance is the second half of "the same way", and it takes BOTH options: inkOf counts every
+   pixel that is not white, so on a dark appearance an unpinned background counts the whole canvas as
+   ink — and Background -> White alone then leaves the prose drawn in the dark appearance's light
+   foreground, on white, so a Text cell measures exactly 0 and every comparison against it inverts.
+   That is what it did here, silently, until ConversionUX T2; with LightDark -> "Light" beside it the
+   paragraph reads 2440 and the two formulas 1268 and 1368, which is what this file always claimed.
+   (WindowSize is not pinned because it cannot be — the export
    crops to the content, so the width follows the text and the ink is unaffected by the wrap.)
 
    "Formula" reads 0 when no DisplayFormula cell was produced at all, rather than measuring what
@@ -98,7 +102,8 @@ $displayParagraph = "The cone at $p$ is:\n\\begin{equation*}\n  x^2 + y^2 = z^2\
 
 notebookInk[ Notebook[ cells_, options___ ] ] :=
   Module[ { notebook, file },
-    notebook = NotebookPut[ Notebook[ cells, options ], Visible -> False, Background -> White ];
+    notebook = NotebookPut[ Notebook[ cells, options ], Visible -> False, Background -> White,
+      LightDark -> "Light" ];
     file = Export[ FileNameJoin[ { $TemporaryDirectory, "MathNotebookDisplayInk.png" } ], notebook, ImageResolution -> 72 ];
     NotebookClose[ notebook ];
     inkOf @ Import[ file ]
@@ -229,7 +234,8 @@ $bodyPaper = "\\documentclass{article}\n\\newtheorem{thm}{Theorem}[section]\n\\b
 
 notebookImageInk[ imported_Notebook ] :=
   Module[ { notebook, file },
-    notebook = NotebookPut[ withSheet[ imported, "AMSArticle.nb" ], Visible -> False ];
+    notebook = NotebookPut[ withSheet[ imported, "AMSArticle.nb" ], Visible -> False,
+      Background -> White, LightDark -> "Light" ];
     file = Export[ FileNameJoin[ { $TemporaryDirectory, "MathNotebookFigureInk.png" } ], notebook,
       ImageResolution -> 72 ];
     NotebookClose[ notebook ];
@@ -304,6 +310,51 @@ sheetText[ source_String, sheet_String ] :=
     StringDelete[ Import[ file, "Plaintext" ], WhitespaceCharacter ]
   ]
 
+(* ConversionUX T2: a newly converted MaTeX cell has to come out at the size the document is showing
+   mathematics at. Nothing kernel-side can see this — the cell round-trips through its stored
+   "SourceTeX" whatever size the image was rendered at, and the size arithmetic on its own passes
+   while ConvertToMaTeX goes on ignoring it, which is exactly how the bug shipped. What is measured
+   is the image: the width of the rendered GraphicsBox, converted under an untouched document and
+   under one whose math control is at twice the anchor. The third document converts first and moves
+   the slider afterwards, so the two orders can be compared — they now build the cell through the
+   same constructor and must land on the same image, where before the conversion always drew at 14.
+
+   Guarded rather than assumed: MaTeX is optional and shells out to pdflatex and Ghostscript, so a
+   machine without them gets no tests here rather than failing ones. The configuration written is
+   the one InstallMaTeX writes, so a MaTeX that has never been configured still renders. *)
+
+$maTeXAvailable = PacletObjectQ @ Quiet @ PacletObject[ "MaTeX" ] &&
+  StringQ @ findExecutable[ "pdflatex" ] && StringQ @ findExecutable[ "gs" ];
+
+If[ ! $maTeXAvailable,
+  Print[ "MaTeX, pdflatex or Ghostscript is absent: the MaTeX conversion size tests are not run." ] ];
+
+maTeXDocument[ parent_ ] :=
+  NotebookPut[ Notebook[
+    { Cell[ BoxData[ FormBox[ SuperscriptBox[ "x", "2" ], TraditionalForm ] ], "DisplayFormula" ] },
+    StyleDefinitions -> parent, Visible -> False ] ]
+
+maTeXWidth[ notebook_NotebookObject ] :=
+  FirstCase[ NotebookGet[ notebook ], GraphicsBox[ ___, ImageSize -> { width_, _ }, ___ ] :> width, 0, Infinity ]
+
+maTeXMeasurements[ parent_ ] :=
+  Module[ { size = 2 mathFontSizeAnchor[ parent ], base, scaled, rescaled, measurements },
+    Needs[ "MaTeX`" ];
+    MaTeX`ConfigureMaTeX[ "pdfLaTeX" -> findExecutable[ "pdflatex" ], "Ghostscript" -> findExecutable[ "gs" ] ];
+    base = maTeXDocument[ parent ];
+    ConvertToMaTeX[ base ];
+    scaled = maTeXDocument[ parent ];
+    SetMathFontSize[ scaled, size ];
+    ConvertToMaTeX[ scaled ];
+    rescaled = maTeXDocument[ parent ];
+    ConvertToMaTeX[ rescaled ];
+    SetMathFontSize[ rescaled, size ];
+    measurements = <| "Size" -> maTeXFontSize[ scaled ], "Base" -> maTeXWidth[ base ],
+      "Scaled" -> maTeXWidth[ scaled ], "Rescaled" -> maTeXWidth[ rescaled ] |>;
+    NotebookClose /@ { base, scaled, rescaled };
+    measurements
+  ]
+
 $measured = UsingFrontEnd @ <|
   "Imported" -> importedText[ $importedSource ],
   "PlainSheet" -> AssociationMap[ sheetText[ $plainPaper, # ] &, { "PlainArticle.nb", "Default.nb" } ],
@@ -326,7 +377,8 @@ $measured = UsingFrontEnd @ <|
       NotebookClose[ notebook ];
       size ] &,
     $templates ],
-  "Citations" -> citationMeasurements @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ]
+  "Citations" -> citationMeasurements @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
+  "MaTeX" -> If[ $maTeXAvailable, maTeXMeasurements @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ] ]
 |>;
 
 (* Nothing below is meaningful unless the template sheets actually loaded: Default.nb sizes Title
@@ -563,4 +615,15 @@ VerificationTest[
   Map[ StringContainsQ[ $measured[ "PlainSheet", "Default.nb" ], # ] &,
     { "Definition2.1.", "Proof.", "\[EmptySquare]", "1.First", "Definition~2.0" } ],
   { False, False, False, False, True }
+]
+
+(* ConversionUX T2: the converted image is wider under a document whose math control is at twice the
+   anchor, and it is the same image whether the slider was moved before the conversion or after it.
+   Converting at the fixed base size gives 14 for the size and one width for all three. *)
+If[ $maTeXAvailable,
+VerificationTest[
+  With[ { m = $measured[ "MaTeX" ] },
+    { m[ "Size" ], m[ "Base" ] > 0, m[ "Scaled" ] > m[ "Base" ], m[ "Scaled" ] === m[ "Rescaled" ] } ],
+  { 2 $maTeXBaseFontSize, True, True, True }
+]
 ]

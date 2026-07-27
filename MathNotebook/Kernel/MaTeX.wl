@@ -9,6 +9,7 @@ PackageScope["findExecutable"]
 PackageScope["executableDirectories"]
 PackageScope["mathTeX"]
 PackageScope["maTeXCellQ"]
+PackageScope["maTeXCell"]
 PackageScope["toMaTeXNotebook"]
 PackageScope["fromMaTeXNotebook"]
 PackageScope["userInitFile"]
@@ -17,14 +18,21 @@ PackageScope["$maTeXBaseFontSize"]
 
 $maTeXBaseFontSize = 14
 
+(* A MaTeX cell is an image, so it cannot inherit a style change and has to be rendered at the size
+   the document is showing mathematics at right now. That size is maTeXFontSize, the same function
+   SetMathFontSize re-renders through — a conversion and a later slider touch therefore agree, where
+   converting at the fixed $maTeXBaseFontSize left every new cell at 14 until the slider was moved. *)
 ConvertToMaTeX[] :=
-  ( Needs[ "MaTeX`" ]; convertCells[ toMaTeXCell, InputNotebook[] ] )
+  With[ { notebook = InputNotebook[] },
+    Needs[ "MaTeX`" ]; convertCells[ toMaTeXCell @ maTeXFontSize[ notebook ], notebook ] ]
 
 ConvertToMaTeX[ notebook_NotebookObject ] :=
-  ( Needs[ "MaTeX`" ]; NotebookPut[ toMaTeXNotebook[ NotebookGet[ notebook ] ], notebook ] )
+  ( Needs[ "MaTeX`" ];
+    NotebookPut[ toMaTeXNotebook[ NotebookGet[ notebook ], maTeXFontSize[ notebook ] ], notebook ] )
 
 ConvertToMaTeX[ cells : { __CellObject } ] :=
-  ( Needs[ "MaTeX`" ]; writeCells[ toMaTeXCell, cells ] )
+  ( Needs[ "MaTeX`" ];
+    writeCells[ toMaTeXCell @ maTeXFontSize @ ParentNotebook @ First[ cells ], cells ] )
 
 ConvertFromMaTeX[] :=
   convertCells[ fromMaTeXCell, InputNotebook[] ]
@@ -56,23 +64,27 @@ InstallMaTeX[] :=
       "Ghostscript" -> findExecutable[ "gs" ] ]
   )
 
-toMaTeXNotebook[ notebook_Notebook ] :=
-  mapCells[ toMaTeXCell, notebook ]
+toMaTeXNotebook[ notebook_Notebook, size_ ] :=
+  mapCells[ toMaTeXCell[ size ], notebook ]
 
 fromMaTeXNotebook[ notebook_Notebook ] :=
   mapCells[ fromMaTeXCell, notebook ]
 
-toMaTeXCell[ cell : Cell[ _, style : "DisplayFormula" | "DisplayFormulaNumbered", options___ ] ] :=
+toMaTeXCell[ size_ ][ cell : Cell[ _, style : "DisplayFormula" | "DisplayFormulaNumbered", options___ ] ] :=
   With[ { tex = mathTeX[ cell ] },
-    If[ tex === $Failed,
-      cell,
-      Cell[ BoxData[ ToBoxes @ MaTeX`MaTeX[ tex, "DisplayStyle" -> True, FontSize -> $maTeXBaseFontSize ] ], style,
-        Sequence @@ retainedCellOptions[ { options } ],
-        TaggingRules -> <| "MathNotebook" -> <| "SourceTeX" -> tex, "MaTeX" -> True |> |> ] ]
+    If[ tex === $Failed, cell, maTeXCell[ tex, style, { options }, size ] ]
   ]
 
-toMaTeXCell[ cell_ ] :=
+toMaTeXCell[ size_ ][ cell_ ] :=
   cell
+
+(* The one place a MaTeX cell is built. Converting and re-rendering at a new size differ only in
+   where the TeX comes from, and building both here is what keeps them from drifting apart on the
+   size — which is exactly how a converted cell came to ignore the document's math size. *)
+maTeXCell[ tex_String, style_String, options_List, size_ ] :=
+  Cell[ BoxData[ ToBoxes @ MaTeX`MaTeX[ tex, "DisplayStyle" -> True, FontSize -> size ] ], style,
+    Sequence @@ retainedCellOptions[ options ],
+    TaggingRules -> <| "MathNotebook" -> <| "SourceTeX" -> tex, "MaTeX" -> True |> |> ]
 
 fromMaTeXCell[ cell : Cell[ _, style_String, options___ ] ] /; maTeXCellQ[ cell ] :=
   With[ { tex = storedSourceTeX[ cell ] },

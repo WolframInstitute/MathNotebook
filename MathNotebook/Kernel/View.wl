@@ -159,10 +159,17 @@ mathFontSizeAnchor[ parent_ ] :=
   baseFontSizes[ parent ][ "Screen", "DisplayFormula" ]
 
 (* MaTeX cells are images rendered at a fixed size, so they cannot inherit a style change.
-   The TeX survives in TaggingRules, so they are re-rendered at the scaled size instead. *)
+   The TeX survives in TaggingRules, so they are re-rendered at the scaled size instead. The size
+   is scaled from the base one by the ratio the math control is holding, so an untouched document
+   gives back $maTeXBaseFontSize exactly. ConvertToMaTeX reads it too, which is what makes a newly
+   converted cell the same size as one the slider has already been over; the pure two-argument form
+   is what lets that be asserted without a front end. *)
 maTeXFontSize[ notebook_NotebookObject ] :=
-  With[ { anchor = mathFontSizeAnchor @ parentStyleSheet[ notebook ] },
-    Round[ $maTeXBaseFontSize Lookup[ viewSettings[ notebook ], "MathFontSize", anchor ] / anchor ] ]
+  maTeXFontSize[ parentStyleSheet[ notebook ], viewSettings[ notebook ] ]
+
+maTeXFontSize[ parent_, settings_Association ] :=
+  With[ { anchor = mathFontSizeAnchor[ parent ] },
+    Round[ $maTeXBaseFontSize Lookup[ settings, "MathFontSize", anchor ] / anchor ] ]
 
 rescaleMaTeXCells[ notebook_NotebookObject ] :=
   With[ { cells = Select[ Cells[ notebook ], maTeXCellQ @ NotebookRead[ # ] & ] },
@@ -171,7 +178,4 @@ rescaleMaTeXCells[ notebook_NotebookObject ] :=
       writeCells[ resizedMaTeXCell[ maTeXFontSize[ notebook ] ], cells ] ] ]
 
 resizedMaTeXCell[ size_ ][ cell : Cell[ _, style_String, options___ ] ] :=
-  With[ { tex = storedSourceTeX[ cell ] },
-    Cell[ BoxData[ ToBoxes @ MaTeX`MaTeX[ tex, "DisplayStyle" -> True, FontSize -> size ] ], style,
-      Sequence @@ retainedCellOptions[ { options } ],
-      TaggingRules -> <| "MathNotebook" -> <| "SourceTeX" -> tex, "MaTeX" -> True |> |> ] ]
+  maTeXCell[ storedSourceTeX[ cell ], style, { options }, size ]

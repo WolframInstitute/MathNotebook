@@ -21,7 +21,12 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 
 ## Active
 
-None. [First Public Release](Done/2026-07-27-Release.md) closed on 2026-07-27: **0.1.11 is
+- [Conversion and MaTeX UX](Active/ConversionUX.md) — next: **T1**, settle the labelling and grouping of the
+  four conversion buttons with Pavel and say where `ExportLaTeXDocument` belongs in the palette. A design
+  conversation, so it wants him at a notebook. T2 closed on 2026-07-27: a newly converted MaTeX cell now
+  renders at the document's current math size
+
+[First Public Release](Done/2026-07-27-Release.md) closed on 2026-07-27: **0.1.11 is
 published**, the version marker agrees, and the README's `PacletInstall` line installs it from the
 cloud onto a machine with no local copy. The cloud previews and the linked tutorial were re-deployed
 with it. [Repo Organization](Done/2026-07-27-RepoOrganization.md) closed the same day: the root holds
@@ -31,12 +36,9 @@ five files beside `Images/`, `LaTeX/`, `MathNotebook/`, `Notebooks/`, `Resources
 ## Backlog
 
 Reduced from eight items to three on 2026-07-27 — the four in `Dropped/` each carry a note saying
-why and what would reopen them. Both remaining items are parked rather than queued: neither blocks
-anything.
+why and what would reopen them. The one remaining item is parked rather than queued: it blocks
+nothing.
 
-- [Conversion and MaTeX UX](Backlog/ConversionUX.md) — four near-identical conversion labels an author
-  cannot tell apart, and a newly converted MaTeX cell that ignores the math slider. Trimmed to those
-  two; the MaTeX display form went back on the pile as a design call needing Pavel at a notebook
 - [Complex Systems Stylesheet and Submission Buttons](Backlog/JournalSubmission.md) — *parked.* A fifth
   template from the journal's own class file, and a "publish to Complex Systems / arXiv" bundle;
   Pavel's explicit request, so kept, but it is feature expansion and the bundle half wants the export

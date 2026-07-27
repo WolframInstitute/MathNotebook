@@ -85,6 +85,25 @@ VerificationTest[ (* the withdrawn column-width setting is inert: it writes no c
   { }
 ]
 
+(* ConversionUX T2. A MaTeX cell is an image, so the size it is rendered at has to be computed
+   rather than inherited, and both the re-render and ConvertToMaTeX now read it here. The two-
+   argument form is the pure core of the NotebookObject one, which is what lets the arithmetic be
+   asserted without a front end; the wiring itself is measured in Tests/FrontEnd.wlt. *)
+VerificationTest[ (* an untouched document renders MaTeX at the base size and nothing else *)
+  maTeXFontSize[ "StubSheet.nb", <| |> ],
+  $maTeXBaseFontSize
+]
+
+VerificationTest[ (* ... and a scaled one at the ratio the math styles themselves moved by *)
+  maTeXFontSize[ "StubSheet.nb", <| "MathFontSize" -> 2 mathFontSizeAnchor[ "StubSheet.nb" ] |> ],
+  2 $maTeXBaseFontSize
+]
+
+VerificationTest[ (* the prose control must not reach it: MaTeX renders mathematics *)
+  maTeXFontSize[ "StubSheet.nb", <| "DocumentFontSize" -> 26 |> ],
+  $maTeXBaseFontSize
+]
+
 VerificationTest[ (* the sheet keeps the parent recoverable and marks itself as ours *)
   With[ { sheet = viewStyleSheet[ "AMSArticle.nb", <| "DocumentFontSize" -> 20 |> ] },
     { First @ First @ sheet,

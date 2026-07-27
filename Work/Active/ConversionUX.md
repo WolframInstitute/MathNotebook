@@ -55,7 +55,6 @@ Done when an author who has never read the source can tell from the palette what
 **Trimmed 2026-07-27** from five tasks to two, in the backlog reduction. What survives is the defect Pavel actually reported — four labels he could not tell apart — and the one rough edge that is a bug rather than a design question. The MaTeX *display form* (T2 below, now dropped from scope) is a design decision needing Pavel at a notebook, not a session; it goes back on the pile if he still wants it after the labels are readable.
 
 - [ ] T1 — Write down what each of the four conversions does and what an author actually wants, then settle the labelling and grouping with Pavel before touching code. Include where `ExportLaTeXDocument` belongs in the palette, since it now exists and the per-selection buttons should not look like the only LaTeX path. Rewrite the tutorial's conversion section to match.
-- [ ] T2 — Make a newly converted MaTeX cell honour the document's current math size. It renders at the hardcoded `$maTeXBaseFontSize` of 14 until the math slider is touched, which is a plain bug and independent of every open design question here.
 
 ### Dropped from scope 2026-07-27
 
@@ -64,11 +63,34 @@ Done when an author who has never read the source can tell from the palette what
 
 ### Done
 
-(completed tasks move here with the session that closed them)
+- [x] T2 — Make a newly converted MaTeX cell honour the document's current math size (Session 1).
 
 ## Progress
 
-(no sessions yet)
+### Session 1 — 2026-07-27 — T2
+
+- **Prompt:** `/next-session` with no item named; nothing was active, so the choice of item and task was put to Pavel, who took T2 over T1 (a design conversation) and over `JournalSubmission` T1.
+- **Did:** `ConvertToMaTeX` now reads `maTeXFontSize[notebook]` — the same function `SetMathFontSize`'s re-render already used — instead of the fixed `$maTeXBaseFontSize`, on all three overloads (`InputNotebook[]`, a notebook, a selection, the last via `ParentNotebook @ First[cells]`).
+  `toMaTeXCell` and `toMaTeXNotebook` are parameterised by the size to carry it in.
+  The actual repair is structural rather than a changed literal: `toMaTeXCell` and `View.wl`'s `resizedMaTeXCell` were two independent constructions of the same cell that happened to differ on the size, and both now go through one `maTeXCell[tex, style, options, size]` in `MaTeX.wl`, so converting and re-rendering cannot drift apart on it again.
+  `maTeXFontSize` gained a pure two-argument core `maTeXFontSize[parent, settings]` with the `NotebookObject` form as its wrapper, which is what lets the arithmetic be asserted kernel-only.
+  Measured live on an `AMSArticle` document: converting an untouched one renders at 14 (image 15.1 pt wide) and converting one whose math control is at twice the anchor renders at 28 (26.9 pt) — and moving the slider before or after the conversion now lands on the same image.
+  Four tests: three in `View.wlt` on the size arithmetic (base, scaled, and that the *prose* control does not reach it) and one in `Tests/FrontEnd.wlt` on the wiring, guarded on MaTeX, pdflatex and Ghostscript being present so a machine without them gets no tests here rather than failing ones.
+  The bite check is a real one: reintroducing the hardcoded size takes `FrontEnd.wlt` from 26 to 25 passing.
+  Suite green at 222.
+- **Learned:**
+  - **`Tests/FrontEnd.wlt`'s `notebookInk` was silently broken and the suite was red before this session started** — 24 passed / 1 failed on a clean tree, and the failing assertion was the T2 display-ink one from `InlineMathConverterDefects`, not anything of this item's.
+    The cause is the dark-appearance trap `CLAUDE.md` already records, but the note has the failure mode backwards and it takes **both** options, not one.
+    `Background -> White` alone forces white paper and leaves the prose drawn in the dark appearance's *light* foreground, so a `Text` cell measures exactly **0** ink and every comparison against it inverts — the whole-page-counts-as-ink failure the note describes is what happens when the background is *not* pinned.
+    With `LightDark -> "Light"` beside it the numbers come back to exactly the ones the file has always claimed: 2440 for the paragraph, 1268 and 1368 for the two formulas.
+    Fixed in `notebookInk` and `notebookImageInk`; suite is green again.
+    The general lesson is that an ink measurement is only reproducible if it pins **both** ends of the contrast, and that a number of 0 should have been an assertion rather than a comparand.
+  - The size a MaTeX cell should be rendered at is not a property of the cell, so it cannot be recovered from one — a conversion has to be told, which is why the fix is an argument threaded through `toMaTeXCell` rather than a lookup inside it.
+    `ConvertToMaTeX[{cell, ...}]` gets it from `ParentNotebook @ First[cells]`, the only overload with no notebook of its own.
+  - MaTeX renders fine in a bare `wolframscript` kernel — no front end needed — and reads its `pdfLaTeX`/`Ghostscript` paths from persistent config, so a test that has never run `InstallMaTeX[]` on that machine renders nothing at all and every ink or width measurement quietly reads 0.
+    The guard therefore writes the same configuration `InstallMaTeX` does before measuring.
+  - `Default.nb` resolves `DisplayFormula` to a numeric 14, screen and printout alike, so making `ConvertToMaTeX` depend on the chain-read anchor does not break a document that is not on a MathNotebook sheet.
+- **Next:** T1 — settle the labelling and grouping of the four conversions with Pavel, and where `ExportLaTeXDocument` belongs in the palette. It is a design conversation, so it wants him at a notebook rather than a headless session.
 
 ## Decisions
 
