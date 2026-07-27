@@ -44,6 +44,7 @@ PacletObject[
           "WolframInstitute`MathNotebook`$MathNotebookCloudVersion"
         }
       },
+      {"Documentation", "Root" -> "Documentation", "Language" -> "English"},
       {"FrontEnd", "Root" -> "FrontEnd", "Prepend" -> True},
       {"Asset", "Root" -> "Assets", "Assets" -> {{"Tutorial", "MathNotebookTutorial.nb"}}}
     }
