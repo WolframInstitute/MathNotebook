@@ -39,6 +39,48 @@ VerificationTest[
   True
 ]
 
+(* JournalSubmission T2: ComplexSystems is a template — same base cell list, same style names, chained
+   to Default — but it is the one that breaks the shared-counter clause above, and deliberately. The
+   journal declares one counter per environment with no section prefix (ComplexSystems.nb declares
+   Lemma standalone with CounterIncrements -> "Lemma"), so exactly one cell in this sheet increments
+   "Theorem" where the other four have twelve, and Section must not reset it. Numbering is the
+   document's, so an imported paper still overrides this per cell; a paper written from the first cell
+   in this template numbers the way the journal prints. *)
+
+$complexSheet = Get[ FileNameJoin[ { $styleSheetDirectory, "ComplexSystems.nb" } ] ];
+
+counterOf[ sheet_, style_ ] :=
+  FirstCase[ First[ sheet ],
+    Cell[ StyleData[ style ] | StyleData[ style, StyleDefinitions -> _ ], options___ ] :>
+      Lookup[ { options }, CounterIncrements, None ], None, { 1 } ]
+
+VerificationTest[
+  { FileExistsQ[ FileNameJoin[ { $styleSheetDirectory, "ComplexSystems.nb" } ] ],
+    SubsetQ[ styleNames[ $complexSheet ], $sharedInventory ],
+    ! FreeQ[ First[ $complexSheet ], StyleData[ StyleDefinitions -> "Default.nb" ] ],
+    AllTrue[ Keys @ $theoremEnvironments, counterOf[ $complexSheet, # ] === # & ],
+    Count[ First[ $complexSheet ], Cell[ StyleData[ _String, ___ ], ___, CounterIncrements -> "Theorem", ___ ], { 1 } ],
+    MemberQ[ FirstCase[ First[ $complexSheet ], Cell[ StyleData[ "Section" ], options___ ] :>
+      Lookup[ { options }, CounterAssignments, { } ], { }, { 1 } ], { "Theorem", 0 } ] },
+  { True, True, True, True, 1, False }
+]
+
+(* The geometry is the journal's and it is measured, not chosen: a 432 x 648 page carrying a 306 pt
+   column, which is what 63 pt each side comes to and what the .sty's \textwidth=25.5pc comes to.
+   Display math is flush left at a 2 pc indent rather than centred as in the other four. *)
+VerificationTest[
+  With[ { notebookOptions = FirstCase[ First[ $complexSheet ], Cell[ StyleData[ "Notebook" ], options___ ] :> { options }, { }, { 1 } ],
+      printMargins = style |-> FirstCase[ First[ $complexSheet ],
+        Cell[ StyleData[ style, "Printout" ], options___ ] :> Lookup[ { options }, CellMargins, None ], None, { 1 } ] },
+    { Lookup[ Lookup[ notebookOptions, PrintingOptions, { } ], "PaperSize" ],
+      printMargins[ "Text" ],
+      432 - Total @ First @ printMargins[ "Text" ],
+      First @ printMargins[ "DisplayFormula" ],
+      FirstCase[ First[ $complexSheet ], Cell[ StyleData[ "DisplayFormula" ], options___ ] :>
+        Lookup[ { options }, TextAlignment, None ], None, { 1 } ] } ],
+  { { 432, 648 }, { { 63, 63 }, { 2, 0 } }, 306, { 87, 63 }, Left }
+]
+
 (* LaTeXPaperImport T11: the fifth sheet is not a template. It is Default.nb with the paper's
    structure added, so it declares the twelve environments and their counter and chains to Default,
    but claims none of the typography. *)

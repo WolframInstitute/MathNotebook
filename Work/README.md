@@ -22,12 +22,16 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 ## Active
 
 - [Complex Systems Stylesheet and Submission Buttons](Active/JournalSubmission.md) — activated 2026-07-28 from
-  `Backlog/`, where it had been parked. **T1 done:** the journal turns out to publish a full 213-style production
-  Wolfram stylesheet, not just the class file the Spec assumed, so the fifth template is a derivation and T2 is
-  better defined than it was. Its geometry is 6″ × 9″ with a 306 pt column, agreeing to the point with the `.sty`
-  and the sample PDF. Two things T2 must not copy from the other four sheets: display math is **flush left**, and
-  numbering is **one counter per environment with no section prefix**. Neither the `.sty` nor the `.nb` carries a
-  licence grant, so neither is vendorable — both live in gitignored `Resources/`
+  `Backlog/`, where it had been parked. **T1 and T2 done; T3 (the submission bundle) is all that remains.**
+  T1 found that the journal publishes a full 213-style production Wolfram stylesheet, not just the class file the
+  Spec assumed, so the template became a derivation. T2 generated it: `ComplexSystems.nb` is the **fifth
+  template**, a 432 × 648 page with a 306 pt column, display math flush left, and one counter per environment —
+  proved in a rendered PDF that reads `Definition 1.` / `Theorem 1.` then `Definition 2.` / `Theorem 2.`, where
+  the other four would read `1.1` and `1.2`. It is the first template measured from a journal's own files rather
+  than styled to resemble a class, and the first with a screen/print font split, both faces being commercial.
+  Neither the `.sty` nor the `.nb` carries a licence grant, so neither is vendored — they live in gitignored
+  `Resources/` and the sample PDF is a notebook printout. **Not in published 0.1.12: shipping the template needs
+  a release**
 
 [Conversion and MaTeX UX](Done/2026-07-28-ConversionUX.md) closed on 2026-07-28, the last item to:
 the palette's four near-identical conversion labels became six verbs under three headings that carry

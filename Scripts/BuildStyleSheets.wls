@@ -9,6 +9,96 @@ $theoremEnvironments = <|
   "Remark" -> "Remark", "Question" -> "Remark", "Observation" -> "Remark"
 |>;
 
+(* JournalSubmission T2: the fifth template is the first one measured from a journal's own artifacts
+   rather than styled to resemble a class file. Complex Systems publishes both ComplexSystems.nb and
+   ComplexSystems.sty, and they agree to the point: a 432 x 648 page (6in x 9in, confirmed against the
+   sample PDF's MediaBox) carrying a 306 pt column, which is 63 pt each side and the .sty's
+   \textwidth=25.5pc; Sabon LT Std over Univers LT Std headings; display math flush left at a 2 pc
+   indent rather than centred; and one counter per environment running straight through the document.
+   Neither file is redistributable -- Copyright (c) 2014-2018, Complex Systems, Inc., with no licence
+   grant -- so nothing below is copied from them. These are measurements, which is also why they are
+   written out as a literal table rather than derived: the journal chose them.
+
+   Both fonts are commercial and on no stock machine, so the journal's own answer is adopted with the
+   numbers: Times and Helvetica on screen, Sabon and Univers in the "Printout" variant, which is the
+   one that reaches the PDF. That is what "PrintFont" and "PrintOverrides" exist for; the other four
+   templates set neither key and generate exactly as before. *)
+
+$complexSystemsHeadings = { "Author", "Section", "Subsection", "Subsubsection" };
+
+(* The journal gives every environment its own counter with no section prefix, where this repo's four
+   templates share one Theorem counter reset by Section and print Section.Theorem. The tell in
+   ComplexSystems.nb is that Lemma is declared standalone with CounterIncrements -> "Lemma" while
+   fifteen siblings inherit TheoremLike. Numbering is the document's and not the sheet's, so an
+   imported paper still overrides this per cell -- but a paper written from the first cell in this
+   template has to number the way the journal prints, and Section must therefore not reset it. The
+   .sty sets theorem heads \sffamily\bfseries and the body \normalfont, so unlike the base sheet no
+   environment is italic and the Remark class gets no separate treatment. *)
+$complexSystemsEnvironments =
+  AssociationMap[
+    environment |-> {
+      CellDingbat -> Cell[ TextData[ { environment <> " ", CounterBox[ environment ], "." } ],
+        FontFamily -> "Helvetica", FontWeight -> "Bold", FontSlant -> "Plain" ],
+      CounterIncrements -> environment,
+      FontSlant -> "Plain",
+      CellMargins -> { { 67, 24 }, { 8, 10 } } },
+    Keys @ $theoremEnvironments ];
+
+$complexSystemsOverrides = Merge[ {
+  <|
+    "Notebook" -> { PrintingOptions -> { "PaperSize" -> { 432, 648 },
+        "PrintingMargins" -> { { 0, 0 }, { 54, 54 } }, "FacingPages" -> True,
+        "FirstPageHeader" -> False, "PageHeaderMargins" -> { 36, 36 },
+        "PageFooterMargins" -> { 24, 24 } } },
+    "Title" -> { FontSize -> 36, CellMargins -> { { 54, 24 }, { 0, 15 } } },
+    "Author" -> { FontWeight -> "Bold", FontVariations -> { }, FontSize -> 14,
+      CellMargins -> { { 54, 24 }, { 0, 6 } } },
+    "Abstract" -> { FontSize -> 14, CellMargins -> { { 54, 86 }, { 4, 25 } } },
+    "Section" -> { FontSize -> 18, CellMargins -> { { 54, 12 }, { 16, 27 } },
+      CounterAssignments -> { { "Subsection", 0 }, { "Subsubsection", 0 } } },
+    "Subsection" -> { FontSize -> 15, CellMargins -> { { 54, 12 }, { 6, 23 } } },
+    "Subsubsection" -> { FontSize -> 12, CellMargins -> { { 54, 12 }, { 6, 12 } } },
+    "Text" -> { FontSize -> 14, ParagraphIndent -> 18, CellMargins -> { { 54, 24 }, { 4, 4 } } },
+    "DisplayFormula" -> { TextAlignment -> Left, FontSize -> 14, CellMargins -> { { 90, 24 }, { 6, 6 } } },
+    "DisplayFormulaNumbered" -> { TextAlignment -> Left, FontSize -> 14, CellMargins -> { { 90, 24 }, { 6, 6 } } },
+    "Caption" -> { FontSize -> 12, CellMargins -> { { 67, 24 }, { 10, 18 } } },
+    "Reference" -> { FontSize -> 14, CellMargins -> { { 100, 25 }, { 3, 3 } } },
+    "Proof" -> { FontSlant -> "Plain", CellMargins -> { { 67, 24 }, { 8, 10 } } }
+  |>,
+  $complexSystemsEnvironments,
+  AssociationMap[ { FontFamily -> "Helvetica" } &, $complexSystemsHeadings ]
+  }, Apply[ Join ] ];
+
+$complexSystemsPrintOverrides = Merge[ {
+  <|
+    "Title" -> { FontSize -> 16, CellMargins -> { { 63, 63 }, { 22, 6 } } },
+    "Author" -> { FontFamily -> "Univers LT Std", FontSize -> 8, CellMargins -> { { 63, 63 }, { -4, 6 } } },
+    "Date" -> { FontSize -> 9, CellMargins -> { { 63, 63 }, { 2, 6 } } },
+    "Abstract" -> { FontSize -> 9, CellMargins -> { { 87, 63 }, { 0, 6 } } },
+    "Section" -> { FontFamily -> "Univers LT Std", FontSize -> 9, CellMargins -> { { 72, 63 }, { 8, 30 } } },
+    "Subsection" -> { FontFamily -> "Univers LT Std", FontSize -> 9, CellMargins -> { { 74, 63 }, { 2, 16 } } },
+    "Subsubsection" -> { FontFamily -> "Univers LT Std", FontSize -> 9, CellMargins -> { { 63, 63 }, { 2, 14 } } },
+    "Text" -> { FontSize -> 10, ParagraphIndent -> 12, CellMargins -> { { 63, 63 }, { 2, 0 } } },
+    "DisplayFormula" -> { FontSize -> 10, CellMargins -> { { 87, 63 }, { 6, 4 } } },
+    "DisplayFormulaNumbered" -> { FontSize -> 10, CellMargins -> { { 87, 63 }, { 6, 4 } } },
+    "Caption" -> { FontSize -> 9, CellMargins -> { { 63, 63 }, { 18, 4 } } },
+    "Reference" -> { FontSize -> 9, CellMargins -> { { 84, 63 }, { 2, 4 } } }
+  |>,
+  (* A CellDingbat declared on the bare style *is* inherited into the "Printout" variant -- the label
+     prints -- but it is a Cell carrying its own FontFamily, and the variant's FontFamily does not
+     reach inside it. Measured: with the dingbat declared only on the bare style, the sample PDF set
+     every "Definition 1." in Helvetica-Bold, the screen heading face, while the body around it came
+     out in the print face; the journal sets its labels in Univers at 8 pt. So the whole dingbat has to
+     be restated here, counter and all, and the print face written into it. *)
+  AssociationMap[
+    environment |-> {
+      CellDingbat -> Cell[ TextData[ { environment <> " ", CounterBox[ environment ], "." } ],
+        FontFamily -> "Univers LT Std", FontSize -> 8, FontWeight -> "Bold", FontSlant -> "Plain" ],
+      FontSize -> 10, ParagraphIndent -> 0, CellMargins -> { { 63, 63 }, { 2, 4 } } },
+    Keys @ $theoremEnvironments ],
+  <| "Proof" -> { FontSize -> 10, ParagraphIndent -> 0, CellMargins -> { { 63, 63 }, { 2, 4 } } } |>
+  }, Apply[ Join ] ];
+
 $templates = <|
   "AMSArticle" -> <|
     "TextFont" -> "Palatino", "MathFont" -> "Palatino",
@@ -33,6 +123,15 @@ $templates = <|
     "TitleAlignment" -> Center, "TitleWeight" -> "Bold",
     "SectionAlignment" -> Left, "SectionWeight" -> "Plain",
     "SectionVariations" -> { "CapsType" -> "SmallCaps" }
+  |>,
+  "ComplexSystems" -> <|
+    "TextFont" -> "Times", "MathFont" -> "Times",
+    "PrintFont" -> "Sabon LT Std", "PrintMathFont" -> "Sabon LT Std",
+    "TitleAlignment" -> Left, "TitleWeight" -> "Bold",
+    "SectionAlignment" -> Left, "SectionWeight" -> "Bold",
+    "SectionVariations" -> { },
+    "Overrides" -> $complexSystemsOverrides,
+    "PrintOverrides" -> $complexSystemsPrintOverrides
   |>
 |>;
 
@@ -164,7 +263,12 @@ baseStyleSheet[] := Notebook[ Flatten @ {
   },
   StyleDefinitions -> "PrivateStylesheetFormatting.nb" ]
 
+(* A duplicated option in one StyleData cell resolves to its FIRST occurrence -- measured, both for a
+   FontSize and for a CounterIncrements -- which is what makes every override here a prepend rather
+   than a rewrite of the base options, and what lets "Overrides" carry a counter as safely as a font.
+   It goes first so a per-style measurement beats the blanket TextFont the same spec asks for. *)
 templateOverrides[ spec_ ] := Merge[ {
+  Lookup[ spec, "Overrides", <| |> ],
   AssociationMap[ { FontFamily -> spec[ "TextFont" ] } &, $proseStyles ],
   AssociationMap[ { FontFamily -> spec[ "MathFont" ] } &, $mathStyles ],
   <| "Title" -> { TextAlignment -> spec[ "TitleAlignment" ], FontWeight -> spec[ "TitleWeight" ] } |>,
@@ -180,11 +284,28 @@ mergeCell[ overrides_Association ][ Cell[ StyleData[ name_String, StyleDefinitio
 
 mergeCell[ _ ][ cell_ ] := cell
 
+(* The "Printout" variant is a separate cell carrying only a FontSize, and it is the one that reaches
+   the PDF, so a print font or a print margin has to be merged into it rather than into the bare
+   style. Absent a "PrintFont" this is empty and every cell passes through untouched. *)
+templatePrintOverrides[ spec_ ] :=
+  If[ ! KeyExistsQ[ spec, "PrintFont" ], <| |>,
+    Merge[ {
+      Lookup[ spec, "PrintOverrides", <| |> ],
+      AssociationMap[ { FontFamily -> spec[ "PrintFont" ] } &, $proseStyles ],
+      AssociationMap[ { FontFamily -> spec[ "PrintMathFont" ] } &, $mathStyles ]
+      }, Apply[ Join ] ] ]
+
+mergePrintCell[ overrides_Association ][ Cell[ StyleData[ name_String, "Printout" ], options___ ] ] /; KeyExistsQ[ overrides, name ] :=
+  Cell[ StyleData[ name, "Printout" ], Sequence @@ overrides[ name ], options ]
+
+mergePrintCell[ _ ][ cell_ ] := cell
+
 templateStyleSheet[ spec_ ] :=
-  Module[ { overrides = templateOverrides[ spec ], baseCells = First @ baseStyleSheet[], baseNames },
+  Module[ { overrides = templateOverrides[ spec ], printOverrides = templatePrintOverrides[ spec ],
+      baseCells = First @ baseStyleSheet[], baseNames },
     baseNames = Cases[ baseCells, Cell[ StyleData[ name_String, ___ ], ___ ] :> name, { 1 } ];
     Notebook[ Join[
-      Map[ mergeCell[ overrides ], baseCells ],
+      Map[ mergePrintCell[ printOverrides ] @* mergeCell[ overrides ], baseCells ],
       KeyValueMap[ Cell[ StyleData[ #1 ], Sequence @@ #2 ] &, KeyDrop[ overrides, baseNames ] ] ],
       StyleDefinitions -> "PrivateStylesheetFormatting.nb" ]
   ]

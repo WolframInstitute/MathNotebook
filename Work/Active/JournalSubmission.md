@@ -33,7 +33,7 @@ Done when a notebook can be written in a `ComplexSystems` template that matches 
 ## Tasks
 
 - [x] T1 — Read the Complex Systems author instructions and class file; record the geometry and the styles the journal names.
-- [ ] T2 — Generate the `ComplexSystems` template from `BuildStyleSheets.wls`; sample PDF alongside the other four.
+- [x] T2 — Generate the `ComplexSystems` template from `BuildStyleSheets.wls`; sample PDF alongside the other four.
 - [ ] T3 — Scope the submission bundle: what each target accepts, and what the notebook can produce today.
 
 ### Done
@@ -43,7 +43,74 @@ Done when a notebook can be written in a `ComplexSystems` template that matches 
   ships `ComplexSystems.nb`, so the fifth template is a **derivation, not an invention** — and its numbering is
   the opposite of MathNotebook's.
 
+- **T2** (2026-07-28) — `ComplexSystems.nb` is generated, measured through a real front end and proved in
+  a rendered PDF: a 432 × 648 page carrying a 306 pt column, display math flush left, and `Definition 1.`
+  / `Theorem 1.` followed by `Definition 2.` / `Theorem 2.` in the next section — per-environment
+  counters, no prefix, no reset. Two new tests, both bite-checked. The template exists in the working
+  tree and is **not in published 0.1.12**; shipping it needs a release.
+
 ## Progress
+
+### T2 — the fifth template, measured rather than styled (2026-07-28)
+
+**What it took that the other four did not.** `$templates` was a table of seven keys — two fonts, two
+alignments, two weights and a variation list — because the four existing templates differ from the base
+sheet in nothing else. Complex Systems differs in paper size, column width, display-math alignment,
+per-style margins at two sizes, a second font pair for print, and its counters. So the spec grew three
+**optional** keys — `"PrintFont"`, `"PrintOverrides"`, `"Overrides"` — and the four existing templates
+set none of them and regenerate byte-for-byte identically (verified: `0` non-`ExpressionUUID` diff lines
+for all five existing sheets, then reverted so the commit shows only real work).
+
+**The mechanism that made it cheap is a measured fact about option resolution.** A duplicated option in
+one `StyleData` cell resolves to its **first** occurrence — confirmed for a `FontSize` (33 beat 77) and,
+because the counters depend on it, for a `CounterIncrements` (`"Alpha"` beat `"Beta"`). `mergeCell`
+already relied on this to override the base's `TextAlignment`, so every new override is a prepend and
+nothing in the base cell list had to be parameterised. That is what lets a spec carry a **counter** as
+safely as a font, which is the whole reason the per-environment numbering needed no new machinery.
+
+**A second cell shape needed merging.** The `"Printout"` variant is a separate cell carrying only a
+`FontSize`, and it is the one that reaches the PDF, so `mergePrintCell` merges into it what `mergeCell`
+merges into the bare style. Without it a print font is simply unreachable.
+
+**Verified through a front end, not by reading the file back.** Every value resolves as measured from the
+journal: `PaperSize` `{432, 648}`; `PrintingMargins` `{{0, 0}, {54, 54}}`; `Text` printout Sabon LT Std
+at 10 pt with `CellMargins -> {{63, 63}, {2, 0}}`, so the column is **432 − 126 = 306 pt**; `Section`
+printout Univers LT Std 9; `Title` printout 16; `DisplayFormula` `TextAlignment -> Left` with printout
+margins `{{87, 63}, …}`, a 24 pt indent; `Definition`'s counter is `"Definition"` and `Theorem`'s is
+`"Theorem"`; `Section` resets only `Subsection` and `Subsubsection`; theorem bodies upright, as the
+`.sty`'s `\normalfont` asks.
+
+**The PDF is the assertion the front end cannot make**, because a counter reads 0 outside a rendered
+document. `LaTeX/Sample-ComplexSystems.pdf` comes back `/MediaBox [0 0 432 648]` and its text extracts as
+`Definition 1.`, `Theorem 1.`, then `Definition 2.`, `Theorem 2.` after a second `Section` — theorem
+numbered 1 despite a definition preceding it, and neither reset. Under the other four the same document
+would read `1.1` and `1.2`. It is a **notebook printout, not pdfTeX output** like the other three PDFs in
+that directory, because the journal's class file is not redistributable; that asymmetry is now stated in
+the README rather than left to be discovered.
+
+**One defect the PDF caught that nothing else would have.** The first sample set every `Definition 1.` in
+**Helvetica-Bold** — the screen face — while the body printed correctly. A `CellDingbat` *is* inherited
+into the `"Printout"` variant, but it is a `Cell` carrying its own `FontFamily`, and the variant's font
+does not reach inside it; the label therefore has to be restated in the variant, counter and all. It is
+invisible to every structural test and to the round trip: the label is present and correctly numbered,
+merely in the wrong typeface, and only the PDF's embedded font list shows it. Fixed, and the code comment
+that first described this backwards ("not inherited") was corrected to what was measured.
+
+**Both new tests bite** — checked by reintroducing the defect, not by watching them pass, with the working
+file copied aside first and restored from the copy. Dropping `$complexSystemsEnvironments` from the
+overrides, so the sheet falls back to the shared `Theorem` counter, fails the counter test (10 → 9 passed,
+1 failed). Changing `"PaperSize"` to A4 fails the geometry test (10 → 9, 1 failed). Suite green at **230
+passed, 0 failed**, `StyleSheets.wlt` 8 → 10.
+
+**Known gaps, none of them blocking.** Neither Sabon LT Std nor Univers LT Std is installed on this
+machine, so the sample PDF's body faces are unnamed subsets — the geometry is right and the typeface
+substitutes, which is exactly why the journal's own sheet carries the split and not an excuse. The
+`.sty`'s section rules (a 3 pt vertical bar plus a hairline under every heading) have no counterpart:
+they are drawn decoration with no `CellDingbat` or frame equivalent that would survive a style swap.
+`Item`/`ItemNumbered`/`ItemParagraph` get a bare `FontFamily` cell and no `"Printout"` cell, so the print
+font does not reach them — a **pre-existing** gap shared by all four older templates, not introduced here.
+And the journal's `<Name>Continuation` styles are not mirrored; T7's per-cell dingbat stripping already
+covers multi-paragraph bodies.
 
 ### T1 — what the journal actually publishes (2026-07-28)
 
@@ -143,3 +210,6 @@ is a different thing and is fine; shipping the journal's cells is not.
 | 2026-07-28 | T2 derives the fifth template from the journal's own stylesheet rather than reconstructing it from the `.sty` | The journal ships a 213-style production `.nb` chaining to `Default.nb` — the same architecture as our four templates. The `.sty` is the cross-check, not the source |
 | 2026-07-28 | Adopt the journal's screen/print font split verbatim (Times/Helvetica bare, Sabon/Univers `"Printout"`) | Sabon LT Std and Univers LT Std are commercial and on no stock machine; the journal's own sheet already answers this, and it needs no new mechanism here |
 | 2026-07-28 | `ComplexSystems` gets **per-environment counters with no section prefix**, breaking the one-`Theorem`-counter invariant the other four share | The `.sty`'s six `\newtheorem`s take no `[section]`, and the sheet declares `Lemma` standalone with `CounterIncrements -> "Lemma"`. Numbering is the document's, not the sheet's, so this is a deviation the sheet is allowed — but `theoremStyleCells` cannot be reused unchanged |
+| 2026-07-28 | Extend `$templates` with **optional** keys (`"Overrides"`, `"PrintFont"`, `"PrintOverrides"`) rather than parameterising the base cell list | The four existing templates set none of them and regenerate byte-identically, so the fifth template costs the other four nothing. Verified by diffing every sheet with `ExpressionUUID` lines filtered and reverting the five that had not really changed |
+| 2026-07-28 | Split the counter clause in `Tests/StyleSheets.wlt` instead of relaxing it | Relaxing it to "some counter" would stop detecting a shared-counter regression in the four. The four assert twelve cells incrementing `"Theorem"`; `ComplexSystems` asserts exactly one, plus that `Section` does not reset it. Both directions bite-checked |
+| 2026-07-28 | Ship the sample as a **notebook printout PDF**, not pdfTeX output, and say so in the README | The other three sample PDFs are compiled from their `.tex` by pdfLaTeX. There is no redistributable Complex Systems class to compile against, so the honest artifact is the notebook's own printout — which is also what actually proves the stylesheet renders the journal's geometry |

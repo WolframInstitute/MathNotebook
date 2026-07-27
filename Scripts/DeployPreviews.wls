@@ -5,7 +5,7 @@ styleSheetDirectory = Replace[ Environment[ "MATHNOTEBOOK_STYLESHEETS" ],
 tutorialPath = Replace[ Environment[ "MATHNOTEBOOK_TUTORIAL" ],
   Except[ _String ] :> FileNameJoin[ { repoDirectory, "MathNotebook", "Assets", "MathNotebookTutorial.nb" } ] ];
 
-$styleSheets = { "AMSArticle", "ArXivArticle", "SpringerJournal", "RevTeXAPS" };
+$styleSheets = { "AMSArticle", "ArXivArticle", "SpringerJournal", "RevTeXAPS", "ComplexSystems" };
 
 If[ $CloudBase === None, $CloudBase = "https://www.wolframcloud.com" ];
 If[ ! $CloudConnected, CloudConnect[] ];
@@ -38,7 +38,7 @@ sampleCells[ name_String ] := {
 
   Cell[ "Statement", "Section" ],
   Cell[ "A graph is a pair (V, E) with E a set of unordered pairs of distinct elements of V.", "Definition" ],
-  Cell[ "The theorem environments share one counter, so this theorem follows the definition above and both reset at the next section.", "Theorem" ],
+  Cell[ If[ name === "ComplexSystems", "This template gives every environment its own counter, running straight through the document with no section prefix, which is what the journal prints.", "The theorem environments share one counter, so this theorem follows the definition above and both reset at the next section." ], "Theorem" ],
   Cell[ math @ RowBox[ { SubscriptBox[ "\[Sum]", RowBox[ { "v", "\[Element]", "V" } ] ],
     RowBox[ { "deg", "(", "v", ")" } ], "=", RowBox[ { "2", RowBox[ { "|", "E", "|" } ] } ] } ], "DisplayFormulaNumbered" ],
   Cell[ "Summing degrees counts every edge twice.", "Proof" ],
