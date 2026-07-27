@@ -54,7 +54,7 @@ Done when an author who has never read the source can tell from the palette what
 
 **Trimmed 2026-07-27** from five tasks to two, in the backlog reduction. What survives is the defect Pavel actually reported — four labels he could not tell apart — and the one rough edge that is a bug rather than a design question. The MaTeX *display form* (T2 below, now dropped from scope) is a design decision needing Pavel at a notebook, not a session; it goes back on the pile if he still wants it after the labels are readable.
 
-- [ ] T1 — Write down what each of the four conversions does and what an author actually wants, then settle the labelling and grouping with Pavel before touching code. Include where `ExportLaTeXDocument` belongs in the palette, since it now exists and the per-selection buttons should not look like the only LaTeX path. Rewrite the tutorial's conversion section to match.
+*Both tasks are now done. The item stays Active on one clause of the Spec's "done when": Pavel has not yet driven the new palette on a real document. Nothing is left to build for it.*
 
 ### Dropped from scope 2026-07-27
 
@@ -63,6 +63,7 @@ Done when an author who has never read the source can tell from the palette what
 
 ### Done
 
+- [x] T1 — Settle the labelling and grouping of the conversions, give `ImportLaTeXDocument`/`ExportLaTeXDocument` a place on the palette, and rewrite the tutorial's conversion section (Session 2).
 - [x] T2 — Make a newly converted MaTeX cell honour the document's current math size (Session 1).
 
 ## Progress
@@ -92,8 +93,30 @@ Done when an author who has never read the source can tell from the palette what
   - `Default.nb` resolves `DisplayFormula` to a numeric 14, screen and printout alike, so making `ConvertToMaTeX` depend on the chain-read anchor does not break a document that is not on a MathNotebook sheet.
 - **Next:** T1 — settle the labelling and grouping of the four conversions with Pavel, and where `ExportLaTeXDocument` belongs in the palette. It is a design conversation, so it wants him at a notebook rather than a headless session.
 
+### Session 2 — 2026-07-27 — T1
+
+- **Prompt:** `/next-session` with no item named; `ConversionUX` was the single Active item and T1 its only open task.
+- **Did:** Put the labelling and grouping to Pavel as three drawn layouts before touching anything; he took the one where **the group heading carries the direction and the button is named by its verb alone**, plus tooltips on every conversion and a file dialog inside each document button.
+  Two conversion groups became three: `Whole paper (LaTeX)` with `Import .tex file…` and `Export to .tex…`, `Selection: LaTeX ⇄ math` with `Typeset` and `Show source`, `Selection: math ⇄ MaTeX` with `Render` and `Restore`.
+  `MaTeX preferences` and `Install MaTeX` moved down to `Setup`, which is what they are, leaving the MaTeX group to hold only the conversion pair.
+  Each of the six carries a sentence on hover, `Export to .tex…`'s saying in as many words that the selection buttons are a convenience beside it.
+  Both document buttons get their path from a `SystemDialogInput` of their own — `FileOpen` from the current notebook's directory, `FileSave` defaulting to the notebook's name with `.tex` — so neither needed a new exported symbol and the kernel API is unchanged.
+  Tutorial's conversion section rewritten to lead with the whole-paper route and name the new buttons; the MaTeX section and two Best Practices items renamed with it.
+  New `Tests/Palette.wlt`, six tests, pinning the six labels, the three headings, the six tooltips, the absence of the four old labels, and the two dialogs.
+  Bite check: dropping the `Tooltip` wrapper from `kernelButton` and rebuilding takes it from 6 passing to 4.
+  Suite green at 228.
+- **Learned:**
+  - **The four labels were the reported defect but not the real one.** `ImportLaTeXDocument` and `ExportLaTeXDocument` have been exported symbols since `LaTeXPaperImport` T2 and had **no palette presence at all**, so the two per-selection buttons were the only LaTeX exit an author could see — which is exactly why Pavel asked "why do we even have that". The answer to his question was a missing button, not a better word.
+  - **A palette button's code is stored verbatim and cannot call a helper from the build script.** `kernelButton` is `HoldRest`, so a `importDocument[]` written there lands in the `.nb` as an undefined call and the button silently does nothing — the `Package[]` cross-file trap in a second guise. The dialogs are therefore written out literally.
+  - **A generated palette can be regression-tested as text**, which is the only safe way to read one back: undo the exporter's `\`-and-newline line wrapping and its `\<\"…\"\>` string escaping and the labels and tooltips match plainly. A named character in a label stays as its own escape, so the test spells `\\[Ellipsis]`.
+  - `CLAUDE.md`'s warning that `MathNotebookTutorial.nb` carries hand edits the build script does not produce is **stale** — the file is back in sync, and a regeneration removed only the section being rewritten. Verified by filtering the diff for non-`ExpressionUUID` lines rather than by trusting the line count.
+- **Next:** nothing to build. Pavel drives the new palette on a real paper; if it reads, the item closes, and the dropped MaTeX display-form question goes back on the pile only if he still wants it. One thing this session leaves stale for whoever releases next: the tutorial changed, so the cloud copy `Scripts/DeployPreviews.wls` publishes is now a version behind — the same trap that nearly shipped in 0.1.11.
+
 ## Decisions
 
 | Date | Decision | Rationale |
 |---|---|---|
+| 2026-07-27 | The group heading carries the direction; each conversion button is named by its verb alone | Pavel's choice of three layouts put to him. Four labels built from three interchangeable words is the defect, and the shortest fix that removes the ambiguity entirely is to stop repeating the nouns on the buttons: `Typeset`, `Show source`, `Render`, `Restore` share no word with each other, and the heading above them says what they move between |
+| 2026-07-27 | Every conversion button carries a hover tooltip | costs nothing in palette width and answers "what does this one do" where the question is actually asked, rather than in the tutorial |
+| 2026-07-27 | `Import .tex file…` and `Export to .tex…` get their path from a dialog inside the button | the kernel functions take paths and the palette needed the whole-document route visible; a dialog in the button gives it one with no new exported symbol and no kernel API change |
 | 2026-07-26 | Filed as its own item rather than revised inside `PaletteUsability` T6 | the labelling is a palette-usability point but the MaTeX cell form and the fate of LaTeX conversion are design questions about the conversion subsystem, and both need Pavel's decision before any code changes |

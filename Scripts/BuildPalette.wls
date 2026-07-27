@@ -26,6 +26,11 @@ kernelButton[ label_, code_ ] :=
   Button[ label, Needs[ "WolframInstitute`MathNotebook`" ]; code,
     Method -> "Queued", Appearance -> "Palette", ImageSize -> $buttonSize ]
 
+(* The conversion buttons are named by their verb alone and take their direction from the group
+   heading, so each one carries the sentence that says what it does to the selection. *)
+kernelButton[ label_, code_, tooltip_String ] :=
+  Tooltip[ kernelButton[ label, code ], tooltip ]
+
 (* Applying a stylesheet replaces the private sheet the view controls install, so the stored
    sizes have to go with it or the sliders would report a size the document no longer has. *)
 stylesheetItem[ name_String ] :=
@@ -133,16 +138,37 @@ $groups = {
         $fontSizeRange, $defaultFontSize ],
       staticViewSlider[ "Math size", $fontSizeRange, $defaultFontSize ] ],
     kernelButton[ "Reset view", WolframInstitute`MathNotebook`ResetDocumentView[] ] } },
-  { "Convert", "LaTeX \[LeftRightArrow] math (selection)", {
-    kernelButton[ "TeX \[Rule] math", WolframInstitute`MathNotebook`ConvertLaTeXCells[] ],
-    kernelButton[ "Math \[Rule] TeX", WolframInstitute`MathNotebook`ConvertMathCells[] ] } },
-  { "MaTeX", "MaTeX (optional)", {
-    kernelButton[ "Math \[Rule] MaTeX", WolframInstitute`MathNotebook`ConvertToMaTeX[] ],
-    kernelButton[ "MaTeX \[Rule] math", WolframInstitute`MathNotebook`ConvertFromMaTeX[] ],
-    kernelButton[ "MaTeX preferences", WolframInstitute`MathNotebook`OpenMaTeXPreferences[] ],
-    kernelButton[ "Install MaTeX", WolframInstitute`MathNotebook`InstallMaTeX[] ] } },
+  (* Three conversion groups where there were two. The whole-paper route is the one an author
+     wants and it had no palette presence at all, which is what made the two per-selection buttons
+     look like the only way out to LaTeX; the heading now says which is which, and each button is
+     named by its verb alone so no two labels differ by one letter. *)
+  { "Document", "Whole paper (LaTeX)", {
+    kernelButton[ "Import .tex file\[Ellipsis]",
+      With[ { directory = Replace[ Quiet @ NotebookDirectory[ InputNotebook[] ], Except[ _String ] -> Directory[] ] },
+        With[ { file = SystemDialogInput[ "FileOpen", directory ] },
+          If[ StringQ[ file ], NotebookPut @ WolframInstitute`MathNotebook`ImportLaTeXDocument[ file ] ] ] ],
+      "Reads a LaTeX paper into a new notebook: sectioning and theorem environments become styled cells, mathematics is typeset, labels become cell tags, and cross-references and citations become live links. Anything it cannot read is carried verbatim, so exporting returns the source unchanged." ],
+    kernelButton[ "Export to .tex\[Ellipsis]",
+      With[ { notebook = InputNotebook[] },
+        With[ { default = Replace[ Quiet @ NotebookFileName[ notebook ],
+              { name_String :> StringReplace[ name, ".nb" ~~ EndOfString -> ".tex" ], _ :> "paper.tex" } ] },
+          With[ { file = SystemDialogInput[ "FileSave", default ] },
+            If[ StringQ[ file ], WolframInstitute`MathNotebook`ExportLaTeXDocument[ notebook, file ] ] ] ] ],
+      "Writes the whole notebook out as a LaTeX paper. This is the export route; the selection buttons below only change how a few cells are written and are a convenience beside it." ] } },
+  { "Convert", "Selection: LaTeX \[LeftRightArrow] math", {
+    kernelButton[ "Typeset", WolframInstitute`MathNotebook`ConvertLaTeXCells[],
+      "Reads the selected cells as LaTeX and replaces the mathematics in them with editable typeset math. With nothing selected, the whole notebook. Input, Code and Output cells are skipped, so a $ in code is safe." ],
+    kernelButton[ "Show source", WolframInstitute`MathNotebook`ConvertMathCells[],
+      "Turns the typeset mathematics of the selected cells back into LaTeX source, to read or paste elsewhere. With nothing selected, the whole notebook. To write out a paper, use Export to .tex above." ] } },
+  { "MaTeX", "Selection: math \[LeftRightArrow] MaTeX", {
+    kernelButton[ "Render", WolframInstitute`MathNotebook`ConvertToMaTeX[],
+      "Renders the selected display equations through real LaTeX, at the size Math size is showing. The result is an image rather than editable math, so render last. Optional: needs MaTeX, a TeX distribution and Ghostscript." ],
+    kernelButton[ "Restore", WolframInstitute`MathNotebook`ConvertFromMaTeX[],
+      "Turns rendered MaTeX images back into editable typeset math, from the LaTeX each of those cells stores." ] } },
   { "Setup", "Setup", {
     kernelButton[ "Install LaTeX fonts", WolframInstitute`MathNotebook`InstallLaTeXFonts[] ],
+    kernelButton[ "Install MaTeX", WolframInstitute`MathNotebook`InstallMaTeX[] ],
+    kernelButton[ "MaTeX preferences", WolframInstitute`MathNotebook`OpenMaTeXPreferences[] ],
     kernelButton[ "Update from cloud", WolframInstitute`MathNotebook`UpdateMathNotebook[] ],
     kernelButton[ "Tutorial", WolframInstitute`MathNotebook`OpenTutorial[] ] } }
 };
