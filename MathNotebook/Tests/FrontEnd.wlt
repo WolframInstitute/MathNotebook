@@ -78,24 +78,41 @@ inlineInk[ text_String ] := <|
    into its own cell, so what has to be shown is that the formula really renders and that the
    starred form really is unnumbered. The equation number is a CounterBox and a single rasterized
    cell has no document context to resolve one — both starred and unstarred measured 243 that way —
-   so the numbering half renders the whole notebook. *)
+   so both halves render the whole notebook.
+
+   LaTeXPaperImport T12: a whole-notebook render and a single-cell Rasterize are not on the same
+   scale and must never be compared. So every number that appears on both sides of a comparison
+   below comes from notebookInk, "Literal" included; the one cell raster left, "Formula", is only
+   ever asked whether it is positive. notebookInk takes the notebook rather than the source text,
+   so the unconverted paragraph goes through exactly the same measurement as the converted one.
+   Background -> White is the second half of "the same way": inkOf counts every pixel that is not
+   white, so a front end rendering in a dark appearance counts the whole canvas as ink and the
+   numbers stop meaning anything. (WindowSize is not pinned because it cannot be — the export
+   crops to the content, so the width follows the text and the ink is unaffected by the wrap.)
+
+   "Formula" reads 0 when no DisplayFormula cell was produced at all, rather than measuring what
+   FirstCase returned: rasterizing a bare Missing["NotFound"] draws the words and carries 653 ink,
+   so "Formula > 0" was passing on a paragraph the converter had left entirely alone. *)
 
 $displayParagraph = "The cone at $p$ is:\n\\begin{equation*}\n  x^2 + y^2 = z^2\n\\end{equation*}\nand that is all.";
 
-notebookInk[ text_String ] :=
+notebookInk[ Notebook[ cells_, options___ ] ] :=
   Module[ { notebook, file },
-    notebook = NotebookPut[ convertLaTeXNotebook @ Notebook[ { Cell[ text, "Text" ] } ], Visible -> False ];
+    notebook = NotebookPut[ Notebook[ cells, options ], Visible -> False, Background -> White ];
     file = Export[ FileNameJoin[ { $TemporaryDirectory, "MathNotebookDisplayInk.png" } ], notebook, ImageResolution -> 72 ];
     NotebookClose[ notebook ];
     inkOf @ Import[ file ]
   ]
 
+convertedParagraph[ text_String ] :=
+  convertLaTeXNotebook @ Notebook[ { Cell[ text, "Text" ] } ]
+
 displayInk[ text_String ] := <|
-  "Starred" -> notebookInk[ text ],
-  "Unstarred" -> notebookInk @ StringReplace[ text, "equation*" -> "equation" ],
-  "Literal" -> inkArea @ Cell[ text, "Text" ],
-  "Formula" -> inkArea @ FirstCase[
-    First @ convertLaTeXNotebook @ Notebook[ { Cell[ text, "Text" ] } ], Cell[ _, "DisplayFormula", ___ ] ]
+  "Starred" -> notebookInk @ convertedParagraph[ text ],
+  "Unstarred" -> notebookInk @ convertedParagraph @ StringReplace[ text, "equation*" -> "equation" ],
+  "Literal" -> notebookInk @ Notebook[ { Cell[ text, "Text" ] } ],
+  "Formula" -> Replace[ FirstCase[ First @ convertedParagraph[ text ], Cell[ _, "DisplayFormula", ___ ] ],
+    { cell_Cell :> inkArea[ cell ], _ -> 0 } ]
 |>
 
 (* T3: a letter that the kernel reads as a constant is a *display* defect and nothing else — the
@@ -378,8 +395,10 @@ VerificationTest[
   AssociationMap[ True &, { "A pair $(V, E)$ here.", "A list $x_1, x_2$ here." } ]
 ]
 
-(* T2: the split formula carries ink, and the paragraph as a whole carries less than the literal
-   LaTeX it replaces — the backslashes are gone. *)
+(* T2: the split formula carries ink, and the converted paper carries less than the literal LaTeX
+   it replaces — the backslashes, the braces and the two "equation*" are gone. Both papers are
+   rendered as notebooks (LaTeXPaperImport T12), so the comparison is between like and like; the
+   converted one is three cells against the literal one's single cell and still measures less. *)
 VerificationTest[
   { $measured[ "DisplayInk", "Formula" ] > 0,
     $measured[ "DisplayInk", "Starred" ] < $measured[ "DisplayInk", "Literal" ] },

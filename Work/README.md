@@ -22,7 +22,6 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 ## Active
 
 - [View and Reference Defects](Active/ViewAndReferenceDefects.md) — all implementation done (T1–T5: the text slider reaches every prose style, a tagged `Reference` shows its label, a citation to a theorem reads `Theorem 1.1`, front-end tests for all of it, tutorial updated); next: **T6**, Pavel re-checks on the document that produced the report — the Spec's last gate, and not something a session can close
-- [LaTeX Paper Import](Active/LaTeXPaperImport.md) — T1–T11 done (`ImportLaTeXDocument`/`ExportLaTeXDocument`: both specimen papers **and the repo's four LaTeX samples** round-trip byte-identically — through a real save and reopen — with sectioning, theorem environments, labels, cross-references, citations, numbering, figures, front matter, lists and both bibliographies converted; and an imported paper now **opens with its environments live**, on the template its `\documentclass` asks for or on the new `PlainArticle` sheet — `Default.nb`'s typography with the paper structure added — where before it landed on `Default.nb` and a cross-reference read `2.0`); next: **T12**, `FrontEnd.wlt`'s display-ink test compares two measurement scales
 - [Cross-Platform TeX and Font Support](Active/CrossPlatformTeX.md) — T1 done (the suite no longer assumes macOS or a TeX install, and a machine with no TeX gets a message telling it what to do); next: **T2**, Linux end to end — needs a Linux machine
 
 ## Backlog

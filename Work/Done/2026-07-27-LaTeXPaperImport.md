@@ -49,9 +49,9 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
 
 ## Tasks
 
-- [ ] T12 — `FrontEnd.wlt`'s T2 display-ink test compares two measurement scales and fails at HEAD. `Starred` (7742) comes from a whole-notebook PNG render and `Literal` (2440) from a single-cell `Rasterize`, so `Starred < Literal` cannot hold; the clause beside it, `Starred < Unstarred` (56959), is sound and passes. Measure both sides the same way, or drop the clause — `Formula > 0` already says the formula renders. *(Found in Session 6, pre-existing)*
-
 ### Done
+
+- [x] T12 — `FrontEnd.wlt`'s T2 display-ink test compares two measurement scales. `Starred` came from a whole-notebook PNG render and `Literal` from a single-cell `Rasterize`, so the comparison mixed them; both sides now go through the same notebook render. *(Session 12)*
 
 - [x] T1 — Baseline: unzip the paper, convert with today's pipeline, convert back, diff against the source, and write the gap report into this item's Progress. *(Session 1)*
 - [x] T2 — Sectioning and theorem environments, both directions, with tests. *(Session 2)*
@@ -518,6 +518,40 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
   - `Export` writes an `ExpressionUUID` into every cell of a generated sheet, so regenerating the four templates for an unrelated change produces a 599-line diff of nothing. Check `git diff` filtered for non-UUID lines before committing a stylesheet rebuild.
   - A `perl -0pi -e 's/\Q…\E/…/'` bite patch still **interpolates `$variables` inside `\Q…\E`**, so a pattern quoting Wolfram code with a `$` silently matches nothing and reports the suite as green. That is the third form of the "confirm the patch landed" trap; printing the changed line caught it.
 - **Next:** T12 — `FrontEnd.wlt`'s T2 display-ink test compares two measurement scales.
+
+### Session 12 — 2026-07-27 — T12
+
+- **Prompt:** `/next-session` continued.
+- **Did:** The display-ink test measures both sides the same way, and the clause that was supposed to make the other one droppable turned out to be the unsound one.
+
+  | | at HEAD | after |
+  |---|---|---|
+  | `Starred` | 1268 (notebook) | 1268 (notebook) |
+  | `Unstarred` | 1368 (notebook) | 1368 (notebook) |
+  | `Literal` | 2440 (**cell raster**) | 2440 (**notebook**) |
+  | `Formula` | 243, or 653 with no formula at all | 243, or **0** with no formula at all |
+  | suite | 218 pass | 218 pass |
+
+  **The test does not fail at HEAD on this machine, and the recorded 7742 / 56959 do not reproduce.**
+  All 25 of `FrontEnd.wlt` pass unchanged, because the two methods **agree exactly** on a single `Text` cell — the whole-notebook render of the literal paragraph measures 2440, the same 2440 the cell raster gives.
+  So the mismatch T12 names is real but latent, and what separates the two methods is the *canvas*, not the method: `inkOf` counts every pixel that is not white and only `inkArea` pins `LightDark -> "Light"`, so a front end rendering dark counts the whole page on one side and nothing on the other.
+  That is the shape of an assertion that holds for a long time and then stops, which is what the earlier session saw.
+
+  **Both sides now go through `notebookInk`**, which takes the notebook rather than the source text so the unconverted paragraph is measured by the identical code path, with `Background -> White` pinned on the `NotebookPut` — verified to reach the exported PNG, since `Background -> LightBlue` gives a `{222, 240, 255}` corner.
+  `WindowSize` is deliberately not pinned: the export crops to the content, so the width simply follows the text (101, 516 and 116 px in one run) and ink is wrap-invariant.
+  The comparison is now conservative as well as sound — the converted paper is three cells against the literal one's single cell, and still measures 1268 against 2440.
+
+  **`Formula > 0` — T12's own reason the other clause could be dropped — was passing vacuously.**
+  `FirstCase` with no default returns `Missing["NotFound"]` and `Rasterize` *draws* it: 653 ink.
+  Under a converter that produced no `DisplayFormula` cell at all the clause still passed, so it was never the assertion the comment claimed. An absent cell now reads 0.
+
+  **Bites.** Two, each patched by literal replacement with the changed line printed.
+  Dropping the `equation*` row from `$displayDelimiters` puts `Starred` at 2819 above `Literal`'s 2440 and fails 3 tests; flipping that row's `numbered` flag to `True` makes `Starred` and `Unstarred` both 1368 and fails 2 — where before the `Formula` fix the same bite left `Formula` reading 653 and failed only 1.
+- **Learned:**
+  - **A notebook render and a cell raster are not inherently on different scales.** One `Text` cell is 2440 by both, and they diverge only when the canvas is counted. The rule is not "never compare" but "pin the background on both"; `Background -> White` on `NotebookPut` reaches the exported PNG, where `LightDark` is a `Rasterize` option and has no counterpart there.
+  - **`FirstCase` without a default is a silent pass in any ink test**, because a rasterized `Missing["NotFound"]` carries ink. The same shape as `First @ StringCases[…, default]` and as `StringCases[…, patt :> ""]` returning `{}`: a probe that cannot tell "not found" from "found and empty".
+  - A task's own premise is worth measuring before acting on it. Both halves of this one were off — the test passed rather than failed, and the clause offered as the safe fallback was the one asserting nothing.
+- **Next:** none — T12 was the last task and the item is complete.
 
 ## Decisions
 
