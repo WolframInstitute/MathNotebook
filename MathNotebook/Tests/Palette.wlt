@@ -56,6 +56,24 @@ VerificationTest[
   { }
 ]
 
+(* JournalSubmission T3. A template the palette does not list is a template no author can apply
+   from the paclet's own UI: ComplexSystems was generated, tested and shipped in the working tree
+   while $styleSheets in BuildPalette.wls still named five sheets, and nothing detected it — the
+   stylesheet tests measure the .nb files and never look at the menu. Derive the expected list from
+   the shipped sheets rather than writing it out, so a seventh template is caught the same way.
+   LaTeXBase is the shared base the five chain from, not a template, and is not offered. *)
+VerificationTest[
+  Select[
+    DeleteCases[
+      Map[ FileBaseName,
+        FileNames[ "*.nb", FileNameJoin @ {
+          DirectoryName @ palettePath @ PacletObject[ "WolframInstitute/MathNotebook" ],
+          "..", "StyleSheets", "MathNotebook" } ] ],
+      "LaTeXBase" ],
+    ! StringContainsQ[ $paletteSource, "\"" <> # <> ".nb\"" ] & ],
+  { }
+]
+
 (* ImportLaTeXDocument and ExportLaTeXDocument had no palette presence at all, which is what made
    the two per-selection buttons look like the only route out to LaTeX. Each takes a path, so each
    button gets one from a dialog of its own and neither needs a new exported symbol. *)

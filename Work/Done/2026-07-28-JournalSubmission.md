@@ -34,9 +34,15 @@ Done when a notebook can be written in a `ComplexSystems` template that matches 
 
 - [x] T1 — Read the Complex Systems author instructions and class file; record the geometry and the styles the journal names.
 - [x] T2 — Generate the `ComplexSystems` template from `BuildStyleSheets.wls`; sample PDF alongside the other four.
-- [ ] T3 — Scope the submission bundle: what each target accepts, and what the notebook can produce today.
+- [x] T3 — Scope the submission bundle: what each target accepts, and what the notebook can produce today.
 
 ### Done
+
+- **T3** (2026-07-28) — the three targets read from their own instructions and the exporter measured
+  against one: a bundle is needed for arXiv and **not** for *Complex Systems*, which is notebook-native.
+  Today's export writes one `.tex` and none of the seven figures or the `.bib` it names. Implementation
+  moved to `Work/Backlog/SubmissionBundle.md`. One T2 leftover fixed on the way — the fifth template was
+  missing from the palette's stylesheet menu.
 
 - **T1** (2026-07-28) — the instructions, the class file and the journal's *own notebook stylesheet* read and
   measured; geometry, fonts and the environment set recorded below. The finding that reshapes T2: the journal
@@ -50,6 +56,74 @@ Done when a notebook can be written in a `ComplexSystems` template that matches 
   tree and is **not in published 0.1.12**; shipping it needs a release.
 
 ## Progress
+
+### T3 — what a bundle is, measured against what the exporter writes (2026-07-28)
+
+**The three targets want three different things, and only one of them wants a bundle.**
+
+| Target | Accepts | What must actually be uploaded |
+|---|---|---|
+| arXiv | (La)TeX source (preferred), native PDF, HTML | Every `.tex`; every figure in PDF/PNG/JPG (PDFLaTeX) or EPS/PS (LaTeX), **no conversion is performed**; the pre-processed `.bbl`; every `.cls`/`.sty` not in TeX Live. Excludes `.aux`, `.log`, `.pdf`. TeX Live 2023 or 2025. "We do not accept dvi, PS, or PDF created from TeX/LaTeX source" |
+| *Complex Systems* | "Papers should be submitted electronically… other formats or hard copy will require longer processing times" — no format list; both a Mathematica and a LaTeX author template are offered | One document through a Wolfram Cloud form, plus suggested referees' names, addresses and telephone numbers |
+| AMS / Springer / APS (the other three templates) | out of scope — enumerating each journal's rules is not what this item is for | — |
+
+**What the exporter produces today, measured rather than inferred.** The second specimen is already
+an arXiv-shaped bundle — `main.tex` + seven PNGs + `references.bib`, `\documentclass{article}` — so it
+was extracted to a scratch directory, imported, and exported into an empty one beside it. The round
+trip is byte-exact and the output directory holds **`main.tex` and nothing else**, while that same
+`.tex` names seven `\includegraphics` files and `\bibliography{references}`. So "Export to .tex…"
+already writes a correct `.tex` and never once writes a *compilable* one anywhere but the paper's
+original directory. That gap, precisely, is the bundle.
+
+**The pieces, ordered by what they cost.**
+
+1. **Figures — cheap, with one hard case.** The importer already turns each `\includegraphics{f}` into
+   an `Input` cell holding `Import[FileNameJoin[{NotebookDirectory[], f}]]` — seven of them in the
+   specimen, counted — so the path is *in the notebook* and copying is one `CopyFile` per cell. The
+   hard case is the figure whose `Input` cell the author has since replaced with the code that
+   generates the picture: there is no file, and making one means evaluating the cell and exporting at
+   a format the target accepts. arXiv performs no conversion, so the format is the author's problem
+   and the bundle must not guess.
+2. **The `.bib` — cheap to copy, insufficient alone.** arXiv now blocks a submission carrying neither
+   a `.bbl` nor every `.bib` it needs, and a biblatex/biber paper (hodgepaper is one) wants the `.bbl`
+   regardless.
+3. **`.bbl` and PDF — one dependency, not two.** Both need a local LaTeX run. The repo already knows
+   how to find one: `MaTeX.wl` reads the pdfLaTeX and Ghostscript paths from persistent config and
+   `Tests/MaTeX.wlt` guards on both executables being present. A bundle button should degrade the same
+   way — always emit the source tree, add `.bbl`/PDF only where a TeX installation is found — rather
+   than requiring one.
+4. **Class and style files — do not try.** A `.cls` lives on the author's TeX tree; for *Complex
+   Systems* it is exactly the file this repo declines to vendor. But the four other templates' classes
+   (`amsart`, `revtex4`, `svjour3`) are all in TeX Live, and an author submitting to *Complex Systems*
+   is not submitting to arXiv. Name what is missing in a message; do not go looking.
+
+**The *Complex Systems* route needs no bundle at all, and that reshapes the Spec's second half.** The
+journal is notebook-native and its submission is a form upload, so the artifact is the `.nb` the author
+already has — the button there is "check this notebook against the journal's template", not "build a
+tree". Its LaTeX route exists and is strictly worse for this repo: the journal's own sample is
+`\documentclass{article}` + `\usepackage{amssymb,ComplexSystems}`, and since the `.sty` is not
+redistributable, MathNotebook can never ship a *compilable* Complex Systems LaTeX bundle while it can
+and does ship the notebook. So "publish to Complex Systems" and "publish to arXiv" from the original
+request are not two instances of one button.
+
+**Two wiring gaps T2 left; one fixed here.** `$styleSheets` in `BuildPalette.wls` still named five
+sheets, so `ComplexSystems` — generated, measured, tested and sitting in the tree — could not be
+applied from the paclet's own UI at all. Fixed, palette and `Images/Palette.png` regenerated, and a new
+`Tests/Palette.wlt` clause derives the expected menu from the shipped stylesheet `.nb` files (minus
+`LaTeXBase`, which is the shared base and not a template) so a seventh template cannot repeat it.
+Bite-checked by putting the pre-fix palette back from `git show` with the new one copied aside first:
+7 passed → **6 passed, 1 failed**, then restored. Suite **231 passed, 0 failed** (`Palette.wlt` 6 → 7).
+The second gap is scoped and deliberately not fixed: `documentStyleSheet` routes on the
+`\documentclass` alone, and a Complex Systems paper declares `article`, so the importer can never
+choose the fifth template for one. Routing on a `\usepackage` is a different rule from routing on a
+class — a paper may load a package for a single macro — and it deserves its own decision.
+
+**Not shipped.** The fifth template was already absent from published 0.1.12 and this palette change is
+too. A release is `Release`'s job, not this item's.
+
+The implementation is `Work/Backlog/SubmissionBundle.md`, whose Spec is a proposal for review rather
+than a decision: this task was to scope, and the Spec's own instruction was to scope the second half
+only once the stylesheet existed.
 
 ### T2 — the fifth template, measured rather than styled (2026-07-28)
 
@@ -212,4 +286,8 @@ is a different thing and is fine; shipping the journal's cells is not.
 | 2026-07-28 | `ComplexSystems` gets **per-environment counters with no section prefix**, breaking the one-`Theorem`-counter invariant the other four share | The `.sty`'s six `\newtheorem`s take no `[section]`, and the sheet declares `Lemma` standalone with `CounterIncrements -> "Lemma"`. Numbering is the document's, not the sheet's, so this is a deviation the sheet is allowed — but `theoremStyleCells` cannot be reused unchanged |
 | 2026-07-28 | Extend `$templates` with **optional** keys (`"Overrides"`, `"PrintFont"`, `"PrintOverrides"`) rather than parameterising the base cell list | The four existing templates set none of them and regenerate byte-identically, so the fifth template costs the other four nothing. Verified by diffing every sheet with `ExpressionUUID` lines filtered and reverting the five that had not really changed |
 | 2026-07-28 | Split the counter clause in `Tests/StyleSheets.wlt` instead of relaxing it | Relaxing it to "some counter" would stop detecting a shared-counter regression in the four. The four assert twelve cells incrementing `"Theorem"`; `ComplexSystems` asserts exactly one, plus that `Section` does not reset it. Both directions bite-checked |
+| 2026-07-28 | "Publish to arXiv" and "publish to Complex Systems" are **not one button**; only arXiv gets a bundle | arXiv wants a source tree (`.tex` + figures + `.bbl` + non-TeX-Live classes, no PDF-from-TeX). *Complex Systems* is notebook-native with a Wolfram Cloud form, so its artifact is the `.nb` the author already has — and its `.sty` is not redistributable, so a compilable CS LaTeX bundle is something this repo can never ship |
+| 2026-07-28 | A bundle **degrades** rather than requiring LaTeX: source tree always, `.bbl` and PDF only where pdfLaTeX is found | Both extras need one local LaTeX run, and `MaTeX.wl` already locates pdfLaTeX/Ghostscript from persistent config with `Tests/MaTeX.wlt` guarding on their presence. Reuse that shape instead of making a TeX installation a precondition for exporting anything |
+| 2026-07-28 | Do **not** hunt for `.cls`/`.sty` files to bundle; name the missing ones in a message | A class lives on the author's TeX tree, `amsart`/`revtex4`/`svjour3` are all in TeX Live anyway, and the one class that is missing — Complex Systems — is the file this item already decided not to vendor |
+| 2026-07-28 | Add `ComplexSystems` to the palette menu now; leave importer routing on `\usepackage` unfixed and scoped | The template was unreachable from the paclet's own UI, which is a defect in T2's deliverable and a one-line fix with a test that bites. Routing the *importer* on a package rather than a class is a genuine design change — a paper may load a package for one macro — and belongs to a task that can weigh it |
 | 2026-07-28 | Ship the sample as a **notebook printout PDF**, not pdfTeX output, and say so in the README | The other three sample PDFs are compiled from their `.tex` by pdfLaTeX. There is no redistributable Complex Systems class to compile against, so the honest artifact is the notebook's own printout — which is also what actually proves the stylesheet renders the journal's geometry |
