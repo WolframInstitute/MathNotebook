@@ -32,15 +32,114 @@ Done when a notebook can be written in a `ComplexSystems` template that matches 
 
 ## Tasks
 
-- [ ] T1 — Read the Complex Systems author instructions and class file; record the geometry and the styles the journal names.
+- [x] T1 — Read the Complex Systems author instructions and class file; record the geometry and the styles the journal names.
 - [ ] T2 — Generate the `ComplexSystems` template from `BuildStyleSheets.wls`; sample PDF alongside the other four.
 - [ ] T3 — Scope the submission bundle: what each target accepts, and what the notebook can produce today.
 
 ### Done
 
+- **T1** (2026-07-28) — the instructions, the class file and the journal's *own notebook stylesheet* read and
+  measured; geometry, fonts and the environment set recorded below. The finding that reshapes T2: the journal
+  ships `ComplexSystems.nb`, so the fifth template is a **derivation, not an invention** — and its numbering is
+  the opposite of MathNotebook's.
+
 ## Progress
+
+### T1 — what the journal actually publishes (2026-07-28)
+
+`https://www.complex-systems.com/contribute/` offers **six** files, all now in `Resources/` (gitignored):
+`JCS_SamplePaper.nb.pdf`, `JCS_SamplePaper.nb`, `JCS_AuthorTemplate.nb`, `JCS_SamplePaper.tex`,
+`ComplexSystems.sty.zip`, `ComplexSystems.nb`. Submission is a Wolfram Cloud form
+(`wolframcloud.com/obj/submissions/complex-systems-contribution/form`); no publication charges; the page asks for
+suggested referees' names, addresses and telephone numbers. It names no accepted format beyond "electronically" and
+"other formats or hard copy will require longer processing times" — **the journal is notebook-native**, which is
+what makes this item's premise right.
+
+**The premise of the Spec was wrong in the paclet's favour.** The line "publishes its author instructions and class
+file" understated it: there is a full production **Wolfram stylesheet**, `ComplexSystems.nb` — 395 `StyleData`
+cells, 213 distinct style names, `StyleDefinitions -> "Default.nb"`. Same architecture as MathNotebook's four
+templates. T2 must derive from it rather than reconstruct the journal's typography from the `.sty`.
+
+**Page geometry — the two routes agree exactly, so both numbers are trustworthy.**
+
+| | `ComplexSystems.nb` (`Notebook` style) | `ComplexSystems.sty` | Sample PDF |
+|---|---|---|---|
+| Paper | `"PageSize" -> {432, 648}` | `\trimwidth=6in`, `\trimheight=9in` | `/MediaBox [0 0 432 648]` |
+| Text column | `Text` printout `CellMargins -> {{63, 63}, …}` → **306 pt** | `\textwidth=25.5pc` = **306 pt** | — |
+| Text height | `"PrintingMargins" -> {{0, 0}, {54, 54}}` → 540 pt | `\textheight=45pc` = 540 pt | — |
+| Body | Sabon LT Std **10 pt**, `LineSpacing -> {1, 2, 1}`, `ParagraphIndent -> 12` | 10 pt, `\baselineskip 12pt`, `\parindent=12pt`, `\parskip=0pt` | — |
+| Two-sided | `"FacingPages" -> True`, `"FirstPageHeader" -> False` | `\ExecuteOptions{10pt,twoside}`, `\pagestyle{myheadings}` | — |
+
+Note the printing margins are **`{{0, 0}, …}`** — zero left and right. The column is positioned entirely by
+per-style `CellMargins`, so 63 pt each side of a 432 pt page *is* the geometry; there is no paper-level inset to
+combine with. Header margins `{36, 36}`, footer `{24, 24}`, `"PrintRegistrationMarks" -> False` (the `.sty` has the
+same switch, `\imagefalse`, with crop-mark macros behind it).
+
+**Fonts are commercial and the sheet already solves it the way this repo would.** Print is **Sabon LT Std**
+(roman/italic/bold) with **Univers LT Std Bold** for every heading — confirmed as the embedded faces in the sample
+PDF, alongside `Mathematica` and `WolframCodeSans-Regular`. Neither is on a stock machine and neither ships here.
+The journal's own answer is a **screen/print font split**: the bare styles say `"Times"`/`"Helvetica"`, the
+`"Printout"` variants say `"Sabon LT Std"`/`"Univers LT Std"`. So a `ComplexSystems` template can be honest on any
+machine and correct in the PDF for an author who licenses the fonts, with no new mechanism — and it is one more
+reason the `"Printout"` variant must carry its own `FontSize`, as `LaTeXBase` already does.
+
+**Sizes, as declared (screen → printout).** `Title` 36 → 16 bold; `Author`/`Authors` Helvetica 14 → Univers 8 bold;
+`Abstract` 14 → Sabon 9, inset 24 pt (`{{87, 63}, …}`) exactly matching the `.sty`'s `\leftskip = 2pc`; `Keywords`
+same inset, 9 pt; `Text` 14 → 10; `SmallText` 12 → 9; `Section` Helvetica 18 → Univers 9 bold; `Subsection` 15 → 9;
+`Subsubsection` 12 → 9; `DisplayFormula` 14 → 10; `TheoremLike` 14 → 10 with `ParagraphIndent -> 0`;
+`TheoremLabel` Helvetica 12 → Univers 8 bold; `Caption`/`NumberedFigureCaption` 12 → 9; `Reference` 14 → 9.
+
+Three deviations from the `.sty`, all in the notebook sheet's favour for our purposes but worth knowing before
+anyone calls the PDF "wrong": the sheet sets all three heading levels to 9 pt where the `.sty` drops
+subsection/subsubsection to `\footnotesize` (8 pt); `Title` prints 16 pt against the `.sty`'s redefined `\Large`
+(14 pt on 16 pt leading); and the `.sty`'s section rules — a 3 pt vertical bar plus a 25.25pc hairline drawn under
+every heading — have no counterpart in the stylesheet's options. The `.sty` helpfully records its own size table in
+a comment: `\small` 9/11, `\footnotesize` 8/9.5, `\scriptsize` 7/8.
+
+**Display math is flush left, indented 2 pc.** `DisplayFormula` printout is `CellMargins -> {{87, 63}, …}` —
+24 pt in from the text block — and the `.sty` says so twice (`\mathindent=2pc`, and a comment "Defining display
+math to be flush left"). **All four MathNotebook templates centre display math**, so this is a real divergence, not
+a detail; the equation number sits at the right margin (`\@eqnnum`).
+
+**The environment set, and the numbering trap.** The `.sty` declares six — `theorem`, `lemma`, `corollary`,
+`example`, `proposition`, `definition` — each a plain `\newtheorem` with **no `[section]` argument**, so each has
+its **own counter running straight through the document**. The stylesheet is far richer: 15 styles inherit from
+`TheoremLike` (`Axiom`, `Conjecture`, `Corollary`, `Definition`, `Example`, `Notation`, `Postulate`, `Problem`,
+`Proposition`, `Question`, `Remark`, `Rule`, `Solution`, `Theorem`, `TheoremContinuation`) and `Lemma` is
+**not among them** — it is declared standalone with `CounterIncrements -> "Lemma"`, which is the tell for the whole
+scheme: **one counter per environment, no section prefix.**
+
+That is the exact opposite of this repo's four sheets, which declare a single `Theorem` counter shared by all
+twelve styles, reset by `Section` and printed `Section.Theorem`. Per `CLAUDE.md` the numbering belongs to the
+*document*, not the sheet, so nothing is broken — but a paper written under `ComplexSystems` needs its counters
+declared the journal's way, and T2 cannot get there by copying `theoremStyleCells` unchanged.
+
+The other structural difference: the journal spells a multi-paragraph body with a **`<Name>Continuation` style**
+(`TheoremContinuation`, `ProofContinuation`, `LemmaContinuation`, `AbstractContinuation`, …), where T7 keeps one
+style and strips the dingbat and counter per cell. Both work; they are different answers to the same problem, and
+an exporter aimed at this sheet should emit the continuation style rather than option-stripped cells.
+
+**What an author actually touches.** `JCS_AuthorTemplate.nb` uses 60 distinct styles across 193 cells — the
+author-facing surface, and the right basis for T2's mapping rather than all 213. Beyond the obvious: `Institution`,
+`BeginAbstract`/`AbstractContinuation`/`EndAbstract`, `Keywords`, `SectionFirst` (a first-section variant) and the
+`SectionAlt`/`SubsectionAlt`/`SubsubsectionAlt` trio, `DisplayFormulaNumberedSubletter`,
+`DisplayFormulaLeft`/`DisplayFormulaNumberedLeft`, a nine-style list family (`BulletedList`, `SubList`,
+`romanSubList`, `BeginNumberedList`, `NumberedList`, `BeginLetteredList`, `LetteredList`, `NolabelList`),
+`PlacedGraphics`, `EditorialComment`, `AppendixTitle`/`AppendixSection`/`AppendixSectionFirst`/`AppendixEquation`,
+`FigureCaptionAppendix`/`TableCaptionAppendix`, and `Header`/`Footer`/`PageNumber`. The `.sty` matches the appendix
+behaviour (`\appendix` switches sections to A, B and equations to A.n) and adds a `keywords` environment, an
+`abstract` bounded above and below by a 23.5pc hairline, `\authname`/`\authadd`, and a filled-square `\labelitemi`.
+
+**Not redistributable.** `ComplexSystems.sty` opens `Copyright (c) 2014-2018, Complex Systems, Inc.` with **no
+licence grant**, and `ComplexSystems.nb` carries the same notice. Default copyright, so the paclet must not vendor
+either file — which settles the Spec's edge case. A generated template that *matches measurements taken from* them
+is a different thing and is fine; shipping the journal's cells is not.
 
 ## Decisions
 
 | Date | Decision | Rationale |
 |---|---|---|
+| 2026-07-28 | Do **not** vendor `ComplexSystems.sty` or `ComplexSystems.nb`; keep them in gitignored `Resources/` and generate the template from measurements | `Copyright (c) 2014-2018, Complex Systems, Inc.` with no licence grant. Settles the Spec's edge case; the downloads are reproducible from the URLs recorded above |
+| 2026-07-28 | T2 derives the fifth template from the journal's own stylesheet rather than reconstructing it from the `.sty` | The journal ships a 213-style production `.nb` chaining to `Default.nb` — the same architecture as our four templates. The `.sty` is the cross-check, not the source |
+| 2026-07-28 | Adopt the journal's screen/print font split verbatim (Times/Helvetica bare, Sabon/Univers `"Printout"`) | Sabon LT Std and Univers LT Std are commercial and on no stock machine; the journal's own sheet already answers this, and it needs no new mechanism here |
+| 2026-07-28 | `ComplexSystems` gets **per-environment counters with no section prefix**, breaking the one-`Theorem`-counter invariant the other four share | The `.sty`'s six `\newtheorem`s take no `[section]`, and the sheet declares `Lemma` standalone with `CounterIncrements -> "Lemma"`. Numbering is the document's, not the sheet's, so this is a deviation the sheet is allowed — but `theoremStyleCells` cannot be reused unchanged |
