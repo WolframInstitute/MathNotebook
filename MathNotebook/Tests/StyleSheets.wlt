@@ -38,3 +38,46 @@ VerificationTest[
       Count[ First[ sheet ], Cell[ StyleData[ _String, ___ ], ___, CounterIncrements -> "Theorem", ___ ], { 1 } ] === Length @ $theoremEnvironments ] & ],
   True
 ]
+
+(* LaTeXPaperImport T11: the fifth sheet is not a template. It is Default.nb with the paper's
+   structure added, so it declares the twelve environments and their counter and chains to Default,
+   but claims none of the typography. *)
+
+$plainSheet = Get[ FileNameJoin[ { $styleSheetDirectory, "PlainArticle.nb" } ] ];
+
+VerificationTest[
+  { FileExistsQ[ FileNameJoin[ { $styleSheetDirectory, "PlainArticle.nb" } ] ],
+    SubsetQ[ styleNames[ $plainSheet ],
+      Join[ Keys @ $theoremEnvironments, { "Proof", "Caption", "Date", "Citation", "Hyperlink", "URL" } ] ],
+    ! FreeQ[ First[ $plainSheet ], StyleData[ StyleDefinitions -> "Default.nb" ] ],
+    Count[ First[ $plainSheet ], Cell[ StyleData[ _String, ___ ], ___, CounterIncrements -> "Theorem", ___ ], { 1 } ] },
+  { True, True, True, Length @ $theoremEnvironments }
+]
+
+(* A per-style CounterAssignments replaces the parent's rather than adding to it, so declaring the
+   Theorem reset on Section has to carry Default's own eight resets across with it. *)
+VerificationTest[
+  With[ { assignments = FirstCase[ First[ $plainSheet ],
+      Cell[ StyleData[ "Section" ], options___ ] :> Lookup[ { options }, CounterAssignments, { } ], { }, { 1 } ] },
+    { MemberQ[ assignments, { "Theorem", 0 } ], MemberQ[ assignments, { "ItemNumbered", 0 } ],
+      MemberQ[ assignments, { "Subsection", 0 } ] } ],
+  { True, True, True }
+]
+
+(* "Default's typography" is the whole point of the sheet, and it is one assertion: no size and no
+   font family anywhere in it, and not one cell for a style whose look it defers to Default. The
+   styles it does declare for a name Default already has — the three sectioning levels and Abstract —
+   carry only the number or the word the document prints. *)
+VerificationTest[
+  { FreeQ[ First[ $plainSheet ], FontSize -> _ ],
+    FreeQ[ First[ $plainSheet ], FontFamily -> _ ],
+    Sort @ Complement[ styleNames[ $baseSheet ], styleNames[ $plainSheet ] ],
+    Sort @ Flatten @ Cases[ First[ $plainSheet ],
+      Cell[ StyleData[ "Section" | "Subsection" | "Subsubsection" | "Abstract" ], options___ ] :>
+        Complement[ Keys @ { options },
+          { CellDingbat, CounterIncrements, CounterAssignments, ExpressionUUID } ], { 1 } ] },
+  { True, True,
+    { "Author", "DisplayFormula", "DisplayFormulaEquationNumber", "DisplayFormulaNumbered",
+      "Reference", "Text", "Title" },
+    { } }
+]

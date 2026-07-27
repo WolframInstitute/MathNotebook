@@ -189,6 +189,59 @@ templateStyleSheet[ spec_ ] :=
       StyleDefinitions -> "PrivateStylesheetFormatting.nb" ]
   ]
 
+(* The fifth sheet is Default.nb with the paper's structure added and its typography left alone. It is
+   what an imported paper lands on when its \documentclass names no journal this repo has a template
+   for: the environments are live and a cross-reference resolves, but nothing pretends to be a
+   journal. It is generated from the same base cell list as the four templates and contributes only
+   the styles Default has no notion of — the twelve environments, Proof, Caption, Date and the three
+   character styles — plus, for the styles Default does declare, the number or label the document
+   prints and nothing else. Every explicit FontSize is dropped and the "Printout" variants with them,
+   so an environment inherits Default's Text rather than the templates' 13 pt. *)
+
+$defaultSheetFile = FileNameJoin[ { $InstallationDirectory, "SystemFiles", "FrontEnd", "StyleSheets", "Default.nb" } ];
+
+(* Styles Default.nb already declares, written out rather than scanned: a future Default that gains a
+   name would otherwise silently take that style away from this sheet. Tests/StyleSheets.wlt asserts
+   the two lists together cover every style the base sheet declares. *)
+$plainDeferred = { "Notebook", "Title", "Author", "Text", "Item", "ItemNumbered", "ItemParagraph",
+  "Reference", "DisplayFormula", "DisplayFormulaNumbered", "DisplayFormulaEquationNumber" };
+
+(* Also declared by Default, but the number or the word in front of them is the document's and not the
+   sheet's: Default numbers no heading, and an unnumbered Section beside a \ref that reads "Section 3"
+   is worse than no numbering at all. *)
+$plainLabelled = { "Section", "Subsection", "Subsubsection", "Abstract" };
+
+styleOptions[ cells_List, style_String ] :=
+  FirstCase[ cells,
+    Cell[ StyleData[ style ] | StyleData[ style, StyleDefinitions -> _ ], options___ ] :> { options },
+    { }, { 1 } ]
+
+(* A per-style CounterAssignments replaces the parent's rather than adding to it, so Default's own
+   resets have to be carried across or a Section would stop resetting the item counters. *)
+labelledStyleCell[ base_List, default_, style_String ] :=
+  With[ { options = styleOptions[ base, style ],
+      inherited = Lookup[ styleOptions[ Cases[ default, _Cell, Infinity ], style ], CounterAssignments, { } ] },
+    With[ { assignments = Union[ inherited, Lookup[ styleOptions[ base, style ], CounterAssignments, { } ] ] },
+      Cell[ StyleData[ style ],
+        Sequence @@ FilterRules[ options, { CellDingbat, CounterIncrements } ],
+        Sequence @@ If[ assignments === { }, { }, { CounterAssignments -> assignments } ] ] ] ]
+
+plainCell[ Cell[ StyleData[ _String, _String ], ___ ] ] := Nothing
+plainCell[ cell_Cell ] := DeleteCases[ cell, FontSize -> _ ]
+
+plainStyleSheet[] :=
+  Module[ { base = First @ baseStyleSheet[], default = Get[ $defaultSheetFile ], skipped },
+    skipped = Join[ $plainDeferred, $plainLabelled ];
+    Notebook[ Flatten @ {
+      Cell[ StyleData[ StyleDefinitions -> "Default.nb" ] ],
+      Cell[ StyleData[ "Notebook" ], CreateCellID -> True, DefaultNewCellStyle -> "Text" ],
+      Map[ labelledStyleCell[ base, default, # ] &, $plainLabelled ],
+      Map[ plainCell,
+        Select[ base, MatchQ[ Cell[ StyleData[ name_String, ___ ], ___ ] /; ! MemberQ[ skipped, name ] ] ] ] },
+      StyleDefinitions -> "PrivateStylesheetFormatting.nb" ]
+  ]
+
 Export[ FileNameJoin[ { styleSheetDirectory, "LaTeXBase.nb" } ], baseStyleSheet[], "NB" ];
 KeyValueMap[ Export[ FileNameJoin[ { styleSheetDirectory, #1 <> ".nb" } ], templateStyleSheet[ #2 ], "NB" ] &, $templates ];
+Export[ FileNameJoin[ { styleSheetDirectory, "PlainArticle.nb" } ], plainStyleSheet[], "NB" ];
 Print[ "Stylesheets written to ", styleSheetDirectory ]

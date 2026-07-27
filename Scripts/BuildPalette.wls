@@ -4,7 +4,10 @@ palettePath = FileNameJoin[ { repoDirectory, "MathNotebook", "FrontEnd", "Palett
 
 $environments = { "Theorem", "Lemma", "Proposition", "Corollary", "Conjecture", "Claim",
   "Definition", "Example", "Construction", "Remark", "Question", "Observation" };
-$styleSheets = { "AMSArticle", "ArXivArticle", "SpringerJournal", "RevTeXAPS" };
+(* PlainArticle is not a template — it is Default.nb with the environments added, and it is what an
+   imported paper lands on when its \documentclass names no journal. It belongs in the menu so a
+   document can be switched back to it after a template has been tried. *)
+$styleSheets = { "AMSArticle", "ArXivArticle", "SpringerJournal", "RevTeXAPS", "PlainArticle" };
 $buttonSize = { 200, 27 };
 $labelSize = { 182, 20 };
 $fontSizeRange = { 8, 28, 1 };

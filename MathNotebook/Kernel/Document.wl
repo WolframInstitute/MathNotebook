@@ -8,6 +8,7 @@ PackageScope["notebookToLaTeX"]
 PackageScope["theoremEnvironments"]
 PackageScope["environmentNumbering"]
 PackageScope["equationNumbering"]
+PackageScope["documentStyleSheet"]
 PackageScope["environmentCell"]
 PackageScope["documentTagging"]
 PackageScope["bibliographyDatabase"]
@@ -36,11 +37,16 @@ latexToNotebook[ source_String, entries_Association ] :=
     equation = equationNumbering[ preamble ];
     pieces = documentPieces[ body, numbering, citedEntries[ body, entries ] ];
     cells = numberedCells[ Map[ labelledCell, withSeparators[ pieces ] ], numbering, equation ];
-    Notebook[ Map[ referenceCell[ #, labelCounters[ cells ] ] &, cells ],
-      TaggingRules -> <| "MathNotebook" -> <|
-        "Preamble" -> preamble,
-        "Postamble" -> postamble,
-        "BodyPrefix" -> joinMarks @ TakeWhile[ pieces, MatchQ[ _separatorMark ] ] |> |> ]
+    (* FrontEnd`FileName is HoldAll, so the name has to be substituted in by With: writing the call
+       that computes it inside the option leaves that call in the notebook, unevaluated, along with
+       the Module's own renamed local — and the front end then silently falls back to Default.nb. *)
+    With[ { sheet = documentStyleSheet[ preamble ] <> ".nb" },
+      Notebook[ Map[ referenceCell[ #, labelCounters[ cells ] ] &, cells ],
+        StyleDefinitions -> FrontEnd`FileName[ { "MathNotebook" }, sheet, CharacterEncoding -> "UTF-8" ],
+        TaggingRules -> <| "MathNotebook" -> <|
+          "Preamble" -> preamble,
+          "Postamble" -> postamble,
+          "BodyPrefix" -> joinMarks @ TakeWhile[ pieces, MatchQ[ _separatorMark ] ] |> |> ] ]
   ]
 
 notebookToLaTeX[ notebook : Notebook[ cells_List, ___ ] ] :=
@@ -166,11 +172,32 @@ equationNumbering[ preamble_String ] :=
   With[ { within =
       First[
         StringCases[ preamble, "\\numberwithin{equation}{" ~~ level : Except[ "}" ] .. ~~ "}" :> level, 1 ],
-        If[ StringContainsQ[ preamble,
-            "\\documentclass" ~~ ( "[" ~~ Except[ "]" ] ... ~~ "]" ) | "" ~~ "{" ~~
-              ( "amsart" | "amsbook" | "amsproc" ) ~~ "}" ],
+        If[ StringMatchQ[ documentClass[ preamble ], "amsart" | "amsbook" | "amsproc" ],
           "section", None ] ] },
     <| "Prefix" -> withinChain[ within ], "Reset" -> withinStyle[ within ] |> ]
+
+documentClass[ preamble_String ] :=
+  First[
+    StringCases[ preamble,
+      "\\documentclass" ~~ ( "[" ~~ Except[ "]" ] ... ~~ "]" ) | "" ~~ "{" ~~
+        class : Except[ "}" ] .. ~~ "}" :> class, 1 ],
+    "" ]
+
+(* Which template the class asks for. Only a class this repo has a template *for* is named: the
+   templates are journal typography and claiming one for a paper that did not ask for it would be
+   guessing. Everything else — article, book, a local class, no \documentclass at all — lands on
+   PlainArticle, which is Default's typography with the environments added, so the paper opens live
+   without pretending to be a journal. *)
+$classStyleSheets = {
+  "amsart" | "amsbook" | "amsproc" -> "AMSArticle",
+  "revtex" ~~ ___ -> "RevTeXAPS",
+  "svjour" ~~ ___ -> "SpringerJournal" }
+
+documentStyleSheet[ preamble_String ] :=
+  With[ { class = documentClass[ preamble ] },
+    FirstCase[ $classStyleSheets,
+      ( pattern_ -> sheet_ ) /; StringMatchQ[ class, pattern ] :> sheet,
+      "PlainArticle" ] ]
 
 documentParts[ source_String ] :=
   First[ StringCases[ source,

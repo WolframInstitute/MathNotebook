@@ -32,6 +32,8 @@ The same sample document in each template — as a notebook, and as the LaTeX it
 | `SpringerJournal` | [svjour3](https://www.springernature.com/gp/authors/campaigns/latex-author-support) | Times | [sample](https://www.wolframcloud.com/obj/hajek_pavel/MathNotebook/Sample-SpringerJournal.nb) | [tex](https://www.wolframcloud.com/obj/hajek_pavel/MathNotebook/Sample-SpringerJournal.tex) |
 | `RevTeXAPS` | [revtex4-2](https://ctan.org/pkg/revtex) | Times | [sample](https://www.wolframcloud.com/obj/hajek_pavel/MathNotebook/Sample-RevTeXAPS.nb) | [tex](https://www.wolframcloud.com/obj/hajek_pavel/MathNotebook/Sample-RevTeXAPS.tex) · [pdf](https://www.wolframcloud.com/obj/hajek_pavel/MathNotebook/Sample-RevTeXAPS.pdf) |
 
+A fifth sheet, `PlainArticle`, is not a template: it is the notebook's own `Default.nb` typography with the paper structure added — the twelve environments, `Proof`, `Caption` and the citation styles, and the counters that number them. It is what an imported paper opens on when its `\documentclass` names no journal above.
+
 Generated from [`LaTeXBase`](https://www.wolframcloud.com/obj/hajek_pavel/MathNotebook/LaTeXBase.nb); sources and PDFs in [`LaTeX/`](LaTeX). [`svjour3`](https://www.springernature.com/gp/authors/campaigns/latex-author-support) comes from Springer rather than TeX Live, so that sample has no PDF until you install the class.
 
 ## 🖱 Palette

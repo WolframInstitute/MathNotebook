@@ -49,7 +49,6 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
 
 ## Tasks
 
-- [ ] T11 — An imported paper opens with its environments live. *(T9 settled the boundary this task's warning draws: a per-cell counter is wrong when it duplicates the sheet's job and right when it states a fact the sheet cannot know. The numbering a `\newtheorem` declares is the second kind, so T9 writes it on the cell; what T11 must still not do is write the sheet's own default onto every cell.)* `latexToNotebook` sets no `StyleDefinitions` at all, so a fresh import lands on `Default.nb`, where the twelve environment styles do not exist and a reference reads `2.0`. Two halves: a fifth stylesheet that is `Default.nb` plus the environments — same base cell list, Default's typography, contributing only the environment/`Caption`/`Reference`/`Citation` styles and their counters — and `ImportLaTeXDocument` choosing a sheet from the source's `\documentclass` (`amsart` → `AMSArticle`, `revtex` → `RevTeXAPS`, else the new one). What must *not* be done is writing `CounterIncrements`/`CellDingbat` onto each cell to survive any sheet: per-cell options beat the sheet, so swapping sheets to retarget a journal would stop working, and that is the paclet's whole point. *(Pavel's question, Session 6)*
 - [ ] T12 — `FrontEnd.wlt`'s T2 display-ink test compares two measurement scales and fails at HEAD. `Starred` (7742) comes from a whole-notebook PNG render and `Literal` (2440) from a single-cell `Rasterize`, so `Starred < Literal` cannot hold; the clause beside it, `Starred < Unstarred` (56959), is sound and passes. Measure both sides the same way, or drop the clause — `Formula > 0` already says the formula renders. *(Found in Session 6, pre-existing)*
 
 ### Done
@@ -64,6 +63,7 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
 - [x] T8 — Front matter: `\title`, `\author`, `\date`, `\maketitle`, `abstract` → the `Title`/`Author`/`Date`/`Abstract` styles the stylesheets define, and lists (`itemize`, `enumerate`, `description`) → the `Item` family. *(Session 8)*
 - [x] T9 — Numbering: what the notebook shows is what LaTeX prints, read out of `\newtheorem`, `\numberwithin`, the document class and enumitem's `label=`. *(Session 9)*
 - [x] T10 — `thebibliography` written into the `.tex` ↔ `Reference` cells, and a report when a declared `.bib` is missing. *(Session 10)*
+- [x] T11 — An imported paper opens with its environments live: `PlainArticle.nb`, a fifth sheet that is `Default.nb`'s typography with the paper structure added, and `ImportLaTeXDocument` choosing a sheet from the source's `\documentclass`. *(Session 11)*
 
 ## Progress
 
@@ -476,6 +476,48 @@ Unconverted constructs stay in the notebook as tagged Text cells so the exporter
   - `FirstCase` on a whole `Notebook` defaults to level 1, so a probe for a `CellDingbat` written that way answers `Missing["NotFound"]` for every cell — the same default that `CLAUDE.md` already records for `Cases`, met again from the test side.
   - An entry is prose, so what prose carries verbatim it carries verbatim too: `A.~Smith`, `\emph{…}` and `\texttt{…}` are on the page as they are everywhere else in an imported paper. That is Session 3's `~` note, not a new defect.
 - **Next:** T11 — an imported paper opens with its environments live: a fifth stylesheet that is `Default.nb` plus the environment styles, and `ImportLaTeXDocument` choosing a sheet from the source's `\documentclass`.
+
+### Session 11 — 2026-07-27 — T11
+
+- **Prompt:** `/next-session` continued.
+- **Did:** A fifth stylesheet, and an imported paper opens on the one its `\documentclass` asks for.
+
+  | | causal graphs | hodgepaper | the four samples |
+  |---|---|---|---|
+  | `\documentclass` | `article` | `amsart` | one each |
+  | sheet chosen | **PlainArticle** | AMSArticle | AMS, **Plain**, RevTeX, Springer |
+  | renders on PlainArticle | 11 pages, no `XXX` | 36 pages, no `XXX`, 11 QED squares | |
+  | tests | | | 211 → **218** |
+
+  **`PlainArticle.nb` is the fifth sheet and it is deliberately not a fifth template.**
+  The four templates are journal typography; this one is `Default.nb`'s typography with the paper's *structure* added, so a paper that asked for no journal opens looking like a Wolfram notebook and still has live environments.
+  It is generated from the same base cell list as the four, and what it contributes is decided by one rule: a style Default has no notion of comes across whole — the twelve environments, `Proof`, `Caption`, `Date`, `Hyperlink`/`Citation`/`URL` — and a style Default does declare contributes only the number or the word the document prints, which is the three sectioning levels and `Abstract`.
+  Six styles it declares nothing for at all: `Title`, `Text`, `Author`, `Reference` and the three `DisplayFormula` ones, which Default already gets right — its `DisplayFormulaNumbered` carries the identical `CounterBox` and frame label, so equation numbering needed no cell.
+  Every explicit `FontSize` is dropped and the `"Printout"` variants with it, so a theorem inherits Default's `Text` rather than the templates' 13 pt.
+
+  **What the sheet fixes is a broken cross-reference, and only the page can show it.**
+  On `Default.nb` an imported definition prints no name and no number, a proof prints no name and no QED square, the headings print no number — and the `\ref` to that definition reads **`2.0`**, because its section counter increments and its theorem counter never does.
+  The kernel, the round trip and even the resolved counter values are identical under both sheets, so the assertion is a rendered PDF measured under each, and both halves are measured: the good one is not evidence unless the bad one is there beside it.
+
+  **The sheet is chosen from the class, and only a class this repo has a template *for* is named.**
+  `amsart`/`amsbook`/`amsproc` → `AMSArticle`, `revtex*` → `RevTeXAPS`, `svjour*` → `SpringerJournal`, and everything else — `article`, `book`, a local class, no `\documentclass` at all — → `PlainArticle`.
+  That is the task's own mapping, and its one visible consequence is worth a decision: `Sample-ArXivArticle.tex` is `article` and lands on `PlainArticle`, not on `ArXivArticle`, because `ArXivArticle` is a typography choice (Latin Modern) rather than a class this repo can read off the source.
+  The causal-graphs paper is the live case — it is `\documentclass[12pt]{article}` and now opens on the plain sheet, where hodgepaper's `amsart` opens on AMSArticle.
+
+  **`PlainArticle` is in the palette's stylesheet menu**, so a document can be switched back to it after a template has been tried, and in the README and the tutorial script.
+  It is not in `$templateNames`: `Tests/StyleSheets.wlt`'s "all templates define identical style names" invariant is about the four, and the fifth exists precisely to declare fewer.
+
+  **Tests.** Two in `Tests/Document.wlt`, three in `Tests/StyleSheets.wlt`, two in `Tests/FrontEnd.wlt`; 218 pass.
+  Five defects reintroduced: dropping the notebook's `StyleDefinitions` fails 1, flattening the class table fails 2, letting the plain sheet skip the environment styles fails 2 + 1 (the front-end one), keeping the sizes fails 1, and letting `Section`'s resets replace Default's instead of carrying them across fails 1.
+- **Learned:**
+  - **`FrontEnd`FileName` is `HoldAll`.** Writing `FrontEnd`FileName[ { "MathNotebook" }, documentStyleSheet[ preamble ] <> ".nb" ]` put *the unevaluated call* into the notebook, together with the `Module`'s own renamed local (`preamble$1765`) — and a front end reading that option silently falls back to `Default.nb`. The name has to be substituted in by `With`. The only reason nothing else in the repo hit this is that every other use passes a literal string.
+  - **`a -> b :> c` parses as `a -> (b :> c)`**, not as `(a -> b) :> c`: `Rule` and `RuleDelayed` have the same precedence and associate right. So a `Cases` rule whose pattern is itself an option needs the pattern parenthesised, or it matches nothing — silently, like the `~~`/`|` and `~~`/`:` traps already recorded.
+  - **A per-style `CounterAssignments` replaces the parent's, so a child sheet that resets one counter stops resetting the eight the parent did.** Default's `Section` resets `Subsection`, `Subsubsection` and six item counters; adding `{"Theorem", 0}` means carrying all of them across. This is T9's per-cell finding one level up, at the sheet level, and it is why the build script reads Default.nb rather than writing a list out.
+  - **`Default.nb` declares 54 style names and neither `Hyperlink` nor `Link` is among them** — both resolve anyway, from front-end resources outside the file. So a scan of Default.nb cannot answer "does this style exist"; the two lists in `BuildStyleSheets.wls` are written out for that reason, with `Tests/StyleSheets.wlt` pinning exactly which six styles the plain sheet leaves alone.
+  - **A wide `CellDingbat` is what forces the environment margins to come across.** "Theorem 1.1." is drawn to the *left* of the cell's own margin, so at Default's `Text` margin of 66 pt it would be clipped; the base's `CellMargins -> {{130, 10}, …}` is structural in this sheet even though it looks like typography.
+  - `Export` writes an `ExpressionUUID` into every cell of a generated sheet, so regenerating the four templates for an unrelated change produces a 599-line diff of nothing. Check `git diff` filtered for non-UUID lines before committing a stylesheet rebuild.
+  - A `perl -0pi -e 's/\Q…\E/…/'` bite patch still **interpolates `$variables` inside `\Q…\E`**, so a pattern quoting Wolfram code with a `$` silently matches nothing and reports the suite as green. That is the third form of the "confirm the patch landed" trap; printing the changed line caught it.
+- **Next:** T12 — `FrontEnd.wlt`'s T2 display-ink test compares two measurement scales.
 
 ## Decisions
 

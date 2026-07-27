@@ -787,3 +787,31 @@ VerificationTest[
       notebookToLaTeX[ notebook ] === Import[ $missingFile, "Text" ] } ],
   { 1, True }
 ]
+
+(* LaTeXPaperImport T11: the sheet an imported paper opens on, chosen from its \documentclass. Only a
+   class this repo has a template for is named — everything else, article included, lands on
+   PlainArticle, which is Default's typography with the environments added. A paper with no
+   \documentclass at all is the same case. *)
+
+VerificationTest[
+  Map[ documentStyleSheet, {
+    "\\documentclass{amsart}", "\\documentclass[12pt,reqno]{amsart}", "\\documentclass{amsbook}",
+    "\\documentclass{revtex4-2}", "\\documentclass[aps,pra]{revtex4-1}", "\\documentclass{svjour3}",
+    "\\documentclass{article}", "\\documentclass[11pt]{book}", "\\documentclass{mylocalclass}", "" } ],
+  { "AMSArticle", "AMSArticle", "AMSArticle",
+    "RevTeXAPS", "RevTeXAPS", "SpringerJournal",
+    "PlainArticle", "PlainArticle", "PlainArticle", "PlainArticle" }
+]
+
+(* The notebook carries the choice as a StyleDefinitions of its own, and carrying it changes nothing
+   about the export: the exporter reads the cells and the tagging rules, never the options. *)
+VerificationTest[
+  With[ { article = "\\documentclass{article}\n\\begin{document}\n\nSome prose.\n\n\\end{document}\n",
+      ams = "\\documentclass{amsart}\n\\begin{document}\n\nSome prose.\n\n\\end{document}\n" },
+    { Cases[ latexToNotebook[ article ],
+        ( StyleDefinitions -> FrontEnd`FileName[ { "MathNotebook" }, sheet_String, ___ ] ) :> sheet, { 1 } ],
+      Cases[ latexToNotebook[ ams ],
+        ( StyleDefinitions -> FrontEnd`FileName[ { "MathNotebook" }, sheet_String, ___ ] ) :> sheet, { 1 } ],
+      notebookToLaTeX @ latexToNotebook[ article ] === article } ],
+  { { "PlainArticle.nb" }, { "AMSArticle.nb" }, True }
+]

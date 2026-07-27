@@ -126,12 +126,20 @@ $importedSource = "\\documentclass{article}\n\\newtheorem{defn}{Definition}[sect
 importedText[ source_String ] :=
   importedText @ latexToNotebook[ source ]
 
+(* An imported notebook carries a StyleDefinitions of its own since T11 — chosen from the
+   \documentclass — and a second one appended after it is ignored, so these tests replace it rather
+   than append. Embedding the sheet is the only form that resolves reliably headless. *)
+sheetDefinitions[ sheet_String ] :=
+  With[ { file = FileNameJoin[ { $sheetDirectory, sheet } ] },
+    If[ FileExistsQ[ file ], Get[ file ], sheet ] ]
+
+withSheet[ Notebook[ cells_, options___ ], sheet_String ] :=
+  Notebook[ cells, StyleDefinitions -> sheetDefinitions[ sheet ],
+    Sequence @@ FilterRules[ { options }, Except[ StyleDefinitions ] ] ]
+
 importedText[ imported_Notebook ] :=
   Module[ { notebook, file },
-    notebook = NotebookPut[
-      Append[ imported,
-        StyleDefinitions -> Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ] ],
-      Visible -> False ];
+    notebook = NotebookPut[ withSheet[ imported, "AMSArticle.nb" ], Visible -> False ];
     file = Export[ FileNameJoin[ { $TemporaryDirectory, "MathNotebookImported.pdf" } ], notebook ];
     NotebookClose[ notebook ];
     Import[ file, "Plaintext" ]
@@ -204,9 +212,7 @@ $bodyPaper = "\\documentclass{article}\n\\newtheorem{thm}{Theorem}[section]\n\\b
 
 notebookImageInk[ imported_Notebook ] :=
   Module[ { notebook, file },
-    notebook = NotebookPut[
-      Append[ imported, StyleDefinitions -> Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ] ],
-      Visible -> False ];
+    notebook = NotebookPut[ withSheet[ imported, "AMSArticle.nb" ], Visible -> False ];
     file = Export[ FileNameJoin[ { $TemporaryDirectory, "MathNotebookFigureInk.png" } ], notebook,
       ImageResolution -> 72 ];
     NotebookClose[ notebook ];
@@ -225,10 +231,7 @@ $listPaper = "\\documentclass{article}\n\\begin{document}\n\n\\title{A Title}\n\
 
 listMeasurements[ source_String ] :=
   Module[ { notebook, counters },
-    notebook = NotebookPut[
-      Append[ latexToNotebook[ source ],
-        StyleDefinitions -> Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ] ],
-      Visible -> False ];
+    notebook = NotebookPut[ withSheet[ latexToNotebook[ source ], "AMSArticle.nb" ], Visible -> False ];
     counters = Map[ CurrentValue[ #, { "CounterValue", "ItemNumbered" } ] &,
       Cells[ notebook, CellStyle -> "ItemNumbered" ] ];
     NotebookClose[ notebook ];
@@ -251,10 +254,7 @@ $numberingPaper = "\\documentclass{amsart}\n\\newtheorem{thm}{Theorem}[section]\
 
 numberingMeasurements[ source_String ] :=
   Module[ { notebook, counters },
-    notebook = NotebookPut[
-      Append[ latexToNotebook[ source ],
-        StyleDefinitions -> Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ] ],
-      Visible -> False ];
+    notebook = NotebookPut[ withSheet[ latexToNotebook[ source ], "AMSArticle.nb" ], Visible -> False ];
     counters = <|
       "Definition" -> Map[ CurrentValue[ #, { "CounterValue", "TheoremDefn" } ] &,
         Cells[ notebook, CellStyle -> "Definition" ] ],
@@ -266,8 +266,30 @@ numberingMeasurements[ source_String ] :=
     <| "Counters" -> counters, "Text" -> importedText @ latexToNotebook[ source ] |>
   ]
 
+(* LaTeXPaperImport T11: an imported paper has to open with its environments live, and the sheet is
+   the only thing that decides whether it does. On Default.nb the twelve environment styles do not
+   exist, so the definition prints no name and no number, the proof prints no name and no QED square,
+   the headings print no number — and the reference to the definition reads "2.0", because its
+   section counter increments and its theorem counter never does. That is a broken reference on the
+   page and it is invisible everywhere else: the kernel, the round trip and the counter values are
+   all identical under both sheets. The pair is measured, not just the good half, because the whole
+   claim is that the sheet is what fixed it. *)
+
+$plainPaper = "\\documentclass{article}\n\\newtheorem{defn}{Definition}[section]\n\\begin{document}\n\n\\section{First} \\label{sec:one}\n\n\\section{Second} \\label{sec:two}\n\n\\begin{defn} \\label{def:one}\nA body.\n\\end{defn}\n\n\\begin{proof}\nA proof.\n\\end{proof}\n\nSee Section~\\ref{sec:two} and Definition~\\ref{def:one}.\n\n\\end{document}\n";
+
+(* A PDF's plaintext breaks a line wherever the layout does, so every comparison here is against the
+   text with its whitespace taken out. *)
+sheetText[ source_String, sheet_String ] :=
+  Module[ { notebook, file },
+    notebook = NotebookPut[ withSheet[ latexToNotebook[ source ], sheet ], Visible -> False ];
+    file = Export[ FileNameJoin[ { $TemporaryDirectory, "MathNotebookSheet.pdf" } ], notebook ];
+    NotebookClose[ notebook ];
+    StringDelete[ Import[ file, "Plaintext" ], WhitespaceCharacter ]
+  ]
+
 $measured = UsingFrontEnd @ <|
   "Imported" -> importedText[ $importedSource ],
+  "PlainSheet" -> AssociationMap[ sheetText[ $plainPaper, # ] &, { "PlainArticle.nb", "Default.nb" } ],
   "Lists" -> listMeasurements[ $listPaper ],
   "Numbering" -> numberingMeasurements[ $numberingPaper ],
   "Figures" -> figureMeasurements[ $figurePaper ],
@@ -506,4 +528,20 @@ VerificationTest[
       StringContainsQ[ text, "See Definition~1.1.1, Lemma~1.2, (1.1) and (2.1)." ],
       StringContainsQ[ text, "XXX" ] } ],
   { 1, 1, 1, 1, 1, 1, False, 2, 2, True, True, True, False }
+]
+
+(* LaTeXPaperImport T11: the environments are live on the fifth sheet — the name, the number, the
+   QED square and the numbered headings — and the cross-reference reads the definition's own number. *)
+VerificationTest[
+  Map[ StringContainsQ[ $measured[ "PlainSheet", "PlainArticle.nb" ], # ] &,
+    { "Definition2.1.", "Proof.", "\[EmptySquare]", "1.First", "2.Second", "Definition~2.1", "Section~2" } ],
+  ConstantArray[ True, 7 ]
+]
+
+(* And the same paper on Default.nb, which is what an import landed on before this task: no name, no
+   number, no square, no heading number, and a reference that reads 2.0. *)
+VerificationTest[
+  Map[ StringContainsQ[ $measured[ "PlainSheet", "Default.nb" ], # ] &,
+    { "Definition2.1.", "Proof.", "\[EmptySquare]", "1.First", "Definition~2.0" } ],
+  { False, False, False, False, True }
 ]
