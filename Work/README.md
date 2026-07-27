@@ -26,8 +26,9 @@ item — clean context per task is the whole point. Use `/work` to create a new 
   document importer, numbered citations and the `PlainArticle` stylesheet exist only here while the
   README describes all three. T2 is done — 0.1.11 builds from a clean archive, installs, and cold
   smoke-tests green: 196 shipped tests, 21/21 doc URIs resolving, the importer opening a sample on
-  `PlainArticle` and round-tripping it byte for byte. Next: **T3**, publish — which waits on Pavel,
-  as does the rest of T1 (read the regenerated tutorial, confirm the `LICENSE` copyright line)
+  `PlainArticle` and round-tripping it byte for byte. The `LICENSE` copyright line is settled —
+  `Pavel Hajek`, not the institute. Next: **T3**, publish — which waits on Pavel, as does the last
+  part of T1: read the regenerated tutorial, now open in the front end
 
 ## Backlog
 

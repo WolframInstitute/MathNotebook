@@ -45,7 +45,7 @@ Done when `PacletInstall` from the README installs 0.1.11 on a machine that has 
 
 ## Tasks
 
-- [ ] T1 — **Two of three parts done (2026-07-27, see Progress).** Tutorial hand edits resolved and `LICENSE` added. What remains is Pavel's and only Pavel's: read the regenerated tutorial, and confirm the copyright line.
+- [ ] T1 — **Three of four parts done (2026-07-27, see Progress).** Tutorial hand edits resolved, `LICENSE` added, and the copyright line confirmed as `Pavel Hajek` (see Decisions). What remains is Pavel's and only Pavel's: read the regenerated tutorial, now open in the front end. The ~11 design claims to read critically are listed in the Progress entry.
 - [x] T2 — Rebuild all generated artifacts, run the tests, build and install from a clean archive, smoke-test the palette buttons cold. *(2026-07-27)*
 - [ ] T3 — Publish 0.1.11, verify the install URL and the version marker from a fresh kernel, re-run `Scripts/DeployPreviews.wls`, bump and push the marketplace entry.
 
@@ -89,7 +89,16 @@ Done when `PacletInstall` from the README installs 0.1.11 on a machine that has 
   - A `Shortest[ a__ ] ~~ "Method"` capture **excludes everything from `Method` onward**, so counting `"Queued"` inside the captured span answered 0 of 17. The option is there 19 times; the probe had cut the string immediately before it.
 - **Next:** T3, the publish — outward-facing, and waiting on Pavel's go-ahead plus the two T1 confirmations.
 
+### 2026-07-27 — T1, the review package
+
+- **Prompt:** `/next-session` — T1 is a human gate, so this session prepared both halves for review rather than implementing anything.
+- **The copyright line is settled: `Pavel Hajek`, as written.** Personal copyright; `WolframInstitute` is publisher and distributor, not owner. `LICENSE` is unchanged and that half of T1 is closed. Recorded in Decisions below so the question is not reopened at publish time.
+- **The tutorial is open in the front end for Pavel to read as it ships** — styled, with the live practice targets, which a text digest cannot show. A digest of all 86 cells was extracted first to find what actually needs reading: 9 sections, 66 `Item` cells, and of those roughly 11 sentences that assert *design intent* rather than mechanics. Those are the ones handed over, since the other ~55 are verifiable instructions that the T2 cold smoke test already exercised. The list spans the abstract's positioning line, the updater's two rationales, the bibliography workflow, the `PlainArticle`-is-not-a-template distinction, the importer's central promise ("what it cannot read it also does not damage"), the figure and `.bib` ownership asymmetries, MaTeX's deliberate bypass of the `.m` system handler, "the notebook is the source", and the Nik Murzin attribution wording.
+- **Learned — one tutorial claim verified and one gap found beside it.** "Applying [a stylesheet] from the palette also sets the notebook to light mode" is true and is the *palette's* doing, not the sheet's: `stylesheetItem` (`Scripts/BuildPalette.wls:35`) sets `LightDark -> "Light"` and the `Default` menu item resets it to `Automatic`. But `PlainArticle.nb` is the only one of the six sheets that does not declare `LightDark -> "Light"` itself, and `ImportLaTeXDocument` (`Kernel/Document.wl:200`) sets `StyleDefinitions` without it — so **a paper imported onto `PlainArticle` under a dark appearance stays dark**, where one landing on a template goes light from the sheet's own declaration. Plausibly deliberate, since `PlainArticle` is Default's typography and Default follows the system appearance; recorded, not changed.
+- **Next:** T1 closes on Pavel's read of the tutorial. T3 — the publish — is then the last task and needs his go-ahead, being outward-facing.
+
 ## Decisions
 
 | Date | Decision | Rationale |
 |---|---|---|
+| 2026-07-27 | The `LICENSE` copyright line is `Pavel Hajek`, not the institute | Pavel's call. `PacletInfo.wl`'s `"Creator"` is the only attribution the repo states; `"PublisherID" -> WolframInstitute` describes distribution, not ownership. Closes the legal half of T1. |
