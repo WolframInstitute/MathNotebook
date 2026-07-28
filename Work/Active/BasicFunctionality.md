@@ -51,7 +51,6 @@ Done when every defect the shakedown finds is either fixed or recorded with a re
 ## Tasks
 
 - [ ] **T4** — Continue the shakedown into what T1 did not drive live: the three dialog-carrying buttons (`Import .tex file…`, `Export to .tex…`, `Export submission…`) driven with explicit paths, the stylesheet menu against all six shipped sheets, and the MaTeX conversions. T1 covered the referencing and view halves; this covers the conversion and submission halves.
-- [ ] **T5** — The same `$Failed` hole in the seven entry points T2 did not touch: `SetDocumentFontSize`, `SetMathFontSize`, `ResetDocumentView` (`View.wl`), `ConvertLaTeXCells`, `ConvertMathCells` (`Conversion.wl`), `ConvertToMaTeX`, `ConvertFromMaTeX` (`MaTeX.wl`). One `withInputNotebook` each now that the guard exists and is `PackageScope`. Found by reading, not driven — so drive each first and confirm the no-op before fixing it.
 - [ ] **T6** — The record of the last hyperlink is written wrong at the source: all six stylesheets' `Hyperlink` `ButtonBoxOptions` assign `$LastHyperlinkCell = First[ SelectedCells[] ]` with no guard, so a click made with nothing selected stores an unevaluated `First[{}]`. T3's guard reports that honestly rather than doing nothing, so this is no longer a silent failure — but "Go back" still cannot go anywhere. Needs `BuildStyleSheets.wls` and a regeneration of all six sheets (filter the `ExpressionUUID` churn per `CLAUDE.md`), and a click cannot be driven headless, so the assertion has to be on the generated sheets as text.
 - [ ] **T7** — `GoBack` moves the selection but does not bring the parent notebook forward, so a hyperlink followed with `"OpenInNewWindow"` leaves the author's selection changing in a window that is not in front. `SetSelectedNotebook @ ParentNotebook[ cell ]` is the whole fix and is **not assertable headless** — `SelectedNotebook[]` never becomes the notebook there — so it needs Pavel to confirm it live, which is why T3 left it out rather than shipping it untested.
 
@@ -60,6 +59,7 @@ Done when every defect the shakedown finds is either fixed or recorded with a re
 - [x] **T1** — Catalogue: exercise every palette button's stored code against an installed paclet in a live front end. *Session 1.*
 - [x] **T2** — Guard the five selection-driven entry points against `InputNotebook[] === $Failed` and give each a notebook-argument overload. *Session 2.*
 - [x] **T3** — `GoBack[]` with no hyperlink followed, and with a stale one. *Session 3.*
+- [x] **T5** — The same `$Failed` hole in the seven entry points T2 did not touch, and in the palette's own stored code. *Session 3.*
 
 ## Progress
 
@@ -197,5 +197,17 @@ It had already drifted both ways, 21 pages against the paclet's 22 and every usa
 All 22 now agree, all five edited pages open in a live front end with zero messages, and the suite is 265.
 
 Not fixed, and not this item's: `LaTeX/Sample-SpringerJournal.pdf` does not exist while the README links a PDF for the other three samples, and a `MathNotebook/Staging` object from an old dry run is still on the cloud.
+
+### Session 3, T5 — 2026-07-28
+
+All seven confirmed before being touched, as the task required: with no document open each returned an unevaluated expression with **zero messages** — `SetDocumentFontSize[$Failed, 20]`, `ResetDocumentView[$Failed]`, `convertCells[…, $Failed]` four times.
+One `withInputNotebook` each; `ConvertToMaTeX`'s guard answers *before* its `Needs["MaTeX`"]`, which is what makes it safe to drive on a machine without MaTeX.
+
+**The palette was the other half and could not take the same fix.**
+A button's code is stored verbatim, so it may hold only `System`` symbols and fully qualified public ones — never a `PackageScope` guard — so `BuildPalette.wls` writes the `Replace` out literally and it lands in the artifact **nine** times: once per stylesheet menu item including `Default`, and once in each export button, where it has to come *before* the dialog or an author with no document is asked where to save and the answer is discarded, which is the half of the referencing defect that wasted the author's typing.
+The two view sliders needed the opposite fix: they passed `InputNotebook[]` explicitly, so `setter[nb, #]` reached the two-argument overload with `$Failed` and the kernel guard could never fire — they now call the argumentless form.
+
+Tests: the no-document measurement is one association over all **twelve** entry points, so one that stops answering cannot hide behind the eleven that do; `Palette.wlt` counts the nine stored guards and asserts no bare two-argument setter survives.
+Both bite — reverting the three kernel files fails `FrontEnd.wlt`, swapping the pre-change palette artifact back in fails `Palette.wlt` (**266 passed** restored).
 
 - **Next:** T4 — the three dialog-carrying buttons driven with explicit paths, the stylesheet menu against all six sheets, and the MaTeX conversions. Note that T4's stylesheet half now has a live question waiting for it: driven headless against the installed 0.1.15, `FrontEnd`FileName[{"MathNotebook"}, sheet]` resolved to **Default.nb** (Title 45, not 26) for all three sheets tried, even after a menu reset — the fallback `CLAUDE.md` records for `wolframscript`, but it means the palette's own "Apply stylesheet" route is still unverified against an installed paclet.
