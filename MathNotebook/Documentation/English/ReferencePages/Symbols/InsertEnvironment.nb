@@ -24,20 +24,35 @@ Cell["InsertEnvironment", "ObjectName",
  CellID->713000168,ExpressionUUID->"ada97ddb-7f12-4e6b-8d11-b8fa70b631b4"],
 
 Cell[TextData[{
- Cell["   ", "ModInfo",ExpressionUUID->"caa2b458-45d8-4f81-abf7-e7242fe705e9"],
+ Cell["   ", "ModInfo",ExpressionUUID->"dc2bc5a9-e449-1558-80bb-10a0cae6980c"],
  Cell[BoxData[
   RowBox[{
    ButtonBox["InsertEnvironment",
     BaseStyle->"Link",
     ButtonData->"paclet:WolframInstitute/MathNotebook/ref/InsertEnvironment"], 
    RowBox[{"[", "style", "]"}]}]], "InlineFormula",ExpressionUUID->
-  "69cb060e-0d4a-4427-86a5-ae10a9573bdb"],
+  "da76cbd2-06b4-d0ca-c6c4-d8ae39354f40"],
  " \[LineSeparator]",
- "inserts a new cell of the environment style ",
+ "inserts a new cell of the given environment ",
  Cell[BoxData[
   StyleBox["style", "TI"]], "InlineFormula",ExpressionUUID->
-  "61570776-f29b-4e90-bc01-8d8772c2d125"],
- " at the current position."
+  "c0fbc8b0-2ebe-6e1d-76a1-e5b8b9c48f5b"],
+ " at the current position.",
+ "\n",
+ Cell[BoxData[
+  RowBox[{
+   ButtonBox["InsertEnvironment",
+    BaseStyle->"Link",
+    ButtonData->"paclet:WolframInstitute/MathNotebook/ref/InsertEnvironment"], 
+   RowBox[{"[", 
+    RowBox[{"notebook", ", ", " ", "style"}], "]"}]}]], "InlineFormula",ExpressionUUID->
+  "354f3ff2-5860-51bb-63f7-17671c0882bf"],
+ " \[LineSeparator]",
+ "inserts it into the given ",
+ Cell[BoxData[
+  StyleBox["notebook", "TI"]], "InlineFormula",ExpressionUUID->
+  "a29bfa43-f614-c3ad-5161-1527c57b0a67"],
+ "."
 }], "Usage",
  CellID->862098484,ExpressionUUID->"1fa7b0c1-0c77-4d86-b75e-d224148c2e68"],
 

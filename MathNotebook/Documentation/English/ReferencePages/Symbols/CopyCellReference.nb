@@ -24,16 +24,30 @@ Cell["CopyCellReference", "ObjectName",
  CellID->229986300,ExpressionUUID->"4606dd55-fa69-4e65-a99b-292a6970b59a"],
 
 Cell[TextData[{
- Cell["   ", "ModInfo",ExpressionUUID->"16c131d4-f809-4720-be4d-cca52aa2f41d"],
+ Cell["   ", "ModInfo",ExpressionUUID->"a4efaae6-7f01-df73-9e60-6dd969ab8faa"],
  Cell[BoxData[
   RowBox[{
    ButtonBox["CopyCellReference",
     BaseStyle->"Link",
     ButtonData->"paclet:WolframInstitute/MathNotebook/ref/CopyCellReference"], 
    RowBox[{"[", "]"}]}]], "InlineFormula",ExpressionUUID->
-  "9da17444-555f-4958-bdf0-6a8c653a43d2"],
+  "750a6ceb-08a6-7e8f-2af1-2c2b2aa93920"],
  " \[LineSeparator]",
- "copies a live, clickable reference to the selected cell to the clipboard."
+ "copies a live, clickable reference to the selected cell to the clipboard.",
+ "\n",
+ Cell[BoxData[
+  RowBox[{
+   ButtonBox["CopyCellReference",
+    BaseStyle->"Link",
+    ButtonData->"paclet:WolframInstitute/MathNotebook/ref/CopyCellReference"], 
+   RowBox[{"[", "notebook", "]"}]}]], "InlineFormula",ExpressionUUID->
+  "a2de2e90-ef49-ae48-f65f-543376df55ff"],
+ " \[LineSeparator]",
+ "copies a reference to the selected cell of the given ",
+ Cell[BoxData[
+  StyleBox["notebook", "TI"]], "InlineFormula",ExpressionUUID->
+  "cb579c14-db1b-f5a7-d94d-072acc6ed80f"],
+ "."
 }], "Usage",
  CellID->198919063,ExpressionUUID->"f01fc643-f3fb-472d-bf99-421ac96185c7"],
 

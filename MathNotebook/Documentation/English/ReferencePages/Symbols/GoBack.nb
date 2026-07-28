@@ -54,10 +54,17 @@ Cell[TextData[{
  CellID->923396790,ExpressionUUID->"281edbeb-8102-49c8-9d84-20511c20b5e9"],
 
 Cell["\<\
-Before any link has been followed there is nowhere to go back to and the \
-function does nothing.\
+Before any link has been followed there is nowhere to go back to, and the \
+function says so rather than doing nothing.\
 \>", "Notes",
- CellID->14903547,ExpressionUUID->"a653af4e-bed1-4153-b764-7a1cad693101"]
+ CellID->14903547,ExpressionUUID->"a653af4e-bed1-4153-b764-7a1cad693101"],
+
+Cell["\<\
+A cell that has since been deleted, or whose notebook has been closed, is \
+reported the same way: moving the selection to one would otherwise change \
+nothing and raise nothing.\
+\>", "Notes",
+ CellID->287983755,ExpressionUUID->"3f7330e8-77f8-4c3d-8607-a2f57e06fc0a"]
 }, Open  ]],
 
 Cell[CellGroupData[{

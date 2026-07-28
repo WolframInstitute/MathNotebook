@@ -24,16 +24,45 @@ Cell["TagSelectedCell", "ObjectName",
  CellID->138023749,ExpressionUUID->"7378ec44-7c3f-4468-858d-4f26a054707a"],
 
 Cell[TextData[{
- Cell["   ", "ModInfo",ExpressionUUID->"39ef8682-5481-4bd3-aa2b-6072fd2f802a"],
+ Cell["   ", "ModInfo",ExpressionUUID->"2d95e4cd-0cca-e513-e2e2-2de172f8a7a3"],
  Cell[BoxData[
   RowBox[{
    ButtonBox["TagSelectedCell",
     BaseStyle->"Link",
     ButtonData->"paclet:WolframInstitute/MathNotebook/ref/TagSelectedCell"], 
    RowBox[{"[", "]"}]}]], "InlineFormula",ExpressionUUID->
-  "ae42210c-7b0e-4cb1-8a6d-47b22513bed6"],
+  "6ef0842f-e881-9f0d-ad80-f8df7eab51e2"],
  " \[LineSeparator]",
- "assigns a cell tag to the selected cell, for use as a citation anchor."
+ "assigns a cell tag to the selected cell, for use as a citation anchor.",
+ "\n",
+ Cell[BoxData[
+  RowBox[{
+   ButtonBox["TagSelectedCell",
+    BaseStyle->"Link",
+    ButtonData->"paclet:WolframInstitute/MathNotebook/ref/TagSelectedCell"], 
+   RowBox[{"[", "notebook", "]"}]}]], "InlineFormula",ExpressionUUID->
+  "9d58a3bb-d452-1147-6e52-f51b190e2a22"],
+ " \[LineSeparator]",
+ "tags the selected cell of the given ",
+ Cell[BoxData[
+  StyleBox["notebook", "TI"]], "InlineFormula",ExpressionUUID->
+  "f52ac4f0-1395-17bd-3b5d-ed3da349df44"],
+ ".",
+ "\n",
+ Cell[BoxData[
+  RowBox[{
+   ButtonBox["TagSelectedCell",
+    BaseStyle->"Link",
+    ButtonData->"paclet:WolframInstitute/MathNotebook/ref/TagSelectedCell"], 
+   RowBox[{"[", 
+    RowBox[{"notebook", ", ", " ", "tag"}], "]"}]}]], "InlineFormula",ExpressionUUID->
+  "49cb5d6c-c9ac-2513-d3ba-45463bd6e603"],
+ " \[LineSeparator]",
+ "assigns the given ",
+ Cell[BoxData[
+  StyleBox["tag", "TI"]], "InlineFormula",ExpressionUUID->
+  "011bbca6-bc58-82a1-e226-0850f1390c74"],
+ ", without prompting."
 }], "Usage",
  CellID->468964072,ExpressionUUID->"078ed8c4-8076-4735-a1b5-b54e6c0cdf22"],
 

@@ -24,16 +24,45 @@ Cell["InsertCitation", "ObjectName",
  CellID->435104390,ExpressionUUID->"2f5f4aff-0d03-4ef4-b1d9-b46dcb3e5714"],
 
 Cell[TextData[{
- Cell["   ", "ModInfo",ExpressionUUID->"0f12fcf1-f9cb-43a6-aa78-bc891b12c676"],
+ Cell["   ", "ModInfo",ExpressionUUID->"6e1ed27a-30a3-455d-81cf-f0cb0300703c"],
  Cell[BoxData[
   RowBox[{
    ButtonBox["InsertCitation",
     BaseStyle->"Link",
     ButtonData->"paclet:WolframInstitute/MathNotebook/ref/InsertCitation"], 
    RowBox[{"[", "]"}]}]], "InlineFormula",ExpressionUUID->
-  "50de3846-eeff-4250-a85f-46767b82c10a"],
+  "12bfb93e-2f34-5378-2cc2-a974f36bf69c"],
  " \[LineSeparator]",
- "inserts a citation link to a tagged cell."
+ "inserts a citation link to a tagged cell: a numbered environment is cited by its number, which follows the target when cells move, and a reference entry by its tag.",
+ "\n",
+ Cell[BoxData[
+  RowBox[{
+   ButtonBox["InsertCitation",
+    BaseStyle->"Link",
+    ButtonData->"paclet:WolframInstitute/MathNotebook/ref/InsertCitation"], 
+   RowBox[{"[", "notebook", "]"}]}]], "InlineFormula",ExpressionUUID->
+  "9973c78e-f67c-8a2b-64a0-15f18835db84"],
+ " \[LineSeparator]",
+ "inserts it into the given ",
+ Cell[BoxData[
+  StyleBox["notebook", "TI"]], "InlineFormula",ExpressionUUID->
+  "2f0086ee-1de3-8102-b089-824d52f6314b"],
+ ".",
+ "\n",
+ Cell[BoxData[
+  RowBox[{
+   ButtonBox["InsertCitation",
+    BaseStyle->"Link",
+    ButtonData->"paclet:WolframInstitute/MathNotebook/ref/InsertCitation"], 
+   RowBox[{"[", 
+    RowBox[{"notebook", ", ", " ", "tag"}], "]"}]}]], "InlineFormula",ExpressionUUID->
+  "f3144e20-15e8-996e-71a9-c6e6bf5bf878"],
+ " \[LineSeparator]",
+ "cites the given ",
+ Cell[BoxData[
+  StyleBox["tag", "TI"]], "InlineFormula",ExpressionUUID->
+  "57b73da5-fd65-354d-c3c3-54f08b00168b"],
+ ", without prompting."
 }], "Usage",
  CellID->306585204,ExpressionUUID->"181f92d6-418d-4335-b462-3bc1f6d20794"],
 
