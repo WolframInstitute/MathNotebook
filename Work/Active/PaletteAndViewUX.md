@@ -74,10 +74,15 @@ the name of one of its groups, and the math font-size control.
 
 - [ ] **T1 — Rename the group.** Get the name from Pavel, apply it in `BuildPalette.wls`, regenerate
   the palette, update `Tests/Palette.wlt`. Blocked on him; everything else here is not.
-- [ ] **T2 — Inline math scales with the math font size.** Decide island-style vs control-writes-inline
-  by measurement, implement, and assert by rendered width at two sizes.
 - [ ] **T3 — Reference-entry button, `Tag Cell` removed.**
 - [ ] **T4 — `Insert Reference` becomes a picker** over the three reference kinds in the document.
+
+### Done
+
+- [x] **T2 — Inline math scales with the math font size** (Session 1). The island is styled
+  `"InlineFormula"`, which resolves through the chain as `1.05*Inherited`; `SetMathFontSize` scales that
+  **ratio** rather than writing an absolute size, so inline mathematics follows the slider *and* keeps
+  tracking the cell it sits in. No stylesheet change was needed. Asserted on a rendered page.
 
 ## Progress
 
