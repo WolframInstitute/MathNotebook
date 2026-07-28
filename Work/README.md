@@ -50,8 +50,11 @@ with a tooltip, and `Import .tex file…` / `Export to .tex…` joined them — 
 palette presence at all, which is what made the per-selection buttons look like the only way out to
 LaTeX. Closed with one clause waived: Pavel has not yet read the new palette on a real paper.
 
-**0.1.13 is the published version** (2026-07-28) — 258 tests green, the submission bundle, the
-`ComplexSystems` template that 0.1.12 generated but did not ship, and a 22nd reference page.
+**0.1.13 is the published version** (2026-07-28) — 258 tests green, `Scripts/PublishPaclet.wls` then
+`Scripts/DeployPreviews.wls`, marker and archive verified from the cloud (278 KB, 67 files,
+`"Version" -> "0.1.13"`, carrying `Bundle.wl`, `ExportLaTeXBundle.nb` and `ComplexSystems.nb`). It is
+the submission bundle, the `ComplexSystems` template that 0.1.12 generated but did not ship, and a 22nd
+reference page.
 [First Public Release](Done/2026-07-27-Release.md) closed on 2026-07-27 with **0.1.11**, the version
 marker agreeing and the README's `PacletInstall` line installing it from the cloud onto a machine with
 no local copy. [Repo Organization](Done/2026-07-27-RepoOrganization.md) closed the same day: the root
