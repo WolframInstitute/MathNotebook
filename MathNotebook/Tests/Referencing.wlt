@@ -74,10 +74,20 @@ VerificationTest[
   ConstantArray[ citationButton[ "ollivier" ], 3 ]
 ]
 
+(* The label rides with ParagraphIndent -> 0: the style's -24 hanging indent is for an entry with no
+   dingbat, and on a labelled cell it outdents the dingbat into the margin reserved for it. *)
 VerificationTest[
   labelReferenceCells @ Notebook[ { Cell[ "Ollivier, Ricci curvature", "Reference", CellTags -> "ollivier" ] } ],
   Notebook[ { Cell[ "Ollivier, Ricci curvature", "Reference", CellTags -> "ollivier",
-    CellDingbat -> Cell[ TextData[ "[ollivier]" ] ] ] } ]
+    CellDingbat -> Cell[ TextData[ "[ollivier]" ] ], ParagraphIndent -> 0 ] } ]
+]
+
+(* Relabelling does not accumulate a second indent beside the first. *)
+VerificationTest[
+  labelReferenceCells @ labelReferenceCells @
+    Notebook[ { Cell[ "Twice", "Reference", CellTags -> "twice" ] } ],
+  Notebook[ { Cell[ "Twice", "Reference", CellTags -> "twice",
+    CellDingbat -> Cell[ TextData[ "[twice]" ] ], ParagraphIndent -> 0 ] } ]
 ]
 
 VerificationTest[
@@ -90,14 +100,14 @@ VerificationTest[
   labelReferenceCells @ Notebook[ { Cell[ "Retagged", "Reference", CellTags -> "new",
     CellDingbat -> Cell[ TextData[ "[old]" ] ] ] } ],
   Notebook[ { Cell[ "Retagged", "Reference", CellTags -> "new",
-    CellDingbat -> Cell[ TextData[ "[new]" ] ] ] } ]
+    CellDingbat -> Cell[ TextData[ "[new]" ] ], ParagraphIndent -> 0 ] } ]
 ]
 
 (* A cell may carry several tags; the first is the label. *)
 VerificationTest[
   labelReferenceCells @ Notebook[ { Cell[ "Two tags", "Reference", CellTags -> { "first", "second" } ] } ],
   Notebook[ { Cell[ "Two tags", "Reference", CellTags -> { "first", "second" },
-    CellDingbat -> Cell[ TextData[ "[first]" ] ] ] } ]
+    CellDingbat -> Cell[ TextData[ "[first]" ] ], ParagraphIndent -> 0 ] } ]
 ]
 
 VerificationTest[

@@ -21,7 +21,13 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 
 ## Active
 
-Nothing. [Basic Functionality Shakedown](Done/2026-07-28-BasicFunctionality.md) closed on 2026-07-28
+[Import Display Defects](Active/ImportDisplayDefects.md) — the causal-graphs import round-trips
+byte-exact but displays wrong: `\textbf`/`\emph`/`\textit` render literally in 22 cells and the front
+matter shows raw TeX. T1 closed the bibliography alignment: every sheet's `Reference` reserves a
+185 pt gutter for the hanging `[key]` dingbat, `PlainArticle` carrying the geometry across, and
+labelled cells zero the style's hanging indent. Next: T2 (inline font commands).
+
+[Basic Functionality Shakedown](Done/2026-07-28-BasicFunctionality.md) closed on 2026-07-28
 with all seven tasks done and **one clause outstanding that is Pavel's, not a session's**: applying a
 stylesheet from the palette menu, and Go back after following a reference into a new window, cannot be
 verified anywhere but a real front end — by-name stylesheet resolution reads Default's sizes headless

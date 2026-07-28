@@ -62,7 +62,10 @@ $complexSystemsOverrides = Merge[ {
     "DisplayFormula" -> { TextAlignment -> Left, FontSize -> 14, CellMargins -> { { 90, 24 }, { 6, 6 } } },
     "DisplayFormulaNumbered" -> { TextAlignment -> Left, FontSize -> 14, CellMargins -> { { 90, 24 }, { 6, 6 } } },
     "Caption" -> { FontSize -> 12, CellMargins -> { { 67, 24 }, { 10, 18 } } },
-    "Reference" -> { FontSize -> 14, CellMargins -> { { 100, 25 }, { 3, 3 } } },
+    (* The journal's own 100 pt fits its numbered labels; our dingbat is the BibTeX key, which
+       measures 171 pt at Times 14, so the shared 185 replaces the measured value here — a recorded
+       deviation, not an oversight (ImportDisplayDefects T1). *)
+    "Reference" -> { FontSize -> 14, CellMargins -> { { 185, 25 }, { 3, 3 } } },
     "Proof" -> { FontSlant -> "Plain", CellMargins -> { { 67, 24 }, { 8, 10 } } }
   |>,
   $complexSystemsEnvironments,
@@ -82,7 +85,8 @@ $complexSystemsPrintOverrides = Merge[ {
     "DisplayFormula" -> { FontSize -> 10, CellMargins -> { { 87, 63 }, { 6, 4 } } },
     "DisplayFormulaNumbered" -> { FontSize -> 10, CellMargins -> { { 87, 63 }, { 6, 4 } } },
     "Caption" -> { FontSize -> 9, CellMargins -> { { 63, 63 }, { 18, 4 } } },
-    "Reference" -> { FontSize -> 9, CellMargins -> { { 84, 63 }, { 2, 4 } } }
+    (* Same deviation in print: the key measures 110 pt at Times 9 against the journal's 84. *)
+    "Reference" -> { FontSize -> 9, CellMargins -> { { 125, 63 }, { 2, 4 } } }
   |>,
   (* A CellDingbat declared on the bare style *is* inherited into the "Printout" variant -- the label
      prints -- but it is a Cell carrying its own FontFamily, and the variant's FontFamily does not
@@ -260,8 +264,15 @@ baseStyleSheet[] := Notebook[ Flatten @ {
     MenuSortingValue -> 1280 ],
   Cell[ StyleData[ "Caption", "Printout" ], FontSize -> 9 ],
 
+  (* An imported entry hangs its BibTeX key as a CellDingbat, and a dingbat wider than the left
+     margin is anchored at the window edge with the body pushed right of the margin — the whole
+     bibliography then reads as hanging into the gutter (ImportDisplayDefects T1). The margin has to
+     clear the widest realistic key: [woodhous1973differentiable] measures 173 pt at Palatino 13, the
+     widest of the template faces, so 185 clears it with a gap in every sheet. The -24 first-line
+     outdent is for a hand-written entry with no dingbat; a dingbat'd cell carries its own
+     ParagraphIndent -> 0 (referenceDingbat), since the outdent moves the dingbat with the line. *)
   Cell[ StyleData[ "Reference", StyleDefinitions -> StyleData[ "Text" ] ],
-    CellMargins -> { { 90, 10 }, { 3, 3 } }, ParagraphIndent -> -24,
+    CellMargins -> { { 185, 10 }, { 3, 3 } }, ParagraphIndent -> -24,
     MenuSortingValue -> 2750 ],
   Cell[ StyleData[ "Reference", "Printout" ], FontSize -> 10 ]
   },
@@ -329,12 +340,22 @@ $defaultSheetFile = FileNameJoin[ { $InstallationDirectory, "SystemFiles", "Fron
    name would otherwise silently take that style away from this sheet. Tests/StyleSheets.wlt asserts
    the two lists together cover every style the base sheet declares. *)
 $plainDeferred = { "Notebook", "Title", "Author", "Text", "Item", "ItemNumbered", "ItemParagraph",
-  "Reference", "DisplayFormula", "DisplayFormulaNumbered", "DisplayFormulaEquationNumber" };
+  "DisplayFormula", "DisplayFormulaNumbered", "DisplayFormulaEquationNumber" };
 
 (* Also declared by Default, but the number or the word in front of them is the document's and not the
    sheet's: Default numbers no heading, and an unnumbered Section beside a \ref that reads "Section 3"
    is worse than no numbering at all. *)
 $plainLabelled = { "Section", "Subsection", "Subsubsection", "Abstract" };
+
+(* Also declared by Default, whose typography stands — but an imported entry hangs its BibTeX key as
+   a CellDingbat, and under Default's 66 pt margin the key lands at the window edge, clipped, with the
+   body pushed right of the prose around it. The margin is document structure here for the same reason
+   the environments carry theirs: a dingbat is drawn to the left of it (ImportDisplayDefects T1). *)
+$plainGeometry = { "Reference" };
+
+geometryStyleCell[ base_List, style_String ] :=
+  Cell[ StyleData[ style ],
+    Sequence @@ FilterRules[ styleOptions[ base, style ], { CellMargins, ParagraphIndent } ] ]
 
 styleOptions[ cells_List, style_String ] :=
   FirstCase[ cells,
@@ -356,11 +377,12 @@ plainCell[ cell_Cell ] := DeleteCases[ cell, FontSize -> _ ]
 
 plainStyleSheet[] :=
   Module[ { base = First @ baseStyleSheet[], default = Get[ $defaultSheetFile ], skipped },
-    skipped = Join[ $plainDeferred, $plainLabelled ];
+    skipped = Join[ $plainDeferred, $plainLabelled, $plainGeometry ];
     Notebook[ Flatten @ {
       Cell[ StyleData[ StyleDefinitions -> "Default.nb" ] ],
       Cell[ StyleData[ "Notebook" ], CreateCellID -> True, DefaultNewCellStyle -> "Text" ],
       Map[ labelledStyleCell[ base, default, # ] &, $plainLabelled ],
+      Map[ geometryStyleCell[ base, # ] &, $plainGeometry ],
       Map[ plainCell,
         Select[ base, MatchQ[ Cell[ StyleData[ name_String, ___ ], ___ ] /; ! MemberQ[ skipped, name ] ] ] ] },
       StyleDefinitions -> "PrivateStylesheetFormatting.nb" ]

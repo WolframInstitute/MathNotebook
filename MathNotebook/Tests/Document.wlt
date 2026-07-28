@@ -198,11 +198,11 @@ VerificationTest[
   Cases[ First @ $citeNotebook, Cell[ _, "Reference", ___ ] ],
   { Cell[ "J\[UDoubleDot]rgen Ehlers, Felix Pirani, A first paper, with a comma, A Journal, 44(6), 1587\[Dash]1609, Springer, 2012.",
       "Reference", TaggingRules -> <| "MathNotebook" -> <| "Suppressed" -> "True", "Separator" -> "" |> |>,
-      CellTags -> "first", CellDingbat -> Cell[ TextData[ "[first]" ] ] ],
+      CellTags -> "first", CellDingbat -> Cell[ TextData[ "[first]" ] ], ParagraphIndent -> 0 ],
     Cell[ "Hajnal Andr\[EAcute]ka, A second, 2019.", "Reference",
       TaggingRules -> <| "MathNotebook" -> <| "Suppressed" -> "",
         "BibliographyTeX" -> "\\bibliographystyle{alphaurl}\n\\bibliography{refs}", "Separator" -> "\n\n" |> |>,
-      CellTags -> "second", CellDingbat -> Cell[ TextData[ "[second]" ] ] ] }
+      CellTags -> "second", CellDingbat -> Cell[ TextData[ "[second]" ] ], ParagraphIndent -> 0 ] }
 ]
 
 (* The label is the key in brackets, the verbatim brace content rides along as the ButtonData — both

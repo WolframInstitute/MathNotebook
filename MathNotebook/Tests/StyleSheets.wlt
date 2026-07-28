@@ -120,8 +120,35 @@ VerificationTest[
           { CellDingbat, CounterIncrements, CounterAssignments, ExpressionUUID } ], { 1 } ] },
   { True, True,
     { "Author", "DisplayFormula", "DisplayFormulaEquationNumber", "DisplayFormulaNumbered",
-      "Reference", "Text", "Title" },
+      "Text", "Title" },
     { } }
+]
+
+(* ImportDisplayDefects T1: an imported bibliography entry hangs its BibTeX key as a CellDingbat, and
+   a dingbat wider than the left margin is anchored at the window edge — clipped — with the body
+   pushed right of the prose. The widest key of the causal-graphs specimen measures 173 pt at
+   Palatino 13, so every sheet reserves 185; PlainArticle carries the geometry and nothing else, the
+   same exception the environments already are to its "Default's typography" rule. ComplexSystems
+   deviates from its journal-measured 100/84 deliberately: those fit the journal's own numbered
+   labels, not a key. *)
+VerificationTest[
+  Map[
+    sheet |-> With[ { options = FirstCase[ First[ sheet ],
+        Cell[ StyleData[ "Reference" ] | StyleData[ "Reference", StyleDefinitions -> _ ], opts___ ] :>
+          { opts }, { }, { 1 } ] },
+      { Lookup[ options, CellMargins ][[ 1, 1 ]], Lookup[ options, ParagraphIndent ] } ],
+    Join[ { $baseSheet },
+      Map[ Get[ FileNameJoin[ { $styleSheetDirectory, # <> ".nb" } ] ] &,
+        Append[ $templateNames, "ComplexSystems" ] ],
+      { $plainSheet } ] ],
+  ConstantArray[ { 185, -24 }, 7 ]
+]
+
+VerificationTest[
+  FirstCase[ First[ $complexSheet ],
+    Cell[ StyleData[ "Reference", "Printout" ], options___ ] :> Lookup[ { options }, CellMargins ],
+    None, { 1 } ],
+  { { 125, 63 }, { 2, 4 } }
 ]
 
 

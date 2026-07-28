@@ -463,6 +463,25 @@ goBackDrive[ ] :=
     measurements
   ]
 
+(* ImportDisplayDefects T1: an imported entry hangs its BibTeX key as a CellDingbat, and a dingbat
+   wider than the Reference margin lands at the window edge, clipped, with the body pushed off the
+   margin. The sheets reserve the margin; whether it clears the key depends on the face each sheet
+   resolves for Reference, so the invariant is measured — the widest specimen key, rasterized at the
+   sheet's own font, against the sheet's own margin. A font or size change that silently outgrows
+   the gutter fails here and nowhere else. *)
+referenceGutter[ sheet_ ] :=
+  Module[ { notebook = CreateDocument[ { }, Visible -> False, StyleDefinitions -> sheet ], values },
+    values = <|
+      "Margin" -> CurrentValue[ notebook, { StyleDefinitions, "Reference", CellMargins } ][[ 1, 1 ]],
+      "Label" -> First @ ImageDimensions @ Rasterize[
+        Cell[ TextData[ "[woodhous1973differentiable]" ],
+          FontFamily -> CurrentValue[ notebook, { StyleDefinitions, "Reference", FontFamily } ],
+          FontSize -> CurrentValue[ notebook, { StyleDefinitions, "Reference", FontSize } ] ],
+        Background -> White, LightDark -> "Light" ] |>;
+    NotebookClose[ notebook ];
+    values
+  ]
+
 (* "NoDocument" is first in this association on purpose: a notebook left open by any measurement
    above it would become the input notebook, and the state under test would be gone. *)
 $measured = UsingFrontEnd @ <|
@@ -490,6 +509,9 @@ $measured = UsingFrontEnd @ <|
       NotebookClose[ notebook ];
       size ] &,
     $templates ],
+  "ReferenceGutter" -> AssociationMap[
+    referenceGutter @ Get @ FileNameJoin[ { $sheetDirectory, # } ] &,
+    Join[ $templates, { "ComplexSystems.nb", "PlainArticle.nb" } ] ],
   "Citations" -> citationMeasurements @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
   "MaTeX" -> If[ $maTeXAvailable, maTeXMeasurements @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ] ]
 |>;
@@ -499,6 +521,16 @@ $measured = UsingFrontEnd @ <|
 VerificationTest[
   Union @ Values @ $measured[ "SheetLoaded" ],
   { 26 }
+]
+
+(* The widest key must fit the gutter under every sheet, and the width must be a real measurement —
+   a Rasterize fault reads 0 and would pass a bare "less than" for the wrong reason. *)
+VerificationTest[
+  AssociationMap[
+    With[ { gutter = $measured[ "ReferenceGutter", # ] },
+      100 < gutter[ "Label" ] < gutter[ "Margin" ] ] &,
+    Join[ $templates, { "ComplexSystems.nb", "PlainArticle.nb" } ] ],
+  AssociationMap[ True &, Join[ $templates, { "ComplexSystems.nb", "PlainArticle.nb" } ] ]
 ]
 
 (* The reported defect, literally: on every template, Theorem, Proof, Reference, Item and

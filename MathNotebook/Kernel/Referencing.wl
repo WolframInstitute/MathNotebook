@@ -97,9 +97,15 @@ citationTargetStyle[ notebook_NotebookObject, tag_String ] :=
     { cell_, ___ } :> First @ Flatten @ { CurrentValue[ cell, CellStyle ] },
     _ :> None } ]
 
+(* The Reference style's ParagraphIndent -24 is a hanging indent for a hand-written entry; on a cell
+   carrying a dingbat it outdents the dingbat with the first line, eating 24 pt of the margin the
+   sheets reserve for exactly that label — so the label travels with ParagraphIndent -> 0
+   (ImportDisplayDefects T1). Per-cell is right for the same reason it is for an environment body:
+   "this cell hangs its own label" is true under every stylesheet. *)
 referenceDingbat[ tags_ ] :=
   Replace[ First[ Flatten @ { tags }, None ],
-    { tag_String :> { CellDingbat -> Cell[ TextData[ referenceLabel[ tag ] ] ] }, _ :> { } } ]
+    { tag_String :> { CellDingbat -> Cell[ TextData[ referenceLabel[ tag ] ] ], ParagraphIndent -> 0 },
+      _ :> { } } ]
 
 tagCell[ cell_CellObject, tag_String ] := (
   SetOptions[ cell, CellTags -> tag ];
@@ -111,7 +117,7 @@ labelReferenceCells[ notebook_Notebook ] :=
   ReplaceAll[ notebook,
     Cell[ contents_, "Reference", options___ ] :>
       Cell[ contents, "Reference",
-        Sequence @@ FilterRules[ { options }, Except[ CellDingbat ] ],
+        Sequence @@ FilterRules[ { options }, Except[ { CellDingbat, ParagraphIndent } ] ],
         Sequence @@ referenceDingbat @ Lookup[ { options }, CellTags, { } ] ] ]
 
 (* The same silent no-op as the five above, one state earlier and from the other cause: nothing has
