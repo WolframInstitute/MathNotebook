@@ -15,35 +15,62 @@ PackageScope["referenceLabel"]
 PackageScope["referenceDingbat"]
 PackageScope["citationButton"]
 PackageScope["labelReferenceCells"]
+PackageScope["withInputNotebook"]
+
+(* InputNotebook[] answers $Failed when no document is open — a palette with no paper beside it,
+   which is where a new author starts. SelectedCells[$Failed] then stays unevaluated, so a guard
+   written for {} matches neither branch and the Replace hands back its own argument: every entry
+   point below did nothing and said nothing, and the two that prompt first discarded the tag the
+   author had already typed. So each takes the notebook as an argument — the shape LabelReferences
+   already had, and the repo's own "pure cores with thin wrappers" convention — and the argumentless
+   form does nothing but resolve it, which is also what makes any of them testable. *)
+withInputNotebook[ operation_ ] :=
+  Replace[ InputNotebook[], {
+    notebook_NotebookObject :> operation[ notebook ],
+    _ :> MessageDialog[ "Open a notebook first!" ] } ]
 
 CopyCellReference[] :=
-  Replace[ SelectedCells[ InputNotebook[] ], {
+  withInputNotebook[ CopyCellReference ]
+
+CopyCellReference[ notebook_NotebookObject ] :=
+  Replace[ SelectedCells[ notebook ], {
     { cell_, ___ } :>
       With[ { style = First @ Flatten @ { CurrentValue[ cell, CellStyle ] } },
         CopyToClipboard @ referenceButton[ CurrentValue[ cell, CellID ], Lookup[ $referenceLabelSpec, style, { "", { style }, "" } ] ]
       ],
-    {} :> MessageDialog[ "Select a cell!" ] } ]
+    _ :> MessageDialog[ "Select a cell!" ] } ]
 
 TagSelectedCell[] :=
-  Replace[ SelectedCells[ InputNotebook[] ], {
+  withInputNotebook[ TagSelectedCell ]
+
+TagSelectedCell[ notebook_NotebookObject ] :=
+  Replace[ SelectedCells[ notebook ], {
     { cell_, ___ } :>
       With[ { tag = InputString[ "Cell tag:" ] },
-        If[ StringQ[ tag ], tagCell[ cell, tag ] ]
+        If[ StringQ[ tag ], TagSelectedCell[ notebook, tag ] ]
       ],
-    {} :> MessageDialog[ "Select a cell!" ] } ]
+    _ :> MessageDialog[ "Select a cell!" ] } ]
+
+TagSelectedCell[ notebook_NotebookObject, tag_String ] :=
+  Replace[ SelectedCells[ notebook ], {
+    { cell_, ___ } :> tagCell[ cell, tag ],
+    _ :> MessageDialog[ "Select a cell!" ] } ]
 
 InsertCitation[] :=
+  withInputNotebook[ InsertCitation ]
+
+InsertCitation[ notebook_NotebookObject ] :=
   With[ { tag = InputString[ "Citation tag:" ] },
-    If[ StringQ[ tag ],
-      With[ { notebook = InputNotebook[] },
-        NotebookWrite[ notebook, citationButton[ tag, citationTargetStyle[ notebook, tag ] ] ] ] ]
-  ]
+    If[ StringQ[ tag ], InsertCitation[ notebook, tag ] ] ]
+
+InsertCitation[ notebook_NotebookObject, tag_String ] :=
+  NotebookWrite[ notebook, citationButton[ tag, citationTargetStyle[ notebook, tag ] ] ]
 
 LabelReferences[ notebook_NotebookObject ] :=
   NotebookPut[ labelReferenceCells @ NotebookGet[ notebook ], notebook ]
 
 LabelReferences[] :=
-  LabelReferences[ InputNotebook[] ]
+  withInputNotebook[ LabelReferences ]
 
 (* The label is the cell's own first tag, so a bibliography entry reads exactly as the
    citation that points at it, and nothing renumbers when cells move. *)
@@ -90,11 +117,14 @@ labelReferenceCells[ notebook_Notebook ] :=
 GoBack[] :=
   SelectionMove[ $LastHyperlinkCell, All, Cell ]
 
-InsertEnvironment[ style : "DisplayFormula" | "DisplayFormulaNumbered" ] :=
-  writeEnvironmentCell[ Cell[ BoxData[ FormBox[ "\[Placeholder]", TraditionalForm ] ], style ] ]
-
 InsertEnvironment[ style_String ] :=
-  writeEnvironmentCell[ Cell[ "", style ] ]
+  withInputNotebook[ InsertEnvironment[ #, style ] & ]
+
+InsertEnvironment[ notebook_NotebookObject, style : "DisplayFormula" | "DisplayFormulaNumbered" ] :=
+  writeEnvironmentCell[ notebook, Cell[ BoxData[ FormBox[ "\[Placeholder]", TraditionalForm ] ], style ] ]
+
+InsertEnvironment[ notebook_NotebookObject, style_String ] :=
+  writeEnvironmentCell[ notebook, Cell[ "", style ] ]
 
 $theoremEnvironments = <|
   "Theorem" -> "Plain", "Lemma" -> "Plain", "Proposition" -> "Plain",
@@ -124,9 +154,8 @@ referenceButton[ id_Integer, { prefix_, counters_, suffix_ } ] :=
     BaseStyle -> "Link", Appearance -> None
   ]
 
-writeEnvironmentCell[ cell_Cell ] :=
-  With[ { notebook = InputNotebook[] },
-    SelectionMove[ notebook, After, Cell ];
-    NotebookWrite[ notebook, cell, All ];
-    SelectionMove[ notebook, All, CellContents ]
-  ]
+writeEnvironmentCell[ notebook_NotebookObject, cell_Cell ] := (
+  SelectionMove[ notebook, After, Cell ];
+  NotebookWrite[ notebook, cell, All ];
+  SelectionMove[ notebook, All, CellContents ]
+)

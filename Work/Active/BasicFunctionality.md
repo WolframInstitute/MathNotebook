@@ -50,13 +50,14 @@ Done when every defect the shakedown finds is either fixed or recorded with a re
 
 ## Tasks
 
-- [ ] **T2** — Guard the five selection-driven entry points against `InputNotebook[] === $Failed`, and give each a notebook-argument overload so it can be tested at all — the shape `LabelReferences` already has. `CopyCellReference`, `TagSelectedCell`, `InsertCitation`, `InsertEnvironment` (via `writeEnvironmentCell`) and the `Replace` guards that never fire. The two that prompt first must not consume the author's input before discarding it. Tests that bite by reintroducing the defect.
 - [ ] **T3** — `GoBack[]` before any hyperlink has been followed: `$LastHyperlinkCell` has no value, so the call returns unevaluated with no message. Different cause from T2 (an unset symbol, not a `$Failed` notebook) and reachable *with* a document open, hence its own task.
 - [ ] **T4** — Continue the shakedown into what T1 did not drive live: the three dialog-carrying buttons (`Import .tex file…`, `Export to .tex…`, `Export submission…`) driven with explicit paths, the stylesheet menu against all six shipped sheets, and the MaTeX conversions. T1 covered the referencing and view halves; this covers the conversion and submission halves.
+- [ ] **T5** — The same `$Failed` hole in the seven entry points T2 did not touch: `SetDocumentFontSize`, `SetMathFontSize`, `ResetDocumentView` (`View.wl`), `ConvertLaTeXCells`, `ConvertMathCells` (`Conversion.wl`), `ConvertToMaTeX`, `ConvertFromMaTeX` (`MaTeX.wl`). One `withInputNotebook` each now that the guard exists and is `PackageScope`. Found by reading, not driven — so drive each first and confirm the no-op before fixing it.
 
 ### Done
 
 - [x] **T1** — Catalogue: exercise every palette button's stored code against an installed paclet in a live front end. *Session 1.*
+- [x] **T2** — Guard the five selection-driven entry points against `InputNotebook[] === $Failed` and give each a notebook-argument overload. *Session 2.*
 
 ## Progress
 
@@ -112,3 +113,40 @@ Read styles off live cell objects instead: `First @ Flatten @ { CurrentValue[ #,
 Both faults read exactly like "`InsertEnvironment` is broken", and it is not.
 
 - **Next:** T2 — guard the five entry points and give them notebook-argument overloads.
+
+### Session 2 — 2026-07-28 — T2
+
+- **Prompt:** `/next-session` — the first unchecked box, taken as written.
+- **Did:**
+
+One `PackageScope` guard in `Referencing.wl` and a notebook argument on each of the five.
+`withInputNotebook` resolves `InputNotebook[]` once and answers `MessageDialog["Open a notebook first!"]` when there is none; the argumentless forms now do nothing else.
+The overloads are `CopyCellReference[nb]`, `TagSelectedCell[nb]` and `[nb, tag]`, `InsertCitation[nb]` and `[nb, tag]`, `InsertEnvironment[nb, style]`, `LabelReferences[nb]` (which already had it) and `writeEnvironmentCell[nb, cell]`.
+The two-argument forms are the ones that matter for testing: a notebook alone still reaches `InputString`, so it is the *tag* that makes those two drivable, and the prompting forms are now thin wrappers over them.
+`InsertCitation` also stopped prompting before it resolves the notebook, which is the half of the defect that discarded the author's typing.
+Usage strings updated for the four symbols that gained a form; the 22 reference pages still show the old ones and are left for a release task.
+
+**Five tests in `Tests/FrontEnd.wlt`, and the bite check ran twice.**
+A headless `UsingFrontEnd` has no input notebook, so it reproduces the reported state for free — the same fact that made these untestable is what makes the guard assertable, once the guard exists.
+The dialog is read back by its own text rather than by the head of the return, because a *successful* call can also answer a `NotebookObject`.
+Bite A, `withInputNotebook[ operation_ ] := operation[ InputNotebook[] ]`: **30 passed, 1 failed**, and driven directly the five answer `CopyCellReference[$Failed]`, `TagSelectedCell[$Failed]`, `InsertCitation[$Failed]`, `InsertEnvironment[$Failed, "Theorem"]`, `LabelReferences[$Failed]` with zero messages — the reported shape, restored on purpose.
+Bite B, the whole pre-fix `Referencing.wl` from `HEAD`: **26 passed, 5 failed**, so all five new tests bite on the fix and 26 is the file's own previous count.
+Restored from a scratchpad copy both times, never `git checkout --`.
+Full suite green after the restore: **263 passed, 0 failed** (258 + 5), `Specimens.wlt` at 32 covering both the byte-exact round trip and the structure census.
+
+**A finding, recorded as T5 rather than fixed.**
+Seven more entry points carry the identical hole — `SetDocumentFontSize`, `SetMathFontSize`, `ResetDocumentView`, `ConvertLaTeXCells`, `ConvertMathCells`, `ConvertToMaTeX`, `ConvertFromMaTeX` — each handing `InputNotebook[]` straight into a `notebook_NotebookObject` overload or into `convertCells`.
+So does the palette's own stored code: the stylesheet menu, the two view sliders and the two export buttons all write `InputNotebook[]` bare.
+These were found by reading, not by driving, so T5 says to drive each first and confirm the no-op before touching it.
+
+- **Learned:**
+
+`MessageDialog` in a headless front end returns its `NotebookObject` **promptly** and does not block, so the text the author would see is readable — `FirstCase[ NotebookGet[ dialog ], s_String /; StringEndsQ[ s, "!" ], None, Infinity ]` — and the dialog can be closed before the next call.
+Without closing it between calls the dialog itself would become the input notebook and the state under test would be gone; for the same reason the whole "no document" measurement has to be **first** in `FrontEnd.wlt`'s single `$measured` association, ahead of every measurement that opens a notebook.
+`InputString` headless answers `$Failed` immediately with `InputString::ninit` rather than hanging, which is what made bite B safe to run against code whose first act is a prompt.
+
+A citation's boxes read back off a live notebook are not the boxes that were written: the prefix `"Theorem "` came back as `RowBox[{"Theorem", " "}]`, so the assertion is on the `CounterBox` chain and not on the whole `RowBox` — the same family as the reopen splitting a `ButtonBox[RowBox[…]]` into one button per run.
+
+Serena's `replace_content` in regex mode needs `needle`, not `pattern`, and a needle quoting `\[Placeholder]` did not match however it was escaped; splitting the edit so the named character falls *outside* the matched span is the way through, and it keeps the replacement free of backslashes too.
+
+- **Next:** T3 — `GoBack[]` with no hyperlink followed, whose cause is the unset `$LastHyperlinkCell` and not a `$Failed` notebook.

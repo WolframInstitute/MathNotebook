@@ -355,7 +355,78 @@ maTeXMeasurements[ parent_ ] :=
     measurements
   ]
 
+(* BasicFunctionality T2: with no document open, every selection-driven entry point did nothing and
+   said nothing. InputNotebook[] answers $Failed there — a palette with no paper beside it, which is
+   where a new author starts — and SelectedCells[$Failed] then stays unevaluated, so the guard
+   written for an empty selection matched neither branch and the Replace handed back its own
+   argument. No test in the repo had ever called one of these: they are front-end operations end to
+   end, so the kernel-only files cannot reach them, and the failure raises no message, which leaves
+   the dialog the author is supposed to see as the only detector.
+
+   A headless UsingFrontEnd has no input notebook, so it reproduces the reported state exactly and
+   for free — that is also why these were untestable before the notebook arguments existed, and why
+   they now need nothing but a front end. TimeConstrained is not decoration: without the guard,
+   TagSelectedCell and InsertCitation reach InputString first, and the run would block rather than
+   fail. *)
+
+dialogText[ result_ ] :=
+  Replace[ result,
+    dialog_NotebookObject :>
+      With[ { text = FirstCase[ NotebookGet[ dialog ], s_String /; StringEndsQ[ s, "!" ], None, Infinity ] },
+        NotebookClose[ dialog ]; text ] ]
+
+$noDocumentCalls = <|
+  "CopyCellReference" -> Hold @ CopyCellReference[],
+  "TagSelectedCell" -> Hold @ TagSelectedCell[],
+  "InsertCitation" -> Hold @ InsertCitation[],
+  "InsertEnvironment" -> Hold @ InsertEnvironment[ "Theorem" ],
+  "LabelReferences" -> Hold @ LabelReferences[]
+|>;
+
+noDocumentDialogs[ ] :=
+  Map[ dialogText @ TimeConstrained[ ReleaseHold[ # ], 30, "TIMEOUT" ] &, $noDocumentCalls ]
+
+(* The other half of the same task: the notebook-argument overloads that make the above possible,
+   driven against a live document. The counters are read off the cells for the reason T8 and T9 read
+   them there — a dingbat of "1." collides with too much of a page's plaintext — and Proof and
+   DisplayFormulaNumbered are in the list because they must NOT consume the theorem counter. *)
+referencingDrive[ parent_ ] :=
+  Module[ { notebook, cells, inserted, measurements },
+    notebook = NotebookPut @ Notebook[ {
+      Cell[ "A section", "Section" ],
+      Cell[ "A theorem", "Theorem" ],
+      Cell[ "Smith, A title", "Reference", CellTags -> "Sm09" ] },
+      StyleDefinitions -> parent, Visible -> False ];
+    cells = Cells[ notebook ];
+    measurements = <| "Unselected" -> dialogText @ CopyCellReference[ notebook ] |>;
+    SelectionMove[ cells[[ 2 ]], All, Cell ];
+    measurements[ "Copied" ] = dialogText @ CopyCellReference[ notebook ];
+    measurements[ "Clipboard" ] = Count[ NotebookGet @ ClipboardNotebook[], _Button | _ButtonBox, Infinity ];
+    TagSelectedCell[ notebook, "Thm:key" ];
+    measurements[ "Tagged" ] = CurrentValue[ cells[[ 2 ]], CellTags ];
+    LabelReferences[ notebook ];
+    measurements[ "Dingbat" ] = FirstCase[ NotebookGet[ notebook ],
+      Cell[ _, "Reference", ___, CellDingbat -> Cell[ TextData[ label_String ] ], ___ ] :> label, None, Infinity ];
+    SelectionMove[ Last @ Cells[ notebook ], After, Cell ];
+    Scan[ InsertEnvironment[ notebook, # ] &, { "Theorem", "Lemma", "Proof", "DisplayFormulaNumbered" } ];
+    inserted = Cells[ notebook ];
+    measurements[ "Styles" ] = Map[ First @ Flatten @ { CurrentValue[ #, CellStyle ] } &, inserted ];
+    measurements[ "Counters" ] = Map[ CurrentValue[ #, { "CounterValue", "Theorem" } ] &,
+      Select[ inserted,
+        MemberQ[ { "Theorem", "Lemma", "Proof" }, First @ Flatten @ { CurrentValue[ #, CellStyle ] } ] & ] ];
+    SelectionMove[ Last @ Cells[ notebook ], After, Cell ];
+    InsertCitation[ notebook, "Thm:key" ];
+    measurements[ "Citation" ] = FirstCase[ NotebookGet[ notebook ],
+      ButtonBox[ boxes_, ___, ButtonData -> "Thm:key", ___ ] :> boxes, None, Infinity ];
+    NotebookClose[ notebook ];
+    measurements
+  ]
+
+(* "NoDocument" is first in this association on purpose: a notebook left open by any measurement
+   above it would become the input notebook, and the state under test would be gone. *)
 $measured = UsingFrontEnd @ <|
+  "NoDocument" -> noDocumentDialogs[ ],
+  "Referencing" -> referencingDrive @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
   "Imported" -> importedText[ $importedSource ],
   "PlainSheet" -> AssociationMap[ sheetText[ $plainPaper, # ] &, { "PlainArticle.nb", "Default.nb" } ],
   "Lists" -> listMeasurements[ $listPaper ],
@@ -438,6 +509,45 @@ VerificationTest[
 VerificationTest[
   KeyValueMap[ FreeQ[ citationButton[ #1, #2 ], _CounterBox ] &, $measured[ "Citations" ] ],
   { False, False, False, True, True, True }
+]
+
+(* BasicFunctionality T2: the reported defect, literally. With no document open every one of the five
+   told the author, where each formerly returned an unevaluated expression and no message. *)
+VerificationTest[
+  $measured[ "NoDocument" ],
+  AssociationMap[ "Open a notebook first!" &,
+    { "CopyCellReference", "TagSelectedCell", "InsertCitation", "InsertEnvironment", "LabelReferences" } ]
+]
+
+(* With a document, the guard that was always in the source and never reachable now fires — and a
+   real selection still succeeds, so the guard is a guard and not a refusal. *)
+VerificationTest[
+  { $measured[ "Referencing", "Unselected" ], $measured[ "Referencing", "Copied" ],
+    $measured[ "Referencing", "Clipboard" ] },
+  { "Select a cell!", Null, 1 }
+]
+
+(* The notebook-argument overloads, driven for the first time: the tag reaches the cell and the
+   bibliography entry gets the label its citations read. *)
+VerificationTest[
+  { $measured[ "Referencing", "Tagged" ], $measured[ "Referencing", "Dingbat" ] },
+  { "Thm:key", "[Sm09]" }
+]
+
+(* Four environments land in order, and the theorem counter runs 1, 2, 3 across the two theorems and
+   the lemma while Proof consumes none of it — it reads the lemma's 3 rather than a 4 of its own. *)
+VerificationTest[
+  { $measured[ "Referencing", "Styles" ], $measured[ "Referencing", "Counters" ] },
+  { { "Section", "Theorem", "Reference", "Theorem", "Lemma", "Proof", "DisplayFormulaNumbered" },
+    { 1, 2, 3, 3 } }
+]
+
+(* The citation written by the two-argument form resolves against the tag it was given. The boxes
+   are read back off a live notebook, which splits the prefix string into runs of its own, so what is
+   asserted is the counter chain rather than the whole RowBox. *)
+VerificationTest[
+  Cases[ $measured[ "Referencing", "Citation" ], _CounterBox, Infinity ],
+  { CounterBox[ "Section", "Thm:key" ], CounterBox[ "Theorem", "Thm:key" ] }
 ]
 
 (* Inline Math Converter Defects T1: a comma-bearing span really renders as mathematics — visible
