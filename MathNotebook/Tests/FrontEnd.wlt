@@ -225,6 +225,24 @@ savedRoundTrip[ source_String ] :=
 
 $savedSource = "\\documentclass{article}\n\\begin{document}\n\n\\section{S} \\label{sec:a}\n\nSee \\cite{first, second} and Section~\\ref{sec:a} and~\\eqref{eq:a}.\n\n\\begin{equation}\\label{eq:a}\nx^2\n\\end{equation}\n\n\\end{document}\n";
 
+(* ImportDisplayDefects T2: the same save for the styled runs the font commands become. A StyleBox
+   with list content would come back split into one run per part with the math cell escaping the
+   style — measured, and why a rich run is an inline Cell island instead — so what has to survive
+   is the three plain StyleBoxes exactly as written, the island, and the export byte for byte. *)
+savedFontRuns[ source_String ] :=
+  Module[ { file, notebook, back },
+    file = FileNameJoin[ { $TemporaryDirectory, "MathNotebookFontRuns.nb" } ];
+    Export[ file, latexToNotebook[ source ], "NB" ];
+    notebook = NotebookOpen[ file, Visible -> False ];
+    back = NotebookGet[ notebook ];
+    NotebookClose[ notebook ];
+    <| "StyleBoxes" -> Cases[ back, _StyleBox, Infinity ],
+      "Islands" -> Count[ back, Cell[ _TextData, ___, FontSlant -> "Italic", ___ ], Infinity ],
+      "Exported" -> notebookToLaTeX[ back ] === source |>
+  ]
+
+$fontSavedSource = "\\documentclass{article}\n\\begin{document}\n\nThe \\textbf{light cone}, \\emph{here and now}, an \\textit{upright} word, a \\emph{pairing of degree $n$}.\n\n\\end{document}\n";
+
 (* LaTeXPaperImport T7: an environment body that spans cells has to number itself once. The name,
    the number and the QED square come from the style, so every cell of a three-cell theorem would
    carry all three and the next theorem would be 1.4 — and none of that is visible in the kernel or
@@ -494,6 +512,7 @@ $measured = UsingFrontEnd @ <|
   "Numbering" -> numberingMeasurements[ $numberingPaper ],
   "Figures" -> figureMeasurements[ $figurePaper ],
   "Saved" -> savedRoundTrip[ $savedSource ],
+  "FontRuns" -> savedFontRuns[ $fontSavedSource ],
   "Body" -> importedText @ latexToNotebook[ $bodyPaper ],
   "Bibliography" -> importedText @ latexToNotebook[ $bibliographySource, bibliographyDatabase[ $bibliographyBib ] ],
   "Entries" -> importedText[ $entrySource ],
@@ -756,6 +775,18 @@ VerificationTest[
 VerificationTest[
   { $measured[ "Saved", "Buttons" ] > 3, $measured[ "Saved", "Exported" ] },
   { True, True }
+]
+
+(* ImportDisplayDefects T2: the styled runs the font commands became survive that same save. The
+   three plain runs come back as the very StyleBoxes the import wrote — the "TextItalic" name that
+   tells \textit from \emph included — the math-holding emph as its inline Cell island, and the
+   reopened notebook still exports the source byte for byte. *)
+VerificationTest[
+  $measured[ "FontRuns" ],
+  <| "StyleBoxes" -> { StyleBox[ "light cone", FontWeight -> "Bold" ],
+      StyleBox[ "here and now", FontSlant -> "Italic" ],
+      StyleBox[ "upright", "TextItalic", FontSlant -> "Italic" ] },
+    "Islands" -> 1, "Exported" -> True |>
 ]
 
 (* LaTeXPaperImport T7: a theorem whose body wraps around a display equation is three cells, and the

@@ -199,8 +199,33 @@ inlinePartToTeX[ part : Cell[ BoxData[ FormBox[ boxes_, TraditionalForm ] ], ___
     { tex_String :> "$" <> tex <> "$",
       $Failed :> Replace[ boxesToTeX[ boxes ], { $Failed -> part, tex_String :> "$" <> tex <> "$" } ] } ]
 
+(* The font command is rebuilt from the run itself, not from stored source, so an edit to the
+   styled text reaches the .tex. The style name marks \textit; a bare italic — the Format menu's
+   own — exports as \emph, the semantic default. Both the StyleBox and the inline-Cell shape of a
+   run serialize here, their contents recursing through the same clauses. *)
+inlinePartToTeX[ StyleBox[ content_, "TextItalic", ___ ] ] :=
+  fontTeX[ "textit", content ]
+
+inlinePartToTeX[ Cell[ TextData[ content_ ], "TextItalic", ___ ] ] :=
+  fontTeX[ "textit", content ]
+
+inlinePartToTeX[ StyleBox[ content_, ___, FontWeight -> "Bold", ___ ] ] :=
+  fontTeX[ "textbf", content ]
+
+inlinePartToTeX[ Cell[ TextData[ content_ ], ___, FontWeight -> "Bold", ___ ] ] :=
+  fontTeX[ "textbf", content ]
+
+inlinePartToTeX[ StyleBox[ content_, ___, FontSlant -> "Italic", ___ ] ] :=
+  fontTeX[ "emph", content ]
+
+inlinePartToTeX[ Cell[ TextData[ content_ ], ___, FontSlant -> "Italic", ___ ] ] :=
+  fontTeX[ "emph", content ]
+
 inlinePartToTeX[ part_ ] :=
   part
+
+fontTeX[ command_String, content_ ] :=
+  "\\" <> command <> "{" <> StringJoin[ inlinePartToTeX /@ Flatten @ { content } ] <> "}"
 
 mergeStrings[ parts_List ] :=
   FixedPoint[ Replace[ { before___, first_String, second_String, after___ } :> { before, first <> second, after } ], parts ]

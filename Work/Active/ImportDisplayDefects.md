@@ -81,9 +81,6 @@ goes ahead of everything above. Ask before T1.
 
 ## Tasks
 
-- [ ] **T2 — Inline font commands.** `\textbf`/`\textit`/`\emph` → styled runs in `inlineContent`,
-  export clause in `inlinePartToTeX`'s family, byte-exact on both specimens, reopen-survival measured,
-  tests in `Document.wlt` bitten before trusted.
 - [ ] **T3 — Front matter display.** Settle R3's three decisions with Pavel, implement what he picks,
   tests accordingly.
 - [ ] **T4 — Re-import and confirm.** Re-import `main.tex` over `main.nb` with the fixed paclet,
@@ -92,6 +89,11 @@ goes ahead of everything above. Ask before T1.
 
 ### Done
 
+- [x] **T2 — Inline font commands** (Session 2). `\textbf`/`\textit`/`\emph` → styled runs split
+  before inline math, plain args as native `StyleBox`, rich args as inline `Cell` islands (the shape
+  a save preserves — measured), `"TextItalic"` style name distinguishing `\textit`; export rebuilt
+  from the run in `inlinePartToTeX`/`fontTeX`. Byte-exact on both specimens and all four samples;
+  reopen survival pinned in `FrontEnd.wlt`; three bites confirmed.
 - [x] **T1 — Bibliography alignment** (Session 1). Measure a hanging `[key]` dingbat's geometry under
   the chain, pick the margin that clears the specimen's widest key, write it into `Reference` (screen +
   print) in `BuildStyleSheets.wls` for all sheets including `PlainArticle`'s carried-across set,
@@ -150,3 +152,40 @@ goes ahead of everything above. Ask before T1.
 - **Next:** T2 (inline font commands). The fix reaches Pavel's `main.nb` only through a rebuilt
   paclet — his installed 0.1.16 still carries the old sheets — so T4 must build and install before
   he looks.
+
+### Session 2 — 2026-07-29 — T2
+
+- **Prompt:** `/next-session ImportDisplayDefects`.
+- **Did:** The three font commands now convert to styled runs, and the representation was chosen by
+  measurement rather than taste. Surveyed first: causal-graphs carries 26 `\textbf` + 3 `\emph`, all
+  plain strings; hodgepaper 162 `\emph` + 3 `\textit`, many holding inline math
+  (`\emph{IBL$_\infty$ structure}`, `\emph{$\mathrm{A}_\infty$-homotopy transfer}` opens with math);
+  no nesting, no cites inside args, and — checked by extracting every `$…$` span — no font command
+  inside genuine math, so the split can safely run *before* `splitInlineMath`, which it must, or a
+  math-holding argument is broken across parts before the command can be seen. Reopen measurement
+  (Export/NotebookOpen/NotebookGet) decided the shapes: a `StyleBox` with a plain string survives, a
+  style *name* on it survives, but a `StyleBox` with **list** content is split into one run per part
+  with the math cell escaping the style and dropping it — the ButtonBox-splitting defect's sibling —
+  while an inline `Cell[TextData[…]]` island returns byte-identical. So: `fontSplit`/`fontBox` in
+  `Document.wl` (plain arg → `StyleBox`, rich arg → `Cell` island, `\textit` marked `"TextItalic"`,
+  empty arg left literal), argument recursing through the full inline pipeline (`inlineParts`, which
+  `inlineContent` now fronts); export clauses in `inlinePartToTeX`'s family + `fontTeX` in
+  `Conversion.wl`, the command rebuilt from the run so an author's edit — or a hand-styled run, bare
+  italic reading as `\emph` — reaches the `.tex`. Both specimens and all four samples round-trip
+  byte-exact; zero literal font commands left in any prose cell. Tests: 4 new in `Document.wlt`
+  (StyleBox census, both island shapes + literal `\emph{}`, round trip, hand-styled export), the
+  pinned caption test updated to expect the styled run, and a `FontRuns` save-survival measurement
+  in `FrontEnd.wlt` beside the ButtonBox one. Three bites confirmed: import stubbed → 3 failures;
+  `fontTeX` forced to `\emph` → 5 round-trip failures; rich runs as `StyleBox[list]` → the
+  `FrontEnd.wlt` test alone catches it (`Islands -> 0, Exported -> False`) — the kernel round trip
+  does *not*, which is why the save test exists. Suite 274 → 279, green.
+- **Learned:** The probe trap struck again before the work started: `latexToNotebook` is reachable
+  as `` WolframInstitute`MathNotebook`PackageScope`latexToNotebook `` but `bibliographyEntries` is
+  file-private, so the first probe silently returned its own input — use the exported
+  `ImportLaTeXDocument`. The dingbat cells the sheets write are themselves
+  `Cell[TextData[…], FontWeight -> "Bold"]`, so any census of styled runs must count cell *content*,
+  not cells at `Infinity`, or every theorem label reads as a bold run (32 phantoms on the
+  causal-graphs paper).
+- **Next:** T3 needs Pavel's three R3 decisions before any code; T4 rebuilds and installs the paclet
+  (his 0.1.16 predates both T1 and T2) and re-imports `main.tex`, and should record his answer to
+  the Definition-dingbat/by-name-stylesheet question.

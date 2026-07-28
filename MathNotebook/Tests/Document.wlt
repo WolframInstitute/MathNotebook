@@ -276,14 +276,15 @@ VerificationTest[
 ]
 
 (* A caption holds braces of its own, so it ends at the brace that closes it and not at the first
-   "}" — \textbf{drawn} is inside this one, and the source on either side of the caption is what the
-   exporter puts back. The label is taken out of the trailing source and becomes the cell's tag. *)
+   "}" — \textbf{drawn} is inside this one and comes out a styled run — and the source on either
+   side of the caption is what the exporter puts back. The label is taken out of the trailing
+   source and becomes the cell's tag. *)
 VerificationTest[
   Cases[ First @ $figureNotebook, cell : Cell[ _, "Caption", ___ ] :>
     { storedRule[ cell, "FigurePrefix" ], storedRule[ cell, "Trailing" ], storedRule[ cell, "TrailingAfter" ],
-      Cases[ cell, TextData[ { text_String, ___ } ] :> text, Infinity ] } ],
+      Cases[ cell, TextData[ { first_, second_, third_, ___ } ] :> { first, second, third }, Infinity ] } ],
   { { "\\begin{figure}[htpb]\n\t\\centering\n\t\\begin{tikzpicture}\n\t\t\\draw (0,0) -- (1,1);\n\t\\end{tikzpicture}\n\t\\caption{",
-      "}\n\t", "\n\\end{figure}", { "A \\textbf{drawn} picture, " } } }
+      "}\n\t", "\n\\end{figure}", { { "A ", StyleBox[ "drawn", FontWeight -> "Bold" ], " picture, " } } } }
 ]
 
 (* A \ref at a figure resolves through the Caption counter, which article numbers straight through
@@ -307,6 +308,53 @@ VerificationTest[
     notebookToLaTeX @ Replace[ $figureNotebook,
       Cell[ _, "Caption", options___ ] :> Cell[ "Retitled.", "Caption", options ], { 2 } ],
     "\\caption{Retitled.}\n\t\\label{fig:one}" ],
+  True
+]
+
+(* ImportDisplayDefects T2: \textbf, \textit and \emph become styled runs, split before inline math
+   because an argument may hold a math span whole (\emph{pairing of degree $n$}). A plain argument
+   rides in the front end's native StyleBox; one holding math or a nested command has to be an
+   inline Cell instead — a saved and reopened StyleBox with list content is split into one run per
+   part with the math cell escaping the style, where the Cell island comes back identical
+   (measured). \textit is told apart from \emph by the "TextItalic" style name, which survives the
+   reopen too. An empty argument stays literal source. *)
+
+$fontSource = "\\documentclass{article}\n\\begin{document}\n\nThe \\textbf{light cone} at $p$ is \\emph{here and now}, an \\textit{upright} word, an empty \\emph{}.\n\nA \\emph{pairing of degree $n$} inside \\textbf{a \\emph{nested} run}.\n\n\\end{document}\n"
+
+$fontNotebook = latexToNotebook[ $fontSource ]
+
+VerificationTest[
+  Cases[ First @ $fontNotebook, _StyleBox, Infinity ],
+  { StyleBox[ "light cone", FontWeight -> "Bold" ],
+    StyleBox[ "here and now", FontSlant -> "Italic" ],
+    StyleBox[ "upright", "TextItalic", FontSlant -> "Italic" ],
+    StyleBox[ "nested", FontSlant -> "Italic" ] }
+]
+
+(* The two inline-Cell shapes — math inside an emph, a styled run inside a bold one — and the
+   literal empty command. *)
+VerificationTest[
+  { Cases[ First @ $fontNotebook,
+      Cell[ TextData[ { first_String, Cell[ _BoxData, ___ ] } ], FontSlant -> "Italic" ] :> first, Infinity ],
+    Cases[ First @ $fontNotebook,
+      Cell[ TextData[ { first_String, _StyleBox, last_String } ], FontWeight -> "Bold" ] :> { first, last }, Infinity ],
+    Cases[ First @ $fontNotebook, s_String /; StringContainsQ[ s, "\\emph{}" ], Infinity ] },
+  { { "pairing of degree " }, { { "a ", " run" } }, { " word, an empty \\emph{}." } }
+]
+
+VerificationTest[
+  notebookToLaTeX[ $fontNotebook ] === $fontSource,
+  True
+]
+
+(* The command is rebuilt from the run itself, not from stored source, so an edit to the styled
+   text reaches the .tex — and a run the author styles by hand exports too, a bare italic as \emph,
+   the semantic default. *)
+VerificationTest[
+  StringContainsQ[
+    notebookToLaTeX @ Notebook @ { Cell[ TextData @ { "Set ", StyleBox[ "in bold", FontWeight -> "Bold" ],
+        " and ", StyleBox[ "slanted", FontSlant -> "Italic" ], "." }, "Text" ] },
+    "Set \\textbf{in bold} and \\emph{slanted}." ],
   True
 ]
 

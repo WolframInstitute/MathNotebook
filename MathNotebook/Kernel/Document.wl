@@ -947,9 +947,38 @@ textPieces[ chunk_String ] :=
 (* StringSplit of the empty string is {} and not {""}, so an empty environment body — or an empty
    section title — would otherwise become TextData[{}], which no exporter reads back as text. *)
 inlineContent[ text_String ] :=
-  Replace[
-    mergeStrings @ Flatten @ Replace[ splitInlineMath[ text ], part_String :> citationSplit[ part ], { 1 } ],
+  Replace[ inlineParts[ text ],
     { { unchanged_String } :> unchanged, { } :> text, parts_List :> TextData[ parts ] } ]
+
+(* Font commands split before inline math because their argument may hold a math span whole
+   (\emph{degree $n$}); the argument recurses through the same pipeline, so math and nested
+   commands inside a styled run come out converted too. *)
+inlineParts[ text_String ] :=
+  mergeStrings @ Flatten @ Replace[ fontSplit[ text ],
+    part_String :> Replace[ splitInlineMath[ part ], piece_String :> citationSplit[ piece ], { 1 } ],
+    { 1 } ]
+
+$fontCommands = <|
+  "textbf" -> { FontWeight -> "Bold" },
+  "textit" -> { "TextItalic", FontSlant -> "Italic" },
+  "emph" -> { FontSlant -> "Italic" } |>
+
+fontSplit[ text_String ] :=
+  StringSplit[ text,
+    "\\" ~~ command : ( "textbf" | "textit" | "emph" ) ~~ "{" ~~ body : $braceBody ~~ "}" :>
+      fontBox[ command, body ] ]
+
+(* A plain run rides in the front end's native StyleBox; a run holding math or a nested command has
+   to be an inline Cell instead — a saved and reopened StyleBox with list content is split into one
+   run per part with the math cell escaping the style (measured), where the Cell island comes back
+   identical. \textit is told apart from \emph by the style name, which survives the reopen too. *)
+fontBox[ command_String, "" ] :=
+  "\\" <> command <> "{}"
+
+fontBox[ command_String, body_String ] :=
+  Replace[ inlineParts[ body ],
+    { { one_String } :> StyleBox[ one, Sequence @@ $fontCommands[ command ] ],
+      parts_List :> Cell[ TextData[ parts ], Sequence @@ $fontCommands[ command ] ] } ]
 
 (* One pattern for what a citation is, used both to split the prose and to decide which .bib entries
    the paper cites, so the two halves cannot disagree. *)
