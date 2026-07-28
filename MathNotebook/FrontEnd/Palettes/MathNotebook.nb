@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       154,          7]
-NotebookDataLength[     44900,       1018]
-NotebookOptionsPosition[     44186,        993]
-NotebookOutlinePosition[     44931,       1020]
-CellTagsIndexPosition[     44888,       1017]
+NotebookDataLength[     46792,       1057]
+NotebookOptionsPosition[     46077,       1032]
+NotebookOutlinePosition[     46822,       1059]
+CellTagsIndexPosition[     46779,       1056]
 WindowTitle->MathNotebook
 WindowFrame->Palette*)
 
@@ -626,7 +626,46 @@ written and are a convenience beside it.\"",
                Annotation[#, 
                 "Writes the whole notebook out as a LaTeX paper. This is the \
 export route; the selection buttons below only change how a few cells are \
-written and are a convenience beside it.", "Tooltip"]& ]}
+written and are a convenience beside it.", "Tooltip"]& ]},
+             {
+              TagBox[
+               TooltipBox[
+                ButtonBox["\<\"Export submission\[Ellipsis]\"\>",
+                 Appearance->"Palette",
+                 
+                 ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
+                  With[{$CellContext`notebook = InputNotebook[]}, 
+                    
+                    With[{$CellContext`directory = 
+                    SystemDialogInput["Directory", 
+                    Replace[
+                    Quiet[
+                    NotebookDirectory[$CellContext`notebook]], Except[
+                    Blank[String]] -> Directory[]]]}, 
+                    If[
+                    StringQ[$CellContext`directory], 
+                    SystemOpen[
+                    Lookup[
+                    
+                    WolframInstitute`MathNotebook`ExportLaTeXBundle[$\
+CellContext`notebook, $CellContext`directory], "Directory"]]]]]),
+                 Evaluator->Automatic,
+                 ImageSize->{200, 27},
+                 Method->"Queued"],
+                
+                "\"Writes the whole paper into a directory as an arXiv \
+submission: the .tex beside every figure file and .bib it names, plus the \
+.bbl where a local pdfLaTeX is found, since arXiv runs LaTeX but not BibTeX. \
+No compiled PDF, which arXiv rejects in a source upload. Opens the directory \
+when done and reports anything it could not find.\"",
+                TooltipStyle->"TextStyling"],
+               
+               Annotation[#, 
+                "Writes the whole paper into a directory as an arXiv \
+submission: the .tex beside every figure file and .bib it names, plus the \
+.bbl where a local pdfLaTeX is found, since arXiv runs LaTeX but not BibTeX. \
+No compiled PDF, which arXiv rejects in a source upload. Opens the directory \
+when done and reports anything it could not find.", "Tooltip"]& ]}
             },
             DefaultBaseStyle->"Column",
             GridBoxAlignment->{"Columns" -> {{Left}}},
@@ -989,7 +1028,7 @@ from the LaTeX each of those cells stores.", "Tooltip"]& ]}
    GridBoxAlignment->{"Columns" -> {{Left}}},
    GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
    GridBoxSpacings->{"Columns" -> {{Automatic}}, "Rows" -> {{0.4}}}],
-  "Column"]],ExpressionUUID->"5c957d0f-9fed-4f28-b693-48f4401c06e0"]
+  "Column"]],ExpressionUUID->"e65df116-0af5-4c55-a263-d1dcd5de2309"]
 },
 Editable->False,
 Saveable->False,
@@ -1006,7 +1045,7 @@ TaggingRules-><|
   "MaTeXOpen" -> True, "SetupOpen" -> True|>,
 FrontEndVersion->"15.0 for Mac OS X ARM (64-bit) (May 19, 2026)",
 StyleDefinitions->"Palette.nb",
-ExpressionUUID->"8851802b-0f02-409e-9e03-e1a13dd70788"
+ExpressionUUID->"3eaba136-e0f8-459c-8cb6-ebee25a8274a"
 ]
 (* End of Notebook Content *)
 
@@ -1019,7 +1058,7 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[581, 21, 43601, 970, 800, InheritFromParent,ExpressionUUID->"5c957d0f-9fed-4f28-b693-48f4401c06e0"]
+Cell[581, 21, 45492, 1009, 827, InheritFromParent,ExpressionUUID->"e65df116-0af5-4c55-a263-d1dcd5de2309"]
 }
 ]
 *)

@@ -154,7 +154,18 @@ $groups = {
               { name_String :> StringReplace[ name, ".nb" ~~ EndOfString -> ".tex" ], _ :> "paper.tex" } ] },
           With[ { file = SystemDialogInput[ "FileSave", default ] },
             If[ StringQ[ file ], WolframInstitute`MathNotebook`ExportLaTeXDocument[ notebook, file ] ] ] ] ],
-      "Writes the whole notebook out as a LaTeX paper. This is the export route; the selection buttons below only change how a few cells are written and are a convenience beside it." ] } },
+      "Writes the whole notebook out as a LaTeX paper. This is the export route; the selection buttons below only change how a few cells are written and are a convenience beside it." ],
+    (* SubmissionBundle T4. A .tex alone is not a submission: it names figure files and a .bib that
+       stay behind in the paper's own directory, so the one-file export compiles nowhere else. This
+       button is the whole tree, and it takes a directory where the other two take a file. *)
+    kernelButton[ "Export submission\[Ellipsis]",
+      With[ { notebook = InputNotebook[] },
+        With[ { directory = SystemDialogInput[ "Directory",
+              Replace[ Quiet @ NotebookDirectory[ notebook ], Except[ _String ] -> Directory[] ] ] },
+          If[ StringQ[ directory ],
+            SystemOpen @ Lookup[
+              WolframInstitute`MathNotebook`ExportLaTeXBundle[ notebook, directory ], "Directory" ] ] ] ],
+      "Writes the whole paper into a directory as an arXiv submission: the .tex beside every figure file and .bib it names, plus the .bbl where a local pdfLaTeX is found, since arXiv runs LaTeX but not BibTeX. No compiled PDF, which arXiv rejects in a source upload. Opens the directory when done and reports anything it could not find." ] } },
   { "Convert", "Selection: LaTeX \[LeftRightArrow] math", {
     kernelButton[ "Typeset", WolframInstitute`MathNotebook`ConvertLaTeXCells[],
       "Reads the selected cells as LaTeX and replaces the mathematics in them with editable typeset math. With nothing selected, the whole notebook. Input, Code and Output cells are skipped, so a $ in code is safe." ],

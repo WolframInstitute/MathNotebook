@@ -17,8 +17,8 @@ buttonQ[ label_String ] :=
 
 (* Every conversion is named by its verb alone and takes its direction from the group heading. *)
 VerificationTest[
-  Select[ { "Import .tex file\\[Ellipsis]", "Export to .tex\\[Ellipsis]", "Typeset", "Show source",
-      "Render", "Restore" },
+  Select[ { "Import .tex file\\[Ellipsis]", "Export to .tex\\[Ellipsis]", "Export submission\\[Ellipsis]",
+      "Typeset", "Show source", "Render", "Restore" },
     ! buttonQ[ # ] & ],
   { }
 ]
@@ -41,13 +41,14 @@ VerificationTest[
 
 VerificationTest[
   StringCount[ $paletteSource, "TooltipBox[" ],
-  6
+  7
 ]
 
-(* Six conversions, six tooltips, each the sentence for its own button. *)
+(* Seven routes out to LaTeX, seven tooltips, each the sentence for its own button. *)
 VerificationTest[
   Select[ { "Reads a LaTeX paper into a new notebook",
       "Writes the whole notebook out as a LaTeX paper",
+      "Writes the whole paper into a directory as an arXiv submission",
       "Reads the selected cells as LaTeX",
       "Turns the typeset mathematics of the selected cells back into LaTeX source",
       "Renders the selected display equations through real LaTeX",
@@ -76,10 +77,17 @@ VerificationTest[
 
 (* ImportLaTeXDocument and ExportLaTeXDocument had no palette presence at all, which is what made
    the two per-selection buttons look like the only route out to LaTeX. Each takes a path, so each
-   button gets one from a dialog of its own and neither needs a new exported symbol. *)
+   button gets one from a dialog of its own and neither needs a new exported symbol.
+
+   SubmissionBundle T4 adds the third: ExportLaTeXBundle takes a DIRECTORY where the other two take a
+   file, so its dialog is a "Directory" one and the count of dialogs is what says all three are wired.
+   The bundle button existing is not the same as it being reachable — a generated palette can carry a
+   label whose code was never regenerated. *)
 VerificationTest[
   { StringContainsQ[ $paletteSource, "MathNotebook`ImportLaTeXDocument" ],
     StringContainsQ[ $paletteSource, "MathNotebook`ExportLaTeXDocument" ],
-    StringCount[ $paletteSource, "SystemDialogInput" ] },
-  { True, True, 2 }
+    StringContainsQ[ $paletteSource, "MathNotebook`ExportLaTeXBundle" ],
+    StringCount[ $paletteSource, "SystemDialogInput" ],
+    StringCount[ $paletteSource, "SystemDialogInput[\"Directory\"" ] },
+  { True, True, True, 3, 1 }
 ]

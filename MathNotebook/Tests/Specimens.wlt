@@ -279,6 +279,61 @@ Do[
         TestID -> id <> ": a .bib that is there is converted in silence" ] ] ],
   { name, Keys @ $specimens } ]
 
+(* SubmissionBundle T4. The gap measured on these same two papers: an ExportLaTeXDocument into an
+   empty directory leaves the .tex alone in it while that .tex names seven \includegraphics files and
+   \bibliography{references}, so the round trip is byte-exact and the result compiles nowhere but the
+   paper's original directory. The bundle is the claim the census cannot make -- every number above is
+   about one file -- so it is asserted here as a directory listing checked against arXiv's own rules.
+
+   The causal paper is the case that works: seven PNGs beside a .bib. hodgepaper is the case that is
+   reported: it declares \jobname.bib and ships without it, so its bundle is short by exactly that
+   file and says so. The .bbl is not asserted -- it needs a local pdflatex, and this suite reports
+   fewer tests on a machine without one rather than red ones -- but the BY-PRODUCTS are, since the run
+   either happened in a scratch copy or did not happen at all, and either way nothing arXiv excludes
+   may be in the directory. *)
+$bundled =
+  Association @ Map[
+    Function[ name,
+      Module[ { file = $specimens[ name ], directory = CreateDirectory[ ], notebook, result },
+        notebook = Quiet @ ImportLaTeXDocument[ file ];
+        result = Quiet @ ExportLaTeXBundle[ notebook, directory,
+          "SourceDirectory" -> DirectoryName @ AbsoluteFileName @ file,
+          "Name" -> FileBaseName[ file ] ];
+        name -> <|
+          "Missing" -> result[ "Missing" ],
+          "Written" -> Sort @ Map[ FileNameTake, FileNames[ "*", directory ] ],
+          "Promised" -> Complement[ Sort @ result[ "Files" ],
+            Sort @ Map[ FileNameTake, FileNames[ "*", directory ] ] ],
+          "Excluded" -> Select[ FileNames[ "*", directory ],
+            StringMatchQ[ FileNameTake[ # ],
+              FileBaseName[ file ] ~~ "." ~~ ( "aux" | "log" | "pdf" | "ps" | "blg" | "out" ) ] & ],
+          "TeX" -> ( Import[ FileNameJoin @ { directory, FileBaseName[ file ] <> ".tex" }, "Text" ] ===
+            Import[ file, "Text" ] ) |> ] ],
+    Keys @ $specimens ]
+
+$expectedBundle = <|
+  "Causal graphs" -> <| "Missing" -> { },
+    "Written" -> { "bisect.png", "branchial_graph.png", "causal_graph.png", "hg_rule.png", "main.tex",
+      "message.png", "multiway_graph.png", "references.bib", "spatial_hg.png" } |>,
+  (* Short by exactly the file it declares and does not ship, and it names it. *)
+  "Hodge" -> <| "Missing" -> { "\\jobname.bib" },
+    "Written" -> { "hodgepaper.tex" } |> |>
+
+Do[
+  With[ { id = name, measured = $bundled[ name ], expected = $expectedBundle[ name ] },
+    VerificationTest[ measured[ "Missing" ], expected[ "Missing" ],
+      TestID -> id <> ": what the bundle could not find" ];
+    VerificationTest[ DeleteCases[ measured[ "Written" ], _?( StringEndsQ[ #, ".bbl" ] & ) ],
+      expected[ "Written" ],
+      TestID -> id <> ": the bundle is the .tex plus every file it names" ];
+    VerificationTest[ measured[ "Promised" ], { },
+      TestID -> id <> ": every file the result reports is on disk" ];
+    VerificationTest[ measured[ "Excluded" ], { },
+      TestID -> id <> ": no LaTeX by-product arXiv excludes" ];
+    VerificationTest[ measured[ "TeX" ], True,
+      TestID -> id <> ": the bundled .tex is the imported source" ] ],
+  { name, Keys @ $bundled } ]
+
 (* The paclet's own four LaTeX samples are the only documents this repo actually contains, and the
    only ones anywhere here with a thebibliography written into the .tex -- both specimen papers use a
    .bib. They are small, they are committed, and between them they carry a title block, an abstract,

@@ -7,7 +7,7 @@ PacletObject[
     "Creator" -> "Pavel Hajek",
     "License" -> "MIT",
     "PublisherID" -> "WolframInstitute",
-    "Version" -> "0.1.12",
+    "Version" -> "0.1.13",
     "WolframVersion" -> "14.3+",
     "PrimaryContext" -> "WolframInstitute`MathNotebook`",
     "Extensions" -> {
@@ -31,6 +31,7 @@ PacletObject[
           "WolframInstitute`MathNotebook`ConvertMathCells",
           "WolframInstitute`MathNotebook`ImportLaTeXDocument",
           "WolframInstitute`MathNotebook`ExportLaTeXDocument",
+          "WolframInstitute`MathNotebook`ExportLaTeXBundle",
           "WolframInstitute`MathNotebook`ConvertToMaTeX",
           "WolframInstitute`MathNotebook`ConvertFromMaTeX",
           "WolframInstitute`MathNotebook`InstallMaTeX",

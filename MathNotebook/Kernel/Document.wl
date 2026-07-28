@@ -12,6 +12,9 @@ PackageScope["documentStyleSheet"]
 PackageScope["environmentCell"]
 PackageScope["documentTagging"]
 PackageScope["bibliographyDatabase"]
+PackageScope["bibliographyNames"]
+PackageScope["bibliographyFile"]
+PackageScope["documentClass"]
 PackageScope["citationBox"]
 
 ImportLaTeXDocument[ file_String ] :=
@@ -806,14 +809,19 @@ ImportLaTeXDocument::nobib =
 citation to one of them reads as its key.";
 
 bibliographyFiles[ source_String, file_String ] :=
-  Map[ bibliographyFile[ #, file ] &,
-    Flatten @ StringCases[ source,
-      StartOfLine ~~ ( " " | "\t" ) ... ~~ ( "\\bibliography{" | "\\addbibresource{" ) ~~
-        names : Except[ "}" ] .. ~~ "}" :> StringTrim /@ StringSplit[ names, "," ] ] ]
+  Map[ bibliographyFile[ #, DirectoryName @ AbsoluteFileName @ file, FileBaseName @ file ] &,
+    bibliographyNames[ source ] ]
 
-bibliographyFile[ name_String, file_String ] :=
-  FileNameJoin @ { DirectoryName @ AbsoluteFileName @ file,
-    StringReplace[ name, "\\jobname" -> FileBaseName[ file ] ] <>
+(* The names alone, with no directory and no file on disk: the export side needs them for a document
+   whose .tex has not been written yet, so the pattern lives here and both sides read it. *)
+bibliographyNames[ source_String ] :=
+  Flatten @ StringCases[ source,
+    StartOfLine ~~ ( " " | "\t" ) ... ~~ ( "\\bibliography{" | "\\addbibresource{" ) ~~
+      names : Except[ "}" ] .. ~~ "}" :> StringTrim /@ StringSplit[ names, "," ] ]
+
+bibliographyFile[ name_String, directory_String, jobName_String ] :=
+  FileNameJoin @ { directory,
+    StringReplace[ name, "\\jobname" -> jobName ] <>
       If[ FileExtension[ name ] === "", ".bib", "" ] }
 
 (* Only the cited keys become cells, as LaTeX prints only those; three of the specimen's seventeen

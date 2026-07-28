@@ -39,6 +39,10 @@ A sixth sheet, `PlainArticle`, is not a template: it is the notebook's own `Defa
 
 Generated from [`LaTeXBase`](https://www.wolframcloud.com/obj/hajek_pavel/MathNotebook/LaTeXBase.nb); sources and PDFs in [`LaTeX/`](LaTeX). [`svjour3`](https://www.springernature.com/gp/authors/campaigns/latex-author-support) comes from Springer rather than TeX Live, so that sample has no PDF until you install the class.
 
+## 📤 Submission
+
+**Document ▸ Export submission…** — or `ExportLaTeXBundle[notebook, "directory"]` — writes the whole paper into a directory as an arXiv upload: the `.tex` beside every figure file its `\includegraphics` commands name, every `.bib` its preamble declares, and, where a local pdfLaTeX is found, the `.bbl` that arXiv needs because it runs LaTeX but not BibTeX. **Export to .tex…** beside it writes the `.tex` alone, which compiles only in the paper's own directory. Nothing arXiv excludes goes in — no `.aux`, `.log` or compiled PDF — and anything the paper names but disk does not have is reported rather than dropped.
+
 ## 🖱 Palette
 
 <img src="Images/Palette.png" alt="MathNotebook palette" width="215">
