@@ -92,3 +92,29 @@ the name of one of its groups, and the math font-size control.
   carries no style name, so it inherits the enclosing `Text` cell and no math-style override can
   reach it.
 - **Next:** T2, which needs nothing from Pavel. T1 needs a name from him.
+
+### Session 1 — 2026-07-29 — T2
+
+- **Prompt:** continuing unsupervised; "it would be great if the size of INLINE math content would also
+  change with the change of math font size".
+- **Did:** The cause was as scoped — an inline island had no style, so there was nothing for an
+  override to be written on. The fix is smaller than expected and needed no stylesheet change at all:
+  the island is styled `"InlineFormula"`, a style **no MathNotebook sheet declares** but which resolves
+  through the chain from front-end resources as `1.05*Inherited`. That relativity turned out to be the
+  design point rather than an obstacle. Measured: an island renders at 1649 ink in a `Title` cell
+  against 420 in a `Text` cell, so inline mathematics tracks the cell it sits in — and an **absolute**
+  override reaches the island but destroys that tracking, a `Title`'s inline mathematics *shrinking* to
+  1577. So `SetMathFontSize` scales the **ratio** (`1.05 x size/anchor`, screen and `"Printout"`) rather
+  than writing a size, and inline mathematics both follows the slider and keeps tracking its cell.
+  `inlineMathCells` in `View.wl`, one line in `inlineMathCell` in `Conversion.wl`.
+- **Learned:** The intended control for the rendered test — "prose does not move under a math-only
+  call" — is **not available**, and asserting it was wrong: measured, prose goes 1186 → 1526 ink and
+  `Text` 13 → 15. That is the embedded-parent trap `CLAUDE.md` already records, not the control
+  leaking: the private sheet's parent is an embedded notebook, so every style it does not itself
+  override falls through to `Default.nb`, whose `Text` is 15. It is now pinned *as the trap* so a later
+  session does not read it as a bug, and the claim that isolates the math control is the two **ratios**
+  — inline mathematics must grow by more than that document-wide perturbation, which needs no threshold.
+  Also, `$inlineMathStyleName` had to become `PackageScope`: as a file-private symbol it stayed
+  unresolved in the test and two assertions matched nothing, silently.
+- **Next:** T1 still needs a group name from Pavel. T3 and T4 (the Reference-entry button and the
+  picker) are untouched.

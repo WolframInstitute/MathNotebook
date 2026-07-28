@@ -43,11 +43,16 @@ VerificationTest[ (* malformed TeX answers $Failed; it used to answer the *strin
   { $Failed, $Failed }
 ]
 
-VerificationTest[ (* the cell keeps no "$" at all, and stores the source for the return trip *)
+(* The cell keeps no "$" at all, and stores the source for the return trip. It also carries the style
+   "InlineFormula" (PaletteAndViewUX T2) — a style no MathNotebook sheet declares, resolving through the
+   chain as 1.05*Inherited, which is what gives the math font-size control something to override. An
+   unstyled island had nothing to write on, so SetMathFontSize moved every display formula and left
+   inline mathematics where it was. *)
+VerificationTest[
   splitInlineMath[ "A pair $(V, E)$ here." ],
   { "A pair ",
     Cell[ BoxData[ FormBox[ RowBox[ { "(", RowBox[ { StyleBox[ "V", "TI" ], ",", StyleBox[ "E", "TI" ] } ], ")" } ],
-      TraditionalForm ] ],
+      TraditionalForm ] ], "InlineFormula",
       TaggingRules -> <| "MathNotebook" -> <| "SourceTeX" -> "(V, E)" |> |> ],
     " here." }
 ]
@@ -106,7 +111,7 @@ VerificationTest[
 VerificationTest[
   splitInlineMath[ "Let $x^2$ hold" ],
   { "Let ",
-    Cell[ BoxData[ FormBox[ SuperscriptBox[ "x", "2" ], TraditionalForm ] ],
+    Cell[ BoxData[ FormBox[ SuperscriptBox[ "x", "2" ], TraditionalForm ] ], "InlineFormula",
       TaggingRules -> <| "MathNotebook" -> <| "SourceTeX" -> "x^2" |> |> ],
     " hold" }
 ]

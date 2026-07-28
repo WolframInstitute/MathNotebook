@@ -456,6 +456,39 @@ referencingDrive[ parent_ ] :=
     measurements
   ]
 
+(* PaletteAndViewUX T2: the math font-size control must reach INLINE mathematics, which it did not —
+   an inline island had no style, so there was nothing for an override to be written on and
+   SetMathFontSize moved every display formula and left inline mathematics exactly where it was. The
+   island is styled "InlineFormula" now, and this measures the wiring end to end rather than the cells
+   the control generates: View.wlt asserts those, and the ViewAndReferenceDefects lesson is that such
+   assertions pass while the rendered result is wrong.
+
+   Two claims, not one. The inline mathematics must GROW when the control is turned up, and it must
+   come back on reset. The prose is measured beside it as a control: the *document* control was not
+   touched, so the prose must not move — a run that scaled everything would satisfy a growth test on
+   its own. Each is a separate notebook because installing a private stylesheet is a per-document act. *)
+inlineMathScaling[ parent_ ] :=
+  Module[ { render, prose, inline },
+    prose = Cell[ "Some prose with no mathematics in it at all.", "Text" ];
+    inline = Cell[ TextData[ {
+      Cell[ BoxData[ FormBox[ RowBox[ { "x", "+", "y" } ], TraditionalForm ] ], "InlineFormula" ] } ], "Text" ];
+    render = { cell, action } |->
+      Module[ { notebook, file, value },
+        notebook = NotebookPut[ Notebook[ { cell }, StyleDefinitions -> parent ],
+          Visible -> False, Background -> White, LightDark -> "Light" ];
+        action[ notebook ];
+        file = Export[ FileNameJoin[ { $TemporaryDirectory, "MathNotebookInlineInk.png" } ],
+          notebook, ImageResolution -> 72 ];
+        value = inkOf @ Import[ file ];
+        NotebookClose[ notebook ];
+        value ];
+    <| "InlineBase" -> render[ inline, Null & ],
+       "InlineScaled" -> render[ inline, SetMathFontSize[ #, 2 mathFontSizeAnchor[ parent ] ] & ],
+       "InlineReset" -> render[ inline,
+         ( SetMathFontSize[ #, 2 mathFontSizeAnchor[ parent ] ]; ResetDocumentView[ # ] ) & ],
+       "ProseBase" -> render[ prose, Null & ],
+       "ProseScaled" -> render[ prose, SetMathFontSize[ #, 2 mathFontSizeAnchor[ parent ] ] & ] |> ]
+
 (* ImportDisplayDefects T5: WHERE the reference goes, in the four selection states an author can be in.
    Pavel reported a cross-reference rendering in a different face from the label it points at, and the
    cause is not the stylesheets — measured, the same reference in the same Text cell under the same
@@ -541,6 +574,7 @@ $measured = UsingFrontEnd @ <|
   "GoBack" -> goBackDrive[ ],
   "Referencing" -> referencingDrive @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
   "Placement" -> citationPlacement @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
+  "InlineScaling" -> inlineMathScaling @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
   "Imported" -> importedText[ $importedSource ],
   "PlainSheet" -> AssociationMap[ sheetText[ $plainPaper, # ] &, { "PlainArticle.nb", "Default.nb" } ],
   "Lists" -> listMeasurements[ $listPaper ],
@@ -712,6 +746,28 @@ VerificationTest[
 VerificationTest[
   Cases[ $measured[ "Referencing", "Citation" ], _CounterBox, Infinity ],
   { CounterBox[ "Section", "Thm:key" ], CounterBox[ "Theorem", "Thm:key" ] }
+]
+
+(* PaletteAndViewUX T2: turning the math control up really does enlarge inline mathematics on the page,
+   and reset really does put it back.
+
+   The obvious control — "prose does not move" — is NOT available here and asserting it was wrong:
+   measured, prose goes from 1186 ink to 1526 and Text from 13 to 15 under a math-only call. That is the
+   embedded-parent trap this repo already records, not the control leaking. The private sheet's parent is
+   an embedded notebook, so every style the sheet does not itself override falls through to Default.nb,
+   whose Text is 15. It is pinned below rather than worked around, so a future session reads it as the
+   trap and not as a bug.
+
+   What isolates the math control is therefore the two RATIOS: inline mathematics must grow by MORE than
+   that document-wide perturbation does. No magic threshold, and it is exactly the claim Pavel asked
+   for — the inline size follows the math slider and not merely the page. *)
+VerificationTest[
+  { Divide[ $measured[ "InlineScaling", "InlineScaled" ], $measured[ "InlineScaling", "InlineBase" ] ] >
+      Divide[ $measured[ "InlineScaling", "ProseScaled" ], $measured[ "InlineScaling", "ProseBase" ] ],
+    $measured[ "InlineScaling", "InlineReset" ] === $measured[ "InlineScaling", "InlineBase" ],
+    $measured[ "InlineScaling", "InlineBase" ] > 0,
+    $measured[ "InlineScaling", "ProseScaled" ] > $measured[ "InlineScaling", "ProseBase" ] },
+  { True, True, True, True }
 ]
 
 (* ImportDisplayDefects T5: the reference lands INSIDE a cell in every state, as inline TextData and

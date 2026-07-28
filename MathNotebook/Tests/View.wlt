@@ -65,7 +65,25 @@ VerificationTest[ (* prose and mathematics are independent *)
 
 VerificationTest[ (* the math control reaches the equation number, which would otherwise drift *)
   Union @ styleNames @ viewStyleCells[ "StubSheet.nb", <| "MathFontSize" -> 20 |> ],
-  Union @ $mathStyleNames
+  Union @ Append[ $mathStyleNames, $inlineMathStyleName ]
+]
+
+(* PaletteAndViewUX T2: inline mathematics is the fourth math style and the only one whose override is
+   RELATIVE. An inline island is styled "InlineFormula", which resolves through the chain as
+   1.05*Inherited and so renders at 1.05 x the size of the cell it sits in; the control scales that
+   ratio rather than writing a size, because an absolute size reaches the island but stops the tracking
+   (measured: a Title's inline mathematics shrinks from 1649 ink to 1577). So this is the one override
+   asserted as an expression and not a number, and it is Inherited-bearing on purpose. *)
+VerificationTest[
+  Cases[ viewStyleCells[ "StubSheet.nb", <| "MathFontSize" -> 2 mathFontSizeAnchor[ "StubSheet.nb" ] |> ],
+    Cell[ StyleData[ $inlineMathStyleName, ___ ], ___, FontSize -> size_, ___ ] :> size ],
+  { 2.1 Inherited, 2.1 Inherited }
+]
+
+VerificationTest[ (* untouched, the control writes nothing at all and the sheet's own 1.05 stands *)
+  Cases[ viewStyleCells[ "StubSheet.nb", <| "DocumentFontSize" -> 20 |> ],
+    Cell[ StyleData[ $inlineMathStyleName, ___ ], ___ ] ],
+  { }
 ]
 
 VerificationTest[ (* every size override is written in the "Printout" variant too, or it never prints *)

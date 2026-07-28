@@ -83,10 +83,19 @@ boxesToTeX[ TemplateBox[ association_Association, "TeXAssistantTemplate", ___ ] 
 boxesToTeX[ boxes_ ] :=
   Quiet @ Check[ Convert`TeX`BoxesToTeX[ boxes ], $Failed ]
 
+(* The island carries the style "InlineFormula" so that the math font-size control can reach it: an
+   unstyled island has nothing for an override to be written on, which is why SetMathFontSize moved
+   every display formula and left inline mathematics where it was (PaletteAndViewUX T2). The style is
+   not declared by any MathNotebook sheet and does not need to be — it resolves through the chain from
+   front-end resources, as 1.05*Inherited, and that *relativity* is the point: measured, an island in a
+   Title cell renders at 1649 ink against 420 in a Text cell, so inline mathematics tracks the cell it
+   sits in. The control therefore scales the ratio rather than writing an absolute size, which would
+   break that tracking — at an absolute 26 the Title island *shrinks* to 1577. The exporters match
+   Cell[ BoxData[ ... ], ___ ], so the added style needs no change there. *)
 inlineMathCell[ tex_String ] :=
   Replace[ texToBoxes[ tex ],
     { $Failed -> "$" <> tex <> "$",
-      boxes_ :> Cell[ BoxData[ FormBox[ boxes, TraditionalForm ] ],
+      boxes_ :> Cell[ BoxData[ FormBox[ boxes, TraditionalForm ] ], "InlineFormula",
         TaggingRules -> <| "MathNotebook" -> <| "SourceTeX" -> tex |> |> ] } ]
 
 splitInlineMath[ text_String ] :=

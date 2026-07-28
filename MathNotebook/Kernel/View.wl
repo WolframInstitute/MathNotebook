@@ -5,6 +5,7 @@ PackageExport[SetMathFontSize]
 PackageExport[ResetDocumentView]
 
 PackageScope["$mathStyleNames"]
+PackageScope["$inlineMathStyleName"]
 PackageScope["$viewSettingKeys"]
 PackageScope["baseStyleCells"]
 PackageScope["baseFontSizes"]
@@ -52,6 +53,27 @@ $obsoleteViewSettingKeys = { "ContentWidth" }
 
 $mathStyleNames = { "DisplayFormula", "DisplayFormulaNumbered", "DisplayFormulaEquationNumber" }
 
+(* Inline mathematics is the fourth math style and it cannot join the three above, because its size is
+   RELATIVE and theirs are absolute. An inline island is styled "InlineFormula" (Conversion.wl), a
+   style no MathNotebook sheet declares — it resolves through the chain from front-end resources as
+   1.05*Inherited, so an island renders at 1.05 x the size of whatever cell it sits in: measured, 1649
+   ink in a Title cell against 420 in a Text cell. That tracking is worth keeping, so the control
+   scales the RATIO instead of writing a size. Writing an absolute size does reach the island — it is
+   how this was first tried — but it stops the tracking, and a Title's inline mathematics then
+   *shrinks* (1577 against 1649 as shipped). baseFontSizes could not supply a base here anyway: it
+   drops non-numeric resolutions, and 1.05*Inherited is one. *)
+$inlineMathStyleName = "InlineFormula"
+
+$inlineMathRatio = 1.05
+
+inlineMathCells[ Automatic, _ ] :=
+  { }
+
+inlineMathCells[ size_, anchor_ ] :=
+  With[ { ratio = $inlineMathRatio size / anchor },
+    { Cell[ StyleData[ $inlineMathStyleName ], FontSize -> ratio Inherited ],
+      Cell[ StyleData[ $inlineMathStyleName, "Printout" ], FontSize -> ratio Inherited ] } ]
+
 applyViewSettings[ notebook_NotebookObject, changes_Association ] :=
   With[ { parent = parentStyleSheet[ notebook ] },
     KeyValueMap[
@@ -97,7 +119,8 @@ viewStyleCells[ parent_, settings_Association ] :=
       fontSizeCells[ sizes, Complement[ styleFontSizeNames[], $mathStyleNames ],
         Lookup[ settings, "DocumentFontSize", Automatic ], documentFontSizeAnchor[ parent ] ],
       fontSizeCells[ sizes, $mathStyleNames,
-        Lookup[ settings, "MathFontSize", Automatic ], mathFontSizeAnchor[ parent ] ] ] ]
+        Lookup[ settings, "MathFontSize", Automatic ], mathFontSizeAnchor[ parent ] ],
+      inlineMathCells[ Lookup[ settings, "MathFontSize", Automatic ], mathFontSizeAnchor[ parent ] ] ] ]
 
 (* Of two cells carrying the same StyleData head the front end keeps the first and discards the
    second outright — it does not merge their options. The prose and mathematics controls overlap on
