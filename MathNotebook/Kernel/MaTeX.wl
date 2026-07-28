@@ -23,8 +23,8 @@ $maTeXBaseFontSize = 14
    SetMathFontSize re-renders through — a conversion and a later slider touch therefore agree, where
    converting at the fixed $maTeXBaseFontSize left every new cell at 14 until the slider was moved. *)
 ConvertToMaTeX[] :=
-  With[ { notebook = InputNotebook[] },
-    Needs[ "MaTeX`" ]; convertCells[ toMaTeXCell @ maTeXFontSize[ notebook ], notebook ] ]
+  withInputNotebook[ { notebook } |->
+    ( Needs[ "MaTeX`" ]; convertCells[ toMaTeXCell @ maTeXFontSize[ notebook ], notebook ] ) ]
 
 ConvertToMaTeX[ notebook_NotebookObject ] :=
   ( Needs[ "MaTeX`" ];
@@ -35,7 +35,7 @@ ConvertToMaTeX[ cells : { __CellObject } ] :=
     writeCells[ toMaTeXCell @ maTeXFontSize @ ParentNotebook @ First[ cells ], cells ] )
 
 ConvertFromMaTeX[] :=
-  convertCells[ fromMaTeXCell, InputNotebook[] ]
+  withInputNotebook[ { notebook } |-> convertCells[ fromMaTeXCell, notebook ] ]
 
 ConvertFromMaTeX[ notebook_NotebookObject ] :=
   NotebookPut[ fromMaTeXNotebook[ NotebookGet[ notebook ] ], notebook ]

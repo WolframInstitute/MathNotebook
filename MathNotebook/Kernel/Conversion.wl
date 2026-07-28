@@ -22,8 +22,9 @@ PackageScope["convertMathCell"]
 PackageScope["convertCells"]
 PackageScope["writeCells"]
 
+(* T5: convertCells[ transform, $Failed ] stays unevaluated exactly as the overloads do. *)
 ConvertLaTeXCells[] :=
-  convertCells[ convertLaTeXCell, InputNotebook[] ]
+  withInputNotebook[ { notebook } |-> convertCells[ convertLaTeXCell, notebook ] ]
 
 ConvertLaTeXCells[ notebook_NotebookObject ] :=
   NotebookPut[ convertLaTeXNotebook[ NotebookGet[ notebook ] ], notebook ]
@@ -32,7 +33,7 @@ ConvertLaTeXCells[ cells : { __CellObject } ] :=
   writeCells[ convertLaTeXCell, cells ]
 
 ConvertMathCells[] :=
-  convertCells[ convertMathCell, InputNotebook[] ]
+  withInputNotebook[ { notebook } |-> convertCells[ convertMathCell, notebook ] ]
 
 ConvertMathCells[ notebook_NotebookObject ] :=
   NotebookPut[ convertMathNotebook[ NotebookGet[ notebook ] ], notebook ]

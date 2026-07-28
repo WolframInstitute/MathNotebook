@@ -19,21 +19,24 @@ PackageScope["maTeXFontSize"]
 PackageScope["rescaleMaTeXCells"]
 PackageScope["resizedMaTeXCell"]
 
+(* BasicFunctionality T5: the same $Failed hole the five referencing entry points had — with no
+   document open this handed $Failed to the notebook_NotebookObject overload, which matches nothing,
+   so the call returned unevaluated with no message. Measured for all seven before it was touched. *)
 SetDocumentFontSize[ size : _?NumericQ | Automatic ] :=
-  SetDocumentFontSize[ InputNotebook[], size ]
+  withInputNotebook[ { notebook } |-> SetDocumentFontSize[ notebook, size ] ]
 
 SetDocumentFontSize[ notebook_NotebookObject, size : _?NumericQ | Automatic ] :=
   applyViewSettings[ notebook, <| "DocumentFontSize" -> size |> ]
 
 SetMathFontSize[ size : _?NumericQ | Automatic ] :=
-  SetMathFontSize[ InputNotebook[], size ]
+  withInputNotebook[ { notebook } |-> SetMathFontSize[ notebook, size ] ]
 
 SetMathFontSize[ notebook_NotebookObject, size : _?NumericQ | Automatic ] :=
   ( applyViewSettings[ notebook, <| "MathFontSize" -> size |> ];
     rescaleMaTeXCells[ notebook ] )
 
 ResetDocumentView[] :=
-  ResetDocumentView[ InputNotebook[] ]
+  withInputNotebook[ ResetDocumentView ]
 
 ResetDocumentView[ notebook_NotebookObject ] :=
   ( applyViewSettings[ notebook, AssociationMap[ Automatic &, Join[ $viewSettingKeys, $obsoleteViewSettingKeys ] ] ];

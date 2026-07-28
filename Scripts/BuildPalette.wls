@@ -32,13 +32,21 @@ kernelButton[ label_, code_, tooltip_String ] :=
   Tooltip[ kernelButton[ label, code ], tooltip ]
 
 (* Applying a stylesheet replaces the private sheet the view controls install, so the stored
-   sizes have to go with it or the sliders would report a size the document no longer has. *)
+   sizes have to go with it or the sliders would report a size the document no longer has.
+
+   BasicFunctionality T5: with no document open SetOptions[ $Failed, ... ] does nothing and says
+   nothing, the palette's own half of the hole the seven kernel entry points had. The guard cannot
+   call the paclet's withInputNotebook — that is a PackageScope symbol, and a button's code is stored
+   verbatim, so it may hold nothing but System` symbols and fully qualified public ones — so the
+   Replace is written out here and lands in the .nb literally. *)
 stylesheetItem[ name_String ] :=
   With[ { file = name <> ".nb" },
-    name :> ( SetOptions[ InputNotebook[],
-        StyleDefinitions -> FrontEnd`FileName[ { "MathNotebook" }, file, CharacterEncoding -> "UTF-8" ],
-        LightDark -> "Light" ];
-      CurrentValue[ InputNotebook[], { TaggingRules, "MathNotebook" } ] = Inherited ) ]
+    name :> Replace[ InputNotebook[], {
+      notebook_NotebookObject :> ( SetOptions[ notebook,
+          StyleDefinitions -> FrontEnd`FileName[ { "MathNotebook" }, file, CharacterEncoding -> "UTF-8" ],
+          LightDark -> "Light" ];
+        CurrentValue[ notebook, { TaggingRules, "MathNotebook" } ] = Inherited ),
+      _ :> MessageDialog[ "Open a notebook first!" ] } ] ]
 
 environmentItem[ environment_String ] :=
   environment :> ( Needs[ "WolframInstitute`MathNotebook`" ];
@@ -90,7 +98,7 @@ viewSlider[ label_String, key_String, setter_Symbol, range_List, default_ ] :=
     sliderRow[ label,
       Slider[
         Dynamic[ CurrentValue[ FrontEnd`InputNotebook[ ], path, default ],
-          ( Needs[ "WolframInstitute`MathNotebook`" ]; setter[ InputNotebook[ ], # ] ) & ],
+          ( Needs[ "WolframInstitute`MathNotebook`" ]; setter[ # ] ) & ],
         range, ImageSize -> $sliderSize, ContinuousAction -> False ],
       Dynamic[ CurrentValue[ FrontEnd`InputNotebook[ ], path, default ] ] ] ]
 
@@ -128,7 +136,9 @@ $groups = {
   { "Stylesheet", "Stylesheet", {
     ActionMenu[ "Apply stylesheet",
       Append[ Map[ stylesheetItem, $styleSheets ],
-        "Default" :> SetOptions[ InputNotebook[], StyleDefinitions -> "Default.nb", LightDark -> Automatic ] ],
+        "Default" :> Replace[ InputNotebook[], {
+            notebook_NotebookObject :> SetOptions[ notebook, StyleDefinitions -> "Default.nb", LightDark -> Automatic ],
+            _ :> MessageDialog[ "Open a notebook first!" ] } ] ],
       Appearance -> "PopupMenu", ImageSize -> $buttonSize ] } },
   { "View", "Document view", {
     dual[ viewSlider[ "Text size", "DocumentFontSize", WolframInstitute`MathNotebook`SetDocumentFontSize,
@@ -148,23 +158,30 @@ $groups = {
         With[ { file = SystemDialogInput[ "FileOpen", directory ] },
           If[ StringQ[ file ], NotebookPut @ WolframInstitute`MathNotebook`ImportLaTeXDocument[ file ] ] ] ],
       "Reads a LaTeX paper into a new notebook: sectioning and theorem environments become styled cells, mathematics is typeset, labels become cell tags, and cross-references and citations become live links. Anything it cannot read is carried verbatim, so exporting returns the source unchanged." ],
+    (* T5: the guard has to come before the dialog, or an author with no document open is asked
+       where to save and the answer is discarded — the half of the referencing defect that wasted
+       the author's typing. *)
     kernelButton[ "Export to .tex\[Ellipsis]",
-      With[ { notebook = InputNotebook[] },
-        With[ { default = Replace[ Quiet @ NotebookFileName[ notebook ],
-              { name_String :> StringReplace[ name, ".nb" ~~ EndOfString -> ".tex" ], _ :> "paper.tex" } ] },
-          With[ { file = SystemDialogInput[ "FileSave", default ] },
-            If[ StringQ[ file ], WolframInstitute`MathNotebook`ExportLaTeXDocument[ notebook, file ] ] ] ] ],
+      Replace[ InputNotebook[], {
+        notebook_NotebookObject :>
+          With[ { default = Replace[ Quiet @ NotebookFileName[ notebook ],
+                { name_String :> StringReplace[ name, ".nb" ~~ EndOfString -> ".tex" ], _ :> "paper.tex" } ] },
+            With[ { file = SystemDialogInput[ "FileSave", default ] },
+              If[ StringQ[ file ], WolframInstitute`MathNotebook`ExportLaTeXDocument[ notebook, file ] ] ] ],
+        _ :> MessageDialog[ "Open a notebook first!" ] } ],
       "Writes the whole notebook out as a LaTeX paper. This is the export route; the selection buttons below only change how a few cells are written and are a convenience beside it." ],
     (* SubmissionBundle T4. A .tex alone is not a submission: it names figure files and a .bib that
        stay behind in the paper's own directory, so the one-file export compiles nowhere else. This
        button is the whole tree, and it takes a directory where the other two take a file. *)
     kernelButton[ "Export submission\[Ellipsis]",
-      With[ { notebook = InputNotebook[] },
-        With[ { directory = SystemDialogInput[ "Directory",
-              Replace[ Quiet @ NotebookDirectory[ notebook ], Except[ _String ] -> Directory[] ] ] },
-          If[ StringQ[ directory ],
-            SystemOpen @ Lookup[
-              WolframInstitute`MathNotebook`ExportLaTeXBundle[ notebook, directory ], "Directory" ] ] ] ],
+      Replace[ InputNotebook[], {
+        notebook_NotebookObject :>
+          With[ { directory = SystemDialogInput[ "Directory",
+                Replace[ Quiet @ NotebookDirectory[ notebook ], Except[ _String ] -> Directory[] ] ] },
+            If[ StringQ[ directory ],
+              SystemOpen @ Lookup[
+                WolframInstitute`MathNotebook`ExportLaTeXBundle[ notebook, directory ], "Directory" ] ] ],
+        _ :> MessageDialog[ "Open a notebook first!" ] } ],
       "Writes the whole paper into a directory as an arXiv submission: the .tex beside every figure file and .bib it names, plus the .bbl where a local pdfLaTeX is found, since arXiv runs LaTeX but not BibTeX. No compiled PDF, which arXiv rejects in a source upload. Opens the directory when done and reports anything it could not find." ] } },
   { "Convert", "Selection: LaTeX \[LeftRightArrow] math", {
     kernelButton[ "Typeset", WolframInstitute`MathNotebook`ConvertLaTeXCells[],

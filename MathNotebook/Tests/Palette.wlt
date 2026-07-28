@@ -91,3 +91,19 @@ VerificationTest[
     StringCount[ $paletteSource, "SystemDialogInput[\"Directory\"" ] },
   { True, True, True, 3, 1 }
 ]
+
+
+(* BasicFunctionality T5: the palette's own half of the $Failed hole. Its stored code cannot call the
+   paclet's withInputNotebook — a PackageScope symbol, where a button may hold only System` symbols and
+   fully qualified public ones — so the guard is written out by BuildPalette.wls and has to land in the
+   artifact nine times: once per stylesheet menu item including Default, and once in each of the two
+   export buttons, where it must come BEFORE the dialog or an author with no document is asked where to
+   save and the answer is discarded. The two view sliders are guarded the other way, by calling the
+   argumentless form the kernel now guards, so no bare two-argument setter may remain. *)
+VerificationTest[
+  { StringCount[ $paletteSource, "Open a notebook first!" ],
+    StringCount[ $paletteSource, "SetDocumentFontSize[#]" ],
+    StringCount[ $paletteSource, "SetMathFontSize[#]" ],
+    StringContainsQ[ $paletteSource, "SetOptions[InputNotebook[]" ] },
+  { 9, 1, 1, False }
+]

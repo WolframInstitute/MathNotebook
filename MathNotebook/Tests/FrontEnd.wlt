@@ -380,7 +380,18 @@ $noDocumentCalls = <|
   "TagSelectedCell" -> Hold @ TagSelectedCell[],
   "InsertCitation" -> Hold @ InsertCitation[],
   "InsertEnvironment" -> Hold @ InsertEnvironment[ "Theorem" ],
-  "LabelReferences" -> Hold @ LabelReferences[]
+  "LabelReferences" -> Hold @ LabelReferences[],
+  (* T5: the same hole in the seven entry points T2 did not touch, each of which handed $Failed to a
+     notebook_NotebookObject overload — or to convertCells — and returned unevaluated with no
+     message. Driven and measured that way before the guard went in. ConvertToMaTeX is safe to call
+     here without MaTeX installed precisely because the guard now answers before the Needs. *)
+  "SetDocumentFontSize" -> Hold @ SetDocumentFontSize[ 20 ],
+  "SetMathFontSize" -> Hold @ SetMathFontSize[ 20 ],
+  "ResetDocumentView" -> Hold @ ResetDocumentView[],
+  "ConvertLaTeXCells" -> Hold @ ConvertLaTeXCells[],
+  "ConvertMathCells" -> Hold @ ConvertMathCells[],
+  "ConvertToMaTeX" -> Hold @ ConvertToMaTeX[],
+  "ConvertFromMaTeX" -> Hold @ ConvertFromMaTeX[]
 |>;
 
 noDocumentDialogs[ ] :=
@@ -537,12 +548,16 @@ VerificationTest[
   { False, False, False, True, True, True }
 ]
 
-(* BasicFunctionality T2: the reported defect, literally. With no document open every one of the five
-   told the author, where each formerly returned an unevaluated expression and no message. *)
+(* BasicFunctionality T2 and T5: the reported defect, literally. With no document open every one of
+   the twelve tells the author, where each formerly returned an unevaluated expression and no message.
+   Asserted as the whole association so an entry point that stops answering cannot hide behind the
+   eleven that still do. *)
 VerificationTest[
   $measured[ "NoDocument" ],
   AssociationMap[ "Open a notebook first!" &,
-    { "CopyCellReference", "TagSelectedCell", "InsertCitation", "InsertEnvironment", "LabelReferences" } ]
+    { "CopyCellReference", "TagSelectedCell", "InsertCitation", "InsertEnvironment", "LabelReferences",
+      "SetDocumentFontSize", "SetMathFontSize", "ResetDocumentView",
+      "ConvertLaTeXCells", "ConvertMathCells", "ConvertToMaTeX", "ConvertFromMaTeX" } ]
 ]
 
 (* BasicFunctionality T3: the palette's "Go back" before any hyperlink has been followed, which is
