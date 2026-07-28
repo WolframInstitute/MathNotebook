@@ -350,7 +350,12 @@ maTeXMeasurements[ parent_ ] :=
     ConvertToMaTeX[ rescaled ];
     SetMathFontSize[ rescaled, size ];
     measurements = <| "Size" -> maTeXFontSize[ scaled ], "Base" -> maTeXWidth[ base ],
-      "Scaled" -> maTeXWidth[ scaled ], "Rescaled" -> maTeXWidth[ rescaled ] |>;
+      "Scaled" -> maTeXWidth[ scaled ], "Rescaled" -> maTeXWidth[ rescaled ],
+      (* BasicFunctionality T4: the MaTeX round trip through the notebook overloads, which is what the
+         palette's two MaTeX buttons reach and what no test drove. A rendered cell IS an image, so the
+         detector is the GraphicsBox appearing and then going away again. *)
+      "Rendered" -> Count[ NotebookGet[ base ], _GraphicsBox, Infinity ],
+      "Unrendered" -> ( ConvertFromMaTeX[ base ]; Count[ NotebookGet[ base ], _GraphicsBox, Infinity ] ) |>;
     NotebookClose /@ { base, scaled, rescaled };
     measurements
   ]
@@ -808,5 +813,15 @@ VerificationTest[
   With[ { m = $measured[ "MaTeX" ] },
     { m[ "Size" ], m[ "Base" ] > 0, m[ "Scaled" ] > m[ "Base" ], m[ "Scaled" ] === m[ "Rescaled" ] } ],
   { 2 $maTeXBaseFontSize, True, True, True }
+]
+]
+
+(* BasicFunctionality T4: the two MaTeX palette buttons, driven through the notebook overloads they
+   call. A MaTeX cell is an image and native typeset math is not, so the render and the unrender are
+   one GraphicsBox appearing and then going away — the only pair of states that tells them apart. *)
+If[ $maTeXAvailable,
+VerificationTest[
+  Lookup[ $measured[ "MaTeX" ], { "Rendered", "Unrendered" } ],
+  { 1, 0 }
 ]
 ]

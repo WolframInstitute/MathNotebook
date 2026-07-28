@@ -50,9 +50,6 @@ Done when every defect the shakedown finds is either fixed or recorded with a re
 
 ## Tasks
 
-- [ ] **T4** — Continue the shakedown into what T1 did not drive live: the three dialog-carrying buttons (`Import .tex file…`, `Export to .tex…`, `Export submission…`) driven with explicit paths, the stylesheet menu against all six shipped sheets, and the MaTeX conversions. T1 covered the referencing and view halves; this covers the conversion and submission halves.
-- [ ] **T6** — The record of the last hyperlink is written wrong at the source: all six stylesheets' `Hyperlink` `ButtonBoxOptions` assign `$LastHyperlinkCell = First[ SelectedCells[] ]` with no guard, so a click made with nothing selected stores an unevaluated `First[{}]`. T3's guard reports that honestly rather than doing nothing, so this is no longer a silent failure — but "Go back" still cannot go anywhere. Needs `BuildStyleSheets.wls` and a regeneration of all six sheets (filter the `ExpressionUUID` churn per `CLAUDE.md`), and a click cannot be driven headless, so the assertion has to be on the generated sheets as text.
-- [ ] **T7** — `GoBack` moves the selection but does not bring the parent notebook forward, so a hyperlink followed with `"OpenInNewWindow"` leaves the author's selection changing in a window that is not in front. `SetSelectedNotebook @ ParentNotebook[ cell ]` is the whole fix and is **not assertable headless** — `SelectedNotebook[]` never becomes the notebook there — so it needs Pavel to confirm it live, which is why T3 left it out rather than shipping it untested.
 
 ### Done
 
@@ -60,6 +57,9 @@ Done when every defect the shakedown finds is either fixed or recorded with a re
 - [x] **T2** — Guard the five selection-driven entry points against `InputNotebook[] === $Failed` and give each a notebook-argument overload. *Session 2.*
 - [x] **T3** — `GoBack[]` with no hyperlink followed, and with a stale one. *Session 3.*
 - [x] **T5** — The same `$Failed` hole in the seven entry points T2 did not touch, and in the palette's own stored code. *Session 3.*
+- [x] **T6** — The stylesheets' own `First[ SelectedCells[] ]`, which wrote the hyperlink record wrong at the source. *Session 3.*
+- [x] **T7** — `GoBack` raises the notebook it returns to. *Session 3.*
+- [x] **T4** — The conversion and submission halves driven live: import, export, bundle, the six-sheet menu, the MaTeX round trip. *Session 3.*
 
 ## Progress
 
@@ -211,3 +211,42 @@ Tests: the no-document measurement is one association over all **twelve** entry 
 Both bite — reverting the three kernel files fails `FrontEnd.wlt`, swapping the pre-change palette artifact back in fails `Palette.wlt` (**266 passed** restored).
 
 - **Next:** T4 — the three dialog-carrying buttons driven with explicit paths, the stylesheet menu against all six sheets, and the MaTeX conversions. Note that T4's stylesheet half now has a live question waiting for it: driven headless against the installed 0.1.15, `FrontEnd`FileName[{"MathNotebook"}, sheet]` resolved to **Default.nb** (Title 45, not 26) for all three sheets tried, even after a menu reset — the fallback `CLAUDE.md` records for `wolframscript`, but it means the palette's own "Apply stylesheet" route is still unverified against an installed paclet.
+
+### Session 3, T4 — 2026-07-28
+
+Built and installed the working tree as **0.1.16** first, since T4's own requirement is that verification runs against an installed paclet and everything T3, T5, T6 and T7 fixed was still only in the tree.
+
+Four of the five halves are **correct**, driven with the paths the dialogs would have supplied:
+
+| driven | result |
+|---|---|
+| `Import .tex file…` | `Sample-AMSArticle.tex` → a 20-cell notebook, styles `Abstract, Text, Section, Definition, Theorem, DisplayFormulaNumbered, Proof, DisplayFormula` |
+| `Export to .tex…` | written, and **byte-exact** against the source |
+| `Export submission…` | `paper.tex` alone, which is right — the sample carries a `thebibliography`, so no `.bib` is declared and no BibTeX run is attempted |
+| MaTeX buttons | render → one `GraphicsBox`, unrender → none |
+
+The MaTeX round trip is now a test (`"Rendered"` / `"Unrendered"` in `maTeXMeasurements`), because the notebook overloads those two buttons call were driven by nothing: it bites with the unrender stubbed to `Null` (34/1).
+
+**The fifth half cannot be verified here, and that is the finding.**
+The palette's stylesheet menu sets the sheet **by name**, and by-name resolution gives Default's Title 45 where an embedded `Get` of the same file gives 26 — for all six sheets, before a reset, after `ResetMenusPacket` in the same session, and with the service front end killed and freshly launched.
+`CLAUDE.md` carried a note that a cloud install plus a same-session reset *does* resolve; that does not reproduce for a paclet installed from a local archive, and the note is now amended rather than trusted.
+`ImportLaTeXDocument` sets its sheet the same way — the imported notebook's `StyleDefinitions` reads back as exactly that `FrontEnd`FileName` — so the same doubt covers the importer's typography.
+This is the one thing left for Pavel to confirm by clicking, and it is why the item's last Done clause is not mine to tick.
+
+One probe fault of my own, the shape `CLAUDE.md` names: I read the bundle's result under a `"Written"` key it does not have (`"Directory"`, `"Files"`, `"Missing"`), so a correct bundle first reported writing nothing.
+
+- **Next:** nothing in this item but Pavel's confirmation. See the closing note below.
+
+### Closing — 2026-07-28
+
+Seven tasks, six of them fixes, all seven closed.
+Twelve entry points that did nothing and said nothing now answer; `GoBack` reports both of its empty states and raises the window it returns to; the stylesheets stopped writing an unevaluated `First[{}]` as the hyperlink record; the palette carries nine literal guards of its own because a button's stored code cannot call a `PackageScope` one; the reference pages agree with `Kernel/Usage.wl` and are generated from it; the documentation is deployed nowhere but inside the paclet.
+The suite went **258 → 270**, every new test confirmed by reintroducing the defect and watching it fail, and `Specimens.wlt` held at 32 throughout — the byte-exact round trip and the structure census never moved.
+
+**Closed with one clause outstanding, as `ConversionUX` was.**
+The Done criterion asks that Pavel confirm the core workflows on a real paper, and two things in particular cannot be confirmed anywhere but a real front end:
+
+- **Apply stylesheet** on an open paper, for one template and for `PlainArticle` — by-name resolution is unverifiable headless, and it is also how an imported paper gets its typography.
+- **Go back** after following a reference into a new window — the raise has no headless measurement at all.
+
+Both are named in `CLAUDE.md` so the next session cannot mistake them for verified.
