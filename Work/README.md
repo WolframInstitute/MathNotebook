@@ -27,8 +27,11 @@ a 185 pt gutter for the hanging `[key]` dingbat), T2 the literal `\textbf`/`\emp
 runs whose shape was chosen by what survives a save), and T3 the front matter: the title's `\vspace`
 prefix and the whole `\author` block ride in tagging rules while `\maketitle`, `\sloppy`,
 `\tableofcontents` and comment-only paragraphs produce **no cell at all** — carried as whitespace in
-the preceding cell's `"Separator"`, which is why that needed no export clause. Next: T5 (the citation
-face, from Pavel's screenshot), then T4 last, which is the only task needing him at a screen.
+the preceding cell's `"Separator"`, which is why that needed no export clause. T5 closed Pavel's
+"the fonts are different" screenshot by **disproving** its own hypothesis: a `Citation` run already
+renders in its cell's face, and the culprit was `InsertCitation` at a cell-bracket selection, which
+destroyed the cell's content and left a `BoxData` cell that renders in the box face — one bug wearing
+two symptoms. Next: T4, the only task needing him at a screen.
 
 [Palette and View UX](Active/PaletteAndViewUX.md) — the three things Pavel asked for that are not
 import defects: the palette's `Environments` group renamed (he rejected the name without giving one,

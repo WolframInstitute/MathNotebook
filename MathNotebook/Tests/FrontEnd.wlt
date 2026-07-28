@@ -456,6 +456,40 @@ referencingDrive[ parent_ ] :=
     measurements
   ]
 
+(* ImportDisplayDefects T5: WHERE the reference goes, in the four selection states an author can be in.
+   Pavel reported a cross-reference rendering in a different face from the label it points at, and the
+   cause is not the stylesheets — measured, the same reference in the same Text cell under the same
+   sheet is 406 ink at height 15 as inline TextData, which is the prose face exactly (409/15), and 482
+   at height 17 as BoxData, because BoxData renders in the box face. Writing at a cell-bracket
+   selection produced exactly that BoxData cell AND destroyed the cell's content, so the wrong font and
+   the data loss are one bug. "Prose" is the assertion that matters most: it was False for the bracket
+   case and no test anywhere would have noticed.
+
+   A2 is in the list to pin what must NOT change — with the contents genuinely selected, writing over
+   them is what every editor does, and a fix that "protected" them there would be wrong. *)
+citationPlacement[ parent_ ] :=
+  Module[ { measure },
+    measure = state |->
+      Module[ { notebook, cells, read },
+        notebook = NotebookPut @ Notebook[ {
+          Cell[ "A theorem.", "Theorem", CellTags -> "Thm:1" ],
+          Cell[ "Prose here.", "Text" ] },
+          StyleDefinitions -> parent, Visible -> False ];
+        cells = Cells[ notebook ];
+        Switch[ state,
+          "Point", SelectionMove[ Last @ cells, After, CellContents ],
+          "Selected", SelectionMove[ Last @ cells, All, CellContents ],
+          "Nothing", SelectionMove[ notebook, After, Cell ],
+          "Bracket", SelectionMove[ Last @ cells, All, Cell ] ];
+        InsertCitation[ notebook, "Thm:1" ];
+        read = Map[ NotebookRead, Cells[ notebook ] ];
+        NotebookClose[ notebook ];
+        <| "Prose" -> Or @@ Map[ ! FreeQ[ #, "Prose here." ] &, read ],
+           "Buttons" -> Count[ read, _ButtonBox, Infinity ],
+           "BoxData" -> Count[ read, Cell[ _BoxData, ___ ] ],
+           "TextData" -> Count[ read, Cell[ _TextData, ___ ] ] |> ];
+    AssociationMap[ measure, { "Point", "Selected", "Nothing", "Bracket" } ] ]
+
 (* BasicFunctionality T3: GoBack[] is the same silent no-op one state earlier and from the other
    cause — the unset $LastHyperlinkCell rather than a $Failed notebook — so it is reachable with a
    document open and needs a measurement of its own. Three states, and only the middle one may move a
@@ -506,6 +540,7 @@ $measured = UsingFrontEnd @ <|
   "NoDocument" -> noDocumentDialogs[ ],
   "GoBack" -> goBackDrive[ ],
   "Referencing" -> referencingDrive @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
+  "Placement" -> citationPlacement @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
   "Imported" -> importedText[ $importedSource ],
   "PlainSheet" -> AssociationMap[ sheetText[ $plainPaper, # ] &, { "PlainArticle.nb", "Default.nb" } ],
   "Lists" -> listMeasurements[ $listPaper ],
@@ -677,6 +712,25 @@ VerificationTest[
 VerificationTest[
   Cases[ $measured[ "Referencing", "Citation" ], _CounterBox, Infinity ],
   { CounterBox[ "Section", "Thm:key" ], CounterBox[ "Theorem", "Thm:key" ] }
+]
+
+(* ImportDisplayDefects T5: the reference lands INSIDE a cell in every state, as inline TextData and
+   never as a BoxData cell, and it never costs the cell its content. The bracket case is the one that
+   was broken both ways — it destroyed "Prose here." and produced the BoxData cell whose box face is
+   what Pavel saw. Exactly one button in every state: a duplicate would mean the insertion point moved
+   without the write following it. *)
+VerificationTest[
+  Map[ #[ "Prose" ] &, $measured[ "Placement" ] ],
+  <| "Point" -> True, "Selected" -> False, "Nothing" -> True, "Bracket" -> True |>
+]
+
+VerificationTest[
+  { Map[ #[ "BoxData" ] &, $measured[ "Placement" ] ],
+    Map[ #[ "TextData" ] &, $measured[ "Placement" ] ],
+    Map[ #[ "Buttons" ] &, $measured[ "Placement" ] ] },
+  { <| "Point" -> 0, "Selected" -> 0, "Nothing" -> 0, "Bracket" -> 0 |>,
+    <| "Point" -> 1, "Selected" -> 1, "Nothing" -> 1, "Bracket" -> 1 |>,
+    <| "Point" -> 1, "Selected" -> 1, "Nothing" -> 1, "Bracket" -> 1 |> }
 ]
 
 (* Inline Math Converter Defects T1: a comma-bearing span really renders as mathematics — visible

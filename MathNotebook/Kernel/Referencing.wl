@@ -63,8 +63,29 @@ InsertCitation[ notebook_NotebookObject ] :=
   With[ { tag = InputString[ "Citation tag:" ] },
     If[ StringQ[ tag ], InsertCitation[ notebook, tag ] ] ]
 
+(* Where the reference goes, which turns out to be the whole of ImportDisplayDefects T5. Writing at a
+   cell-bracket selection REPLACES the cell: measured, "Prose here." was overwritten by the button and
+   the cell became a BoxData one. That second half is also the wrong-font defect Pavel reported, and it
+   is not the stylesheets — the same reference in the same Text cell under the same sheet measures 406
+   ink at height 15 as inline TextData, which is the prose face exactly (409/15), and 482 at height 17
+   as BoxData, because BoxData renders in the box face. So the data loss and the face are one bug.
+
+   A whole-cell selection is recognised by NotebookRead answering a Cell, and the insertion point then
+   moves inside that cell's contents; a cursor already inside contents reads as "" with the cell still
+   in SelectedCells, so it is left alone. No selected cell at all means there is no cell to insert
+   into, and an empty Text cell is made to hold the reference rather than letting the front end invent
+   a BoxData one. *)
+citationInsertionPoint[ notebook_NotebookObject ] :=
+  Which[
+    MatchQ[ NotebookRead[ notebook ], _Cell | { __Cell } ],
+      SelectionMove[ notebook, After, CellContents ],
+    SelectedCells[ notebook ] === { },
+      ( NotebookWrite[ notebook, Cell[ "", "Text" ] ];
+        SelectionMove[ notebook, All, CellContents ] ) ]
+
 InsertCitation[ notebook_NotebookObject, tag_String ] :=
-  NotebookWrite[ notebook, citationButton[ tag, citationTargetStyle[ notebook, tag ] ] ]
+  ( citationInsertionPoint[ notebook ];
+    NotebookWrite[ notebook, citationButton[ tag, citationTargetStyle[ notebook, tag ] ] ] )
 
 LabelReferences[ notebook_NotebookObject ] :=
   NotebookPut[ labelReferenceCells @ NotebookGet[ notebook ], notebook ]

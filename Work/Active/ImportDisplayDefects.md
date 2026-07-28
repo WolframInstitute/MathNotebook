@@ -84,11 +84,9 @@ goes ahead of everything above. Ask before T1.
 ## Hand-off
 
 Pavel asked for four more things during Session 3 and told the session to continue without
-supervision, so they are queued rather than discussed:
-
-- **T5** below — the citation face, from his screenshot. Stays in this item: an imported
-  cross-reference rendering in the wrong face is an import display defect.
-- The other three are palette and view work, not import, and are `Work/Active/PaletteAndViewUX.md`:
+supervision, so they were queued rather than discussed. The first is done (T5, Session 4 — and the
+answer was that the stylesheets were never at fault). The other three are palette and view work, not
+import, and live in `Work/Active/PaletteAndViewUX.md`:
   the palette's `Environments` group must be renamed (he did not say to what — **needs-human** unless
   the session's proposal is acceptable), `Tag Cell` goes and a Reference-entry button arrives with
   `Insert Reference` becoming a picker over equations/theorems/literature, and inline math must scale
@@ -102,17 +100,18 @@ label, which is `BasicFunctionality`'s outstanding by-name-stylesheet clause.
 
 ## Tasks
 
-- [ ] **T5 — Citation face matches the label it points at.** Pavel's screenshot shows a bold-serif
-  `Proposition 0.1.` dingbat above a cross-reference to it in a different face. `Citation` inherits
-  `Hyperlink` → `Link`, which brings `Default.nb`'s link face in with it. Measure the resolved faces
-  and pin `Citation`/`Hyperlink`/`URL` to the document face in all seven sheets, keeping the colours;
-  bite it in `StyleSheets.wlt` and measure it in `FrontEnd.wlt`.
 - [ ] **T4 — Re-import and confirm.** Re-import `main.tex` over `main.nb` with the fixed paclet,
   Pavel reads the paper on screen; record his by-name stylesheet answer in `CLAUDE.md` and close
   `BasicFunctionality`'s outstanding clause if it resolves.
 
 ### Done
 
+- [x] **T5 — The reference's face, which was not the stylesheets** (Session 4). The hypothesis in this
+  task as written — that `Citation` inherits `Link`'s Times 12 and needs pinning to each sheet's face —
+  is **false**, and was disproved before any sheet was touched. A `Citation` run inside a `Text` cell
+  already renders in the cell's own face. What is real: `InsertCitation` at a cell-bracket selection
+  destroyed the cell's content and produced a `BoxData` cell, which renders in the box face. One bug,
+  both symptoms; fixed in `citationInsertionPoint`.
 - [x] **T3 — Front matter display** (Session 3). All three R3 decisions taken by Pavel and
   implemented: the title's `\vspace` prefix in `"CommandPrefix"`, the `\author` block verbatim in
   `"CommandTeX"` with the names displayed, and `\maketitle`/`\sloppy`/`\tableofcontents`/comment-only
@@ -248,3 +247,30 @@ label, which is `BasicFunctionality`'s outstanding by-name-stylesheet clause.
   from 1 to 0 and is now the only assertion that a carried paragraph is really invisible — a cell
   count says a cell is gone, only a rendered page says nothing was drawn in its place.
 - **Next:** T5 (citation face), then `PaletteAndViewUX`, then T4 last.
+
+### Session 4 — 2026-07-29 — T5
+
+- **Prompt:** continuing unsupervised from Session 3's instruction; the input was Pavel's screenshot,
+  "the fonts are different. They should not".
+- **Did:** Measured before changing anything, and the task's own hypothesis did not survive it. The
+  chain read says `Citation` resolves to Times 12 in every one of the seven sheets against prose of
+  Palatino 13, Latin Modern 13, Times New Roman 13, Times 14 and Source Sans Pro 15 — which looks
+  exactly like the reported defect. It is not: rendered, a `Citation` run inside a `Text` cell under
+  `AMSArticle` measures **406 ink at height 15** where plain prose is 409/15 and a deliberate Times 12
+  run is 365/12. So the run already takes the cell's face, and
+  `CurrentValue[{StyleDefinitions, "Citation", FontFamily}]` is the chain's abstract resolution rather
+  than what happens inside a cell. The sheets were left alone. What actually reproduces the screenshot
+  is `Cell[BoxData[button], "Text"]` — **482 ink at height 17**, 113 px wide because it does not wrap —
+  and that is what `InsertCitation` produced when a cell was selected by its bracket, *replacing the
+  cell's content in the process*. So the wrong font and a silent data loss were one bug.
+  `citationInsertionPoint` now moves the insertion point inside the cell's contents when a whole cell
+  is selected, and makes an empty `Text` cell when there is no cell to insert into at all.
+- **Learned:** Two things worth keeping. A resolved-style read cannot answer "what face does this run
+  render in" — the character styles resolve one way through the chain and another inside a cell, which
+  is the same trap as reading a print size off the bare style path, and it would have sent this session
+  to rewrite seven stylesheets for nothing. And `NotebookWrite` at a **cell-bracket** selection
+  replaces the cell rather than inserting into it, which no test in the repo covered: the four
+  selection states an author can be in — insertion point, contents selected, nothing selected, bracket
+  — behave differently and only the third had ever been driven. `"Selected" -> False` is pinned
+  deliberately, because writing over a genuine selection is what every editor does.
+- **Next:** `PaletteAndViewUX` T2 (inline math size), then T4 last.
