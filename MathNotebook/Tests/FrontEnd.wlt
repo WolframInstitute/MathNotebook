@@ -579,6 +579,19 @@ VerificationTest[
   <| "Returned" -> Null, "Selected" -> True |>
 ]
 
+(* BasicFunctionality T7, and the weakest test in this file on purpose. A link followed with
+   "OpenInNewWindow" leaves its target in a window of its own, so GoBack has to raise the source
+   notebook or the selection moves out of the author's sight. The raise itself cannot be measured
+   here — SelectedNotebook[] answers $Failed whatever is selected, and AbsoluteCurrentValue[ notebook,
+   "WindowSelected" ] answers $Failed too, both measured on two visible notebooks — so what is
+   asserted is that the call is in the definition, and the effect is Pavel's to confirm on a real
+   window. It bites on the call being dropped, which is what it is for; it would not bite on the call
+   being wrong. The test above is what keeps it honest: raising must not cost the selection move. *)
+VerificationTest[
+  FreeQ[ DownValues[ GoBack ], SetSelectedNotebook ],
+  False
+]
+
 (* With a document, the guard that was always in the source and never reachable now fires — and a
    real selection still succeeds, so the guard is a guard and not a refusal. *)
 VerificationTest[

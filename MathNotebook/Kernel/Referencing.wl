@@ -119,13 +119,18 @@ labelReferenceCells[ notebook_Notebook ] :=
    and answers itself with no message — measured against the installed 0.1.13. A stale cell is the
    second state and needs its own word: SelectionMove on a CellObject whose cell has been deleted or
    whose notebook has been closed answers Null and does nothing, so a CellObject pattern alone is
-   not enough. A deleted cell is recognised by ParentNotebook, which answers $Failed for it. *)
+   not enough. ParentNotebook is both the liveness test — it answers $Failed for a deleted cell — and
+   what T7 needs: a link followed with "OpenInNewWindow" leaves the target in a window of its own, so
+   moving the selection without raising the source notebook changes it out of the author's sight. That
+   raise has NO headless measurement: SelectedNotebook[] answers $Failed whatever is selected, and so
+   does AbsoluteCurrentValue[ notebook, "WindowSelected" ], both measured. So the test asserts the call
+   is made and Pavel confirms the effect on a real window. *)
 GoBack[] :=
   Replace[ $LastHyperlinkCell, {
     cell_CellObject :>
-      If[ ParentNotebook[ cell ] === $Failed,
-        MessageDialog[ "The cell that link was followed from is gone!" ],
-        SelectionMove[ cell, All, Cell ] ],
+      Replace[ ParentNotebook[ cell ], {
+        notebook_NotebookObject :> ( SetSelectedNotebook[ notebook ]; SelectionMove[ cell, All, Cell ] ),
+        _ :> MessageDialog[ "The cell that link was followed from is gone!" ] } ],
     _ :> MessageDialog[ "Follow a hyperlink first!" ] } ]
 
 InsertEnvironment[ style_String ] :=
