@@ -188,4 +188,14 @@ A deleted `CellObject` is a **live-looking** object: it still has the right head
 
 The `perl` note in `CLAUDE.md` generalises — the bite patch went in through a Python script asserting `count == 1` before writing and printing the replacement, which is the same discipline in a language where the quoting of Wolfram code with `$` and `[` in it is not at risk in the first place.
 
-- **Next:** T4 — the three dialog-carrying buttons driven with explicit paths, the stylesheet menu against all six sheets, and the MaTeX conversions.
+**Released and shipped in the same session, at Pavel's direction** — the shakedown's fixes were sitting in the tree while every installed and published copy still carried the defects.
+0.1.14 is T2's and T3's guards (bumped, pushed, published, installed, and each guard driven from the *installed* paclet: `"Follow a hyperlink first!"` and `"Open a notebook first!"` ×3).
+0.1.15 is the documentation, which Pavel then ruled on: **the reference pages ship inside the paclet and are deployed nowhere else**, so the browser mirror was deleted — 21 cloud notebooks, the HTML index, the directory, and the README link.
+It had already drifted both ways, 21 pages against the paclet's 22 and every usage line one release stale, which is the argument for having one copy.
+`Scripts/RegenerateUsage.wls` now rebuilds a page's Usage cell from the symbol's usage string, and with no arguments audits all 22 against `Kernel/Usage.wl`; that audit found a fifth stale page and one page **ahead** of the code — `ExportLaTeXBundle`'s page documents the options form its usage string never mentioned.
+`GoBack`'s notes had also gone false with T3: they said the function does nothing before a link is followed.
+All 22 now agree, all five edited pages open in a live front end with zero messages, and the suite is 265.
+
+Not fixed, and not this item's: `LaTeX/Sample-SpringerJournal.pdf` does not exist while the README links a PDF for the other three samples, and a `MathNotebook/Staging` object from an old dry run is still on the cloud.
+
+- **Next:** T4 — the three dialog-carrying buttons driven with explicit paths, the stylesheet menu against all six sheets, and the MaTeX conversions. Note that T4's stylesheet half now has a live question waiting for it: driven headless against the installed 0.1.15, `FrontEnd`FileName[{"MathNotebook"}, sheet]` resolved to **Default.nb** (Title 45, not 26) for all three sheets tried, even after a menu reset — the fallback `CLAUDE.md` records for `wolframscript`, but it means the palette's own "Apply stylesheet" route is still unverified against an installed paclet.
