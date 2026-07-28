@@ -422,10 +422,36 @@ referencingDrive[ parent_ ] :=
     measurements
   ]
 
+(* BasicFunctionality T3: GoBack[] is the same silent no-op one state earlier and from the other
+   cause — the unset $LastHyperlinkCell rather than a $Failed notebook — so it is reachable with a
+   document open and needs a measurement of its own. Three states, and only the middle one may move a
+   selection: nothing followed yet, a live cell, and a cell that has since been deleted. That last
+   one is why a CellObject pattern alone is not enough — SelectionMove on a deleted cell answers Null
+   and does nothing at all. "Value" is measured before the symbol is assigned here, so a kernel that
+   arrives with it already set fails a test rather than passing the "Unset" one for the wrong reason. *)
+goBackDrive[ ] :=
+  Module[ { notebook, cells, measurements },
+    measurements = <| "Value" -> ValueQ[ $LastHyperlinkCell ], "Unset" -> dialogText @ GoBack[] |>;
+    notebook = NotebookPut @ Notebook[ { Cell[ "One", "Text" ], Cell[ "Two", "Text" ] }, Visible -> False ];
+    cells = Cells[ notebook ];
+    SelectionMove[ Last[ cells ], All, Cell ];
+    $LastHyperlinkCell = First[ cells ];
+    measurements[ "Returned" ] = dialogText @ GoBack[];
+    measurements[ "Selected" ] = SelectedCells[ notebook ] === { First[ cells ] };
+    NotebookDelete[ First[ cells ] ];
+    measurements[ "Stale" ] = dialogText @ GoBack[];
+    NotebookClose[ notebook ];
+    $LastHyperlinkCell = "First[{}] is what the stylesheet assigns with nothing selected";
+    measurements[ "NonCell" ] = dialogText @ GoBack[];
+    Clear[ $LastHyperlinkCell ];
+    measurements
+  ]
+
 (* "NoDocument" is first in this association on purpose: a notebook left open by any measurement
    above it would become the input notebook, and the state under test would be gone. *)
 $measured = UsingFrontEnd @ <|
   "NoDocument" -> noDocumentDialogs[ ],
+  "GoBack" -> goBackDrive[ ],
   "Referencing" -> referencingDrive @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
   "Imported" -> importedText[ $importedSource ],
   "PlainSheet" -> AssociationMap[ sheetText[ $plainPaper, # ] &, { "PlainArticle.nb", "Default.nb" } ],
@@ -517,6 +543,25 @@ VerificationTest[
   $measured[ "NoDocument" ],
   AssociationMap[ "Open a notebook first!" &,
     { "CopyCellReference", "TagSelectedCell", "InsertCitation", "InsertEnvironment", "LabelReferences" } ]
+]
+
+(* BasicFunctionality T3: the palette's "Go back" before any hyperlink has been followed, which is
+   the state the button is in the moment a paper is opened. It answered SelectionMove[
+   $LastHyperlinkCell, All, Cell ] with no message; it now says so, and says something different for
+   a cell that has since been deleted. The non-cell state is the shape the stylesheet's own
+   ButtonFunction writes when it clicks with nothing selected. *)
+VerificationTest[
+  KeyTake[ $measured[ "GoBack" ], { "Value", "Unset", "Stale", "NonCell" } ],
+  <| "Value" -> False, "Unset" -> "Follow a hyperlink first!",
+    "Stale" -> "The cell that link was followed from is gone!",
+    "NonCell" -> "Follow a hyperlink first!" |>
+]
+
+(* And a live cell is still gone back to, so the guard is a guard and not a refusal: the selection
+   leaves the last cell and lands on the recorded one. *)
+VerificationTest[
+  KeyTake[ $measured[ "GoBack" ], { "Returned", "Selected" } ],
+  <| "Returned" -> Null, "Selected" -> True |>
 ]
 
 (* With a document, the guard that was always in the source and never reachable now fires — and a

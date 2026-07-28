@@ -114,8 +114,19 @@ labelReferenceCells[ notebook_Notebook ] :=
         Sequence @@ FilterRules[ { options }, Except[ CellDingbat ] ],
         Sequence @@ referenceDingbat @ Lookup[ { options }, CellTags, { } ] ] ]
 
+(* The same silent no-op as the five above, one state earlier and from the other cause: nothing has
+   assigned $LastHyperlinkCell, so SelectionMove[ $LastHyperlinkCell, All, Cell ] stays unevaluated
+   and answers itself with no message — measured against the installed 0.1.13. A stale cell is the
+   second state and needs its own word: SelectionMove on a CellObject whose cell has been deleted or
+   whose notebook has been closed answers Null and does nothing, so a CellObject pattern alone is
+   not enough. A deleted cell is recognised by ParentNotebook, which answers $Failed for it. *)
 GoBack[] :=
-  SelectionMove[ $LastHyperlinkCell, All, Cell ]
+  Replace[ $LastHyperlinkCell, {
+    cell_CellObject :>
+      If[ ParentNotebook[ cell ] === $Failed,
+        MessageDialog[ "The cell that link was followed from is gone!" ],
+        SelectionMove[ cell, All, Cell ] ],
+    _ :> MessageDialog[ "Follow a hyperlink first!" ] } ]
 
 InsertEnvironment[ style_String ] :=
   withInputNotebook[ InsertEnvironment[ #, style ] & ]

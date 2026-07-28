@@ -50,14 +50,16 @@ Done when every defect the shakedown finds is either fixed or recorded with a re
 
 ## Tasks
 
-- [ ] **T3** — `GoBack[]` before any hyperlink has been followed: `$LastHyperlinkCell` has no value, so the call returns unevaluated with no message. Different cause from T2 (an unset symbol, not a `$Failed` notebook) and reachable *with* a document open, hence its own task.
 - [ ] **T4** — Continue the shakedown into what T1 did not drive live: the three dialog-carrying buttons (`Import .tex file…`, `Export to .tex…`, `Export submission…`) driven with explicit paths, the stylesheet menu against all six shipped sheets, and the MaTeX conversions. T1 covered the referencing and view halves; this covers the conversion and submission halves.
 - [ ] **T5** — The same `$Failed` hole in the seven entry points T2 did not touch: `SetDocumentFontSize`, `SetMathFontSize`, `ResetDocumentView` (`View.wl`), `ConvertLaTeXCells`, `ConvertMathCells` (`Conversion.wl`), `ConvertToMaTeX`, `ConvertFromMaTeX` (`MaTeX.wl`). One `withInputNotebook` each now that the guard exists and is `PackageScope`. Found by reading, not driven — so drive each first and confirm the no-op before fixing it.
+- [ ] **T6** — The record of the last hyperlink is written wrong at the source: all six stylesheets' `Hyperlink` `ButtonBoxOptions` assign `$LastHyperlinkCell = First[ SelectedCells[] ]` with no guard, so a click made with nothing selected stores an unevaluated `First[{}]`. T3's guard reports that honestly rather than doing nothing, so this is no longer a silent failure — but "Go back" still cannot go anywhere. Needs `BuildStyleSheets.wls` and a regeneration of all six sheets (filter the `ExpressionUUID` churn per `CLAUDE.md`), and a click cannot be driven headless, so the assertion has to be on the generated sheets as text.
+- [ ] **T7** — `GoBack` moves the selection but does not bring the parent notebook forward, so a hyperlink followed with `"OpenInNewWindow"` leaves the author's selection changing in a window that is not in front. `SetSelectedNotebook @ ParentNotebook[ cell ]` is the whole fix and is **not assertable headless** — `SelectedNotebook[]` never becomes the notebook there — so it needs Pavel to confirm it live, which is why T3 left it out rather than shipping it untested.
 
 ### Done
 
 - [x] **T1** — Catalogue: exercise every palette button's stored code against an installed paclet in a live front end. *Session 1.*
 - [x] **T2** — Guard the five selection-driven entry points against `InputNotebook[] === $Failed` and give each a notebook-argument overload. *Session 2.*
+- [x] **T3** — `GoBack[]` with no hyperlink followed, and with a stale one. *Session 3.*
 
 ## Progress
 
@@ -150,3 +152,40 @@ A citation's boxes read back off a live notebook are not the boxes that were wri
 Serena's `replace_content` in regex mode needs `needle`, not `pattern`, and a needle quoting `\[Placeholder]` did not match however it was escaped; splitting the edit so the named character falls *outside* the matched span is the way through, and it keeps the replacement free of backslashes too.
 
 - **Next:** T3 — `GoBack[]` with no hyperlink followed, whose cause is the unset `$LastHyperlinkCell` and not a `$Failed` notebook.
+
+### Session 3 — 2026-07-28 — T3
+
+- **Prompt:** `/next-session` — the first unchecked box, taken as written.
+- **Did:**
+
+Drove `GoBack[]` against the **installed 0.1.13** before touching it, which is what turned one task into two states and a third that is not mine to fix.
+Unset, it answers `SelectionMove[ $LastHyperlinkCell, All, Cell ]` with **zero messages** — T1's reading, now reproduced against the installed paclet rather than the tree.
+Given a live cell it is correct: the selection leaves the last cell and lands on the recorded one.
+Given a `CellObject` whose cell has been **deleted**, or whose notebook has been **closed**, `SelectionMove` answers `Null` and does nothing — silently, and a `cell_CellObject` pattern would have accepted it, so the guard needed a liveness test and not just a head.
+`ParentNotebook` is that test: `$Failed` for a deleted cell, the notebook for a live one (`CurrentValue[ cell, CellStyle ]` answers `$Failed` too and would do as well).
+
+The fix is one `Replace` in `Referencing.wl` with two dialogs, because the two states are two different things to tell an author: `"Follow a hyperlink first!"` and `"The cell that link was followed from is gone!"`.
+`GoBack` needs no notebook argument — it reads a global, not `InputNotebook[]` — so unlike T2's five it was always drivable headless, and the reason no test existed was simply that nothing had been called.
+
+**Two tests in `Tests/FrontEnd.wlt`, and the bite check ran twice in opposite directions.**
+`goBackDrive[]` measures four states plus `ValueQ` of the symbol, and sits second in `$measured`, right after `"NoDocument"`; it records `ValueQ` so a kernel arriving with the symbol already set fails a test instead of passing the "Unset" one for the wrong reason.
+Bite A, the original one-line body: **32 passed, 1 failed** — the guard test bites, the live-cell test correctly does not, since that half always worked.
+Bite B, an over-broad guard (`GoBack[] := MessageDialog["Follow a hyperlink first!"]`): **31 passed, 2 failed** — so the second test bites too, on a fix that refuses instead of guarding.
+Restored from a scratchpad copy both times.
+Full suite green: **265 passed, 0 failed** (263 + 2), `Specimens.wlt` at 32 with the byte-exact round trip and the census intact.
+
+**Two findings, recorded as T6 and T7 rather than fixed.**
+The record of the last hyperlink is written wrong at the source: all six sheets assign `$LastHyperlinkCell = First[ SelectedCells[] ]` unguarded, so a click made with nothing selected stores an unevaluated `First[{}]`.
+T3's guard now reports that honestly — it is the `"NonCell"` state in the test — but "Go back" still cannot go anywhere, and fixing it means `BuildStyleSheets.wls` plus a regeneration of six sheets, asserted as text because a click is not drivable.
+And `GoBack` moves the selection without bringing the parent notebook forward, so a link followed into a new window leaves the selection changing out of sight; `SetSelectedNotebook @ ParentNotebook[ cell ]` is the whole fix and is left out deliberately, because it cannot be asserted here.
+
+- **Learned:**
+
+**Window focus has no headless measurement**, which is the constraint that kept T7 out of this session's diff.
+`SetSelectedNotebook[nb]` leaves `SelectedNotebook[] === nb` **False**, the same way it leaves `InputNotebook[]` at `$Failed` — so "the right window came forward" is unassertable, and under this item's own bite rule anything depending on it would ship untested.
+
+A deleted `CellObject` is a **live-looking** object: it still has the right head and prints the same, and every operation on it fails by doing nothing. `ParentNotebook` and `CurrentValue[ …, CellStyle ]` are the two reads that answer `$Failed` for it.
+
+The `perl` note in `CLAUDE.md` generalises — the bite patch went in through a Python script asserting `count == 1` before writing and printing the replacement, which is the same discipline in a language where the quoting of Wolfram code with `$` and `[` in it is not at risk in the first place.
+
+- **Next:** T4 — the three dialog-carrying buttons driven with explicit paths, the stylesheet menu against all six sheets, and the MaTeX conversions.
