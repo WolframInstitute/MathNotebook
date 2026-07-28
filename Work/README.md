@@ -21,7 +21,18 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 
 ## Active
 
-Empty.
+[Basic Functionality Shakedown](Active/BasicFunctionality.md) — next task **T2**: guard the five
+selection-driven referencing entry points against `InputNotebook[] === $Failed` and give each a
+notebook-argument overload. Opened 2026-07-28 because every item was closed, the tree was clean at
+0.1.13 and all **258 tests passed** — and that is the state in which Pavel reported basic functionality
+not working, so the suite is not the instrument that will find it. T1 established why: no test in the
+repo has ever *clicked* anything, `Tests/Palette.wlt` asserts the palette as **text**, and six of the 23
+public symbols — the whole selection-driven layer the buttons hit — had never been called by any test.
+Driven live for the first time they are all functionally correct; what is broken is the guard around
+them. With no document open, all five return an unevaluated expression with **zero messages**, the
+`"Select a cell!"` dialog never fires because `SelectedCells[$Failed]` matches neither arm of its
+`Replace`, and the two that prompt via `InputString` ask for a tag and then discard it. The palette
+itself is clean: 20 of 20 stored symbols resolve and no build-script helper leaked into it.
 
 [Submission Bundle](Done/2026-07-28-SubmissionBundle.md) closed on 2026-07-28, the last item to, and in
 one session across all four of its tasks: `ExportLaTeXBundle` is the 23rd public symbol and writes a
