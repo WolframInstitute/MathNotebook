@@ -812,9 +812,13 @@ VerificationTest[
 (* ... and the front matter is on the page: the title and author as their own styles, the abstract
    headed once however many paragraphs it runs to, the [label] of an item drawn instead of a number,
    and no list or front-matter command left as prose. The author is read case-insensitively because
-   the Author style is small caps, so the PDF's plaintext of "An Author" is "AN AUTHOR". \maketitle is
-   the one command still there, by the decision that a command with no content has no notebook
-   counterpart — it is asserted rather than overlooked. *)
+   the Author style is small caps, so the PDF's plaintext of "An Author" is "AN AUTHOR".
+
+   ImportDisplayDefects T3 inverted the \maketitle clause: it used to assert the command was on the
+   page (1), and now asserts it is not (0). That is the one assertion in the repo that a carried
+   paragraph is really invisible — a cell count says a cell is gone, and only a rendered page says
+   nothing was drawn in its place. The count stays in the test rather than becoming a
+   StringContainsQ so that a *second* copy appearing would fail it too. *)
 VerificationTest[
   { StringContainsQ[ $measured[ "Lists", "Text" ], "A Title" ],
     StringContainsQ[ $measured[ "Lists", "Text" ], "An Author", IgnoreCase -> True ],
@@ -824,7 +828,7 @@ VerificationTest[
       "\\item" | "\\title" | "\\author" | "\\begin{abstract}" | "\\begin{enumerate}" ],
     StringCount[ $measured[ "Lists", "Text" ], "\\maketitle" ],
     StringContainsQ[ $measured[ "Lists", "Text" ], "XXX" ] },
-  { True, True, 1, True, False, 1, False }
+  { True, True, 1, True, False, 0, False }
 ]
 
 (* LaTeXPaperImport T9: the resolved counters. The definitions restart in the second subsection, the

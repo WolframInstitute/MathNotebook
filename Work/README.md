@@ -22,10 +22,20 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 ## Active
 
 [Import Display Defects](Active/ImportDisplayDefects.md) — the causal-graphs import round-trips
-byte-exact but displays wrong: `\textbf`/`\emph`/`\textit` render literally in 22 cells and the front
-matter shows raw TeX. T1 closed the bibliography alignment: every sheet's `Reference` reserves a
-185 pt gutter for the hanging `[key]` dingbat, `PlainArticle` carrying the geometry across, and
-labelled cells zero the style's hanging indent. Next: T2 (inline font commands).
+byte-exact but displays wrong. T1 closed the bibliography alignment (every sheet's `Reference` reserves
+a 185 pt gutter for the hanging `[key]` dingbat), T2 the literal `\textbf`/`\emph`/`\textit` (styled
+runs whose shape was chosen by what survives a save), and T3 the front matter: the title's `\vspace`
+prefix and the whole `\author` block ride in tagging rules while `\maketitle`, `\sloppy`,
+`\tableofcontents` and comment-only paragraphs produce **no cell at all** — carried as whitespace in
+the preceding cell's `"Separator"`, which is why that needed no export clause. Next: T5 (the citation
+face, from Pavel's screenshot), then T4 last, which is the only task needing him at a screen.
+
+[Palette and View UX](Active/PaletteAndViewUX.md) — the three things Pavel asked for that are not
+import defects: the palette's `Environments` group renamed (he rejected the name without giving one,
+so T1 is blocked on him), `Tag Cell` replaced by a button that inserts a `Reference` entry with
+`Insert Reference` becoming a picker over equations/theorems/literature, and inline math scaling with
+the math font size. That last cause is already known: an inline math island carries **no style name**,
+so it inherits the enclosing `Text` cell and no math-style override can reach it. Next: T2.
 
 [Basic Functionality Shakedown](Done/2026-07-28-BasicFunctionality.md) closed on 2026-07-28
 with all seven tasks done and **one clause outstanding that is Pavel's, not a session's**: applying a

@@ -168,9 +168,13 @@ $measured = Map[ specimenCensus, $specimens ]
    or front-matter command is left as literal text anywhere in its prose, and its 7 figures are 7 Input
    cells beside 7 captions. T7 left it untouched -- none of its 32 environments holds display math --
    and T8 is where it moves again: 130 cells became 169 as its title, author, date and abstract became
-   cells of their own and its 12 lists became 41 items. \maketitle is the one command left as prose, by
-   the decision that a command with no content has no notebook counterpart; it joins \sloppy and
-   \tableofcontents rather than being singled out.
+   cells of their own and its 12 lists became 41 items.
+
+   ImportDisplayDefects T3 takes it to 167. A paragraph that prints nothing produces no cell at all now
+   -- it is carried as whitespace in the preceding cell's "Separator" -- so the paper loses its
+   \maketitle/\sloppy Text cell and its commented-out %\printbibliography one. Two Text cells, and
+   nothing else in the census moves: the count is the only detector for a change of this shape, since
+   the round trip is exact either way and every environment, item and counter is untouched.
 
    Hodge is where T7 showed: 172 cells became 349 as 53 of its 55 display blocks were lifted out of
    theorem bodies, and 43 of its 72 unconvertible references found the cell they point at. T8 takes it
@@ -179,8 +183,16 @@ $measured = Map[ specimenCensus, $specimens ]
    tikzcd and an equation wrapping a gathered -- which are left as source deliberately. Of the 29
    references, 6 are at tables and the rest are at labels no cell carries: an align with two \labels
    keeps only the first, and a \label on its own line inside a body is not on the \begin line where
-   labelledCell reads it. The 6 literal \items are the three commented-out enumerate blocks, which must
-   stay literal: the comment mask in itemChunks is what keeps them out of the live lists.
+   labelledCell reads it. The literal \items are the commented-out enumerate blocks, which must stay
+   literal: the comment mask in itemChunks is what keeps them out of the live lists.
+
+   T3 takes hodgepaper to 368 by the same rule, and this is the paper that shows what the rule costs
+   and buys: 10 cells go, one of them inside a proof body, and the literal counts fall with them --
+   29 references to 26, 6 \items to 4 -- because a commented-out draft paragraph is no longer shown.
+   What is left of both is comments that share a paragraph with live prose, which still ride in its
+   cell. A comment-only paragraph that ends an environment body is the case to worry about, since it
+   would carry the \end{...}; environmentPieces folds trailing marks into the closing delimiter, so it
+   does not, and Document.wlt asserts that on a synthetic body rather than trusting these counts.
 
    T9 moves only the numbering keys and the counter count, not one cell or style: the causal paper
    declares four independent per-subsection counters, so all 32 of its environments carry one, while
@@ -191,10 +203,10 @@ $measured = Map[ specimenCensus, $specimens ]
 $expected = <|
   "Causal graphs" -> <|
     "Bytes" -> 36656,
-    "Cells" -> 169,
+    "Cells" -> 167,
     "Styles" -> <| "Abstract" -> 1, "Author" -> 1, "Caption" -> 7, "Construction" -> 2, "Date" -> 1,
       "Definition" -> 20, "DisplayFormula" -> 2, "Input" -> 7, "Item" -> 38, "ItemNumbered" -> 3,
-      "Reference" -> 14, "Section" -> 8, "Subsection" -> 11, "Text" -> 43, "Theorem" -> 10,
+      "Reference" -> 14, "Section" -> 8, "Subsection" -> 11, "Text" -> 41, "Theorem" -> 10,
       "Title" -> 1 |>,
     "Tagged" -> 39,
     "Buttons" -> 14,
@@ -210,14 +222,14 @@ $expected = <|
       "FrontMatter" -> 0 |> |>,
   "Hodge" -> <|
     "Bytes" -> 142877,
-    "Cells" -> 378,
+    "Cells" -> 368,
     "Styles" -> <| "Abstract" -> 1, "Author" -> 1, "Definition" -> 28, "DisplayFormula" -> 50,
       "DisplayFormulaNumbered" -> 33, "Example" -> 21, "ItemNumbered" -> 28, "Lemma" -> 14,
-      "Proof" -> 77, "Proposition" -> 7, "Remark" -> 13, "Section" -> 6, "Text" -> 87,
+      "Proof" -> 76, "Proposition" -> 7, "Remark" -> 13, "Section" -> 6, "Text" -> 78,
       "Theorem" -> 11, "Title" -> 1 |>,
     "Tagged" -> 84,
-    "Buttons" -> 240,
-    "Counters" -> 394,
+    "Buttons" -> 233,
+    "Counters" -> 389,
     "Environments" -> 71,
     "Lists" -> 11,
     "Headed" -> 71,
@@ -225,7 +237,7 @@ $expected = <|
     "ItemsHeaded" -> 31,
     "Numbering" -> <| "Numbered" -> 0, "Unnumbered" -> 4, "EquationNumbers" -> 33, "ItemFormats" -> 5,
       "Resets" -> 4 |>,
-    "Literal" -> <| "Reference" -> 29, "Citation" -> 0, "Graphics" -> 0, "Display" -> 2, "Item" -> 6,
+    "Literal" -> <| "Reference" -> 26, "Citation" -> 0, "Graphics" -> 0, "Display" -> 2, "Item" -> 4,
       "FrontMatter" -> 0 |> |> |>
 
 (* Both halves of the round trip: the pure core, and the same thing through the public wrapper and a

@@ -52,15 +52,17 @@ The census of the import is otherwise right: 169 cells, the ten `axiom`s styled 
   the exporter writes the command back from the run so the round trip of both specimens stays
   byte-exact and `Tests/Specimens.wlt`'s counts stay where they are. The styled run must survive
   `Export`/`NotebookOpen`/`NotebookGet` (the ButtonBox-splitting reopen is the precedent to check).
-- **R3 (front matter).** Decided with Pavel before implementation — the options trade editability
-  for display:
-  - Title: carry the `\vspace{…}` prefix in a tagging rule (the `FigurePrefix` shape) and display the
-    text alone; editing the title still reaches the export.
-  - Author: either display the raw block (status quo, editable) or store the block verbatim and
-    display the names alone (the `.bib` precedent: pretty, but notebook edits stop reaching the
-    `.tex`).
-  - `\maketitle`/`\sloppy` and comment-only paragraphs: leave visible as now, or give them a
-    dedicated dim/monospace style so they read as carried source rather than prose.
+- **R3 (front matter).** Decided by Pavel in Session 3, each option traded editability for display
+  and he took display every time:
+  - Title: the `\vspace{…}` prefix goes in a tagging rule and the cell displays the text alone.
+    Editing the title still reaches the export, because the prefix is a *prefix* and not the whole
+    argument.
+  - Author: the block is stored verbatim and the cell displays the names alone. This is the `.bib`
+    trade and it is accepted — an author edited in the notebook does **not** reach the `.tex`, which
+    is pinned by a test asserting the negative so a later session cannot mistake it for a bug.
+  - `\maketitle`/`\sloppy`/`\tableofcontents` and comment-only paragraphs: **no cell at all**, carried
+    verbatim on the neighbouring cell. Chosen over a dim/monospace style; they are invisible and
+    uneditable in the notebook.
 - Every fix lands in the paclet (`Document.wl` / `BuildStyleSheets.wls` + regenerated sheets), is
   bitten in a test before it is believed, and `main.nb` is re-imported at the end so Pavel sees the
   paper, not a patch.
@@ -79,15 +81,43 @@ goes ahead of everything above. Ask before T1.
 - The Complex Systems importer routing gap (recorded in `SubmissionBundle`).
 - Anything about the seven `Input` figure cells — designed behaviour.
 
+## Hand-off
+
+Pavel asked for four more things during Session 3 and told the session to continue without
+supervision, so they are queued rather than discussed:
+
+- **T5** below — the citation face, from his screenshot. Stays in this item: an imported
+  cross-reference rendering in the wrong face is an import display defect.
+- The other three are palette and view work, not import, and are `Work/Active/PaletteAndViewUX.md`:
+  the palette's `Environments` group must be renamed (he did not say to what — **needs-human** unless
+  the session's proposal is acceptable), `Tag Cell` goes and a Reference-entry button arrives with
+  `Insert Reference` becoming a picker over equations/theorems/literature, and inline math must scale
+  with the math font size.
+
+**T4 must stay last** and is the only task that needs him at a screen. His installed 0.1.16 predates
+T1, T2 and T3, so nothing he looks at now shows any of this.
+
+Still open from Session 0: whether a `Definition` cell in `main.nb` shows a bold `Definition 2.1.1.`
+label, which is `BasicFunctionality`'s outstanding by-name-stylesheet clause.
+
 ## Tasks
 
-- [ ] **T3 — Front matter display.** Settle R3's three decisions with Pavel, implement what he picks,
-  tests accordingly.
+- [ ] **T5 — Citation face matches the label it points at.** Pavel's screenshot shows a bold-serif
+  `Proposition 0.1.` dingbat above a cross-reference to it in a different face. `Citation` inherits
+  `Hyperlink` → `Link`, which brings `Default.nb`'s link face in with it. Measure the resolved faces
+  and pin `Citation`/`Hyperlink`/`URL` to the document face in all seven sheets, keeping the colours;
+  bite it in `StyleSheets.wlt` and measure it in `FrontEnd.wlt`.
 - [ ] **T4 — Re-import and confirm.** Re-import `main.tex` over `main.nb` with the fixed paclet,
   Pavel reads the paper on screen; record his by-name stylesheet answer in `CLAUDE.md` and close
   `BasicFunctionality`'s outstanding clause if it resolves.
 
 ### Done
+
+- [x] **T3 — Front matter display** (Session 3). All three R3 decisions taken by Pavel and
+  implemented: the title's `\vspace` prefix in `"CommandPrefix"`, the `\author` block verbatim in
+  `"CommandTeX"` with the names displayed, and `\maketitle`/`\sloppy`/`\tableofcontents`/comment-only
+  paragraphs carried as whitespace with no cell at all. Byte-exact on both specimens and all four
+  samples; census updated; three bites confirmed.
 
 - [x] **T2 — Inline font commands** (Session 2). `\textbf`/`\textit`/`\emph` → styled runs split
   before inline math, plain args as native `StyleBox`, rich args as inline `Cell` islands (the shape
@@ -189,3 +219,32 @@ goes ahead of everything above. Ask before T1.
 - **Next:** T3 needs Pavel's three R3 decisions before any code; T4 rebuilds and installs the paclet
   (his 0.1.16 predates both T1 and T2) and re-imports `main.tex`, and should record his answer to
   the Definition-dingbat/by-name-stylesheet question.
+
+### Session 3 — 2026-07-29 — T3
+
+- **Prompt:** `/next-session`, then Pavel's three R3 answers, then four further requests and "please
+  continue doing all work items without my supervision".
+- **Did:** Probed both specimens' front matter first so the three decisions were asked with real
+  options on the table, and he took the pretty end of each trade. The title carries its
+  `\vspace{-1.5cm}` in a `"CommandPrefix"` tagging rule and displays its text; the `\author` block —
+  a comment and three brace groups, the paper's second line — rides verbatim in `"CommandTeX"` and
+  the cell shows `Carlos Zapata-Carratala, Pavel Hajek, Nicolay Murzin`; `\maketitle`, `\sloppy`,
+  `\tableofcontents` and comment-only paragraphs produce **no cell**. The third of those is the one
+  worth recording as design: a vanished paragraph becomes a `separatorMark` carrying its own source,
+  which lands in the preceding cell's `"Separator"` — a rule that already holds arbitrary source — so
+  it needed **no export clause at all** and the export stayed a plain `StringJoin`. Only content-free
+  commands are listed, which is why `\printbibliography` is absent despite the specimen carrying one.
+  Both specimens and all four samples round-trip byte for byte. The census moved and was re-measured
+  rather than guessed: causal graphs 169 → 167 cells, hodgepaper 378 → 368 with its literal counts
+  falling too (29 references → 26, 6 `\item`s → 4) because commented-out draft paragraphs are no
+  longer shown. Suite 279 → 286, green.
+- **Learned:** Two findings beyond the mechanism. `environmentPieces` already handles the case that
+  would have lost source — a carried paragraph *ending* an environment body would be the cell holding
+  the `\end{…}`, and it folds trailing marks into the closing delimiter instead; both specimens
+  round-trip byte-exact whether or not that works, so it is asserted on a synthetic body in
+  `Document.wlt`. And the second bite showed the census's blind spot from a new direction: disabling
+  the Author clause left `Specimens.wlt` **fully green** while `Document.wlt` failed three, because a
+  change to what a cell *contains* moves no count. The `FrontEnd.wlt` `\maketitle` clause inverted
+  from 1 to 0 and is now the only assertion that a carried paragraph is really invisible — a cell
+  count says a cell is gone, only a rendered page says nothing was drawn in its place.
+- **Next:** T5 (citation face), then `PaletteAndViewUX`, then T4 last.

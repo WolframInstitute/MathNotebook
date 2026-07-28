@@ -276,6 +276,49 @@ $braceGroup = "{" ~~ ( Except[ "{" | "}" ] | ( "{" ~~ Except[ "{" | "}" ] ... ~~
 
 $braceBody = ( Except[ "{" | "}" ] | $braceGroup ) ...
 
+(* Commands that print nothing. A paragraph made only of these and of comments is carried rather than
+   shown (Pavel's R3 call), and a leading run of them is taken off the front of a front-matter
+   argument — which is what gets \vspace{-1.5cm} out of the specimen's title. Only content-free
+   commands may be listed: \printbibliography prints a bibliography and would be hidden along with
+   it, which is why it is absent despite the specimen carrying one, commented out. *)
+$carriedCommands = { "maketitle", "sloppy", "fussy", "tableofcontents", "listoffigures",
+  "listoftables", "clearpage", "newpage", "pagebreak", "noindent", "bigskip", "medskip",
+  "smallskip", "centering", "raggedright" }
+
+$carriedArgumentCommands = { "vspace*", "vspace", "hspace*", "hspace" }
+
+(* Built at call time rather than stored, because $braceBody has to be defined when it is used. *)
+carriedToken[ ] :=
+  ( "\\" ~~ Alternatives @@ $carriedCommands ) |
+    ( "\\" ~~ Alternatives @@ $carriedArgumentCommands ~~ "{" ~~ $braceBody ~~ "}" )
+
+carriedSourceQ[ text_String ] :=
+  StringMatchQ[ text, ( WhitespaceCharacter | ( "%" ~~ Except[ "\n" ] ... ) | carriedToken[ ] ) .. ]
+
+(* The prefix must hold at least one command and not merely whitespace, or every argument that opens
+   with a space would acquire a tagging rule it does not need and every pinned cell would change. *)
+commandPrefix[ title_String ] :=
+  Replace[
+    StringCases[ title,
+      StartOfString ~~
+        prefix : ( ( WhitespaceCharacter ... ~~ carriedToken[ ] ) .. ~~ WhitespaceCharacter ... ) ~~
+        body___ :> { prefix, body }, 1 ],
+    { { pair_List } :> pair, _ :> { "", title } } ]
+
+(* The names inside an \author block. authblk writes one brace group per author — the specimen writes
+   three of them in one block, under a comment — while a plain class writes the name bare with \and
+   between several. The brace route is taken only when the block is *nothing but* brace groups, or a
+   \thanks{...} inside a bare name would be read as the author. Comments are masked to spaces rather
+   than deleted so a name never joins the one below it. *)
+authorNames[ block_String ] :=
+  With[ { text = StringTrim @ uncommented[ block ] },
+    StringRiffle[
+      Map[ StringTrim,
+        If[ StringMatchQ[ text, ( WhitespaceCharacter | $braceGroup ) .. ],
+          StringCases[ text, "{" ~~ inner : $braceBody ~~ "}" :> inner ],
+          StringSplit[ text, "\\and" ] ] ],
+      ", " ] ]
+
 environmentRules[ numbering_Association, depth_Integer ] :=
   Map[ name |->
       ( StartOfLine ~~ indent : ( " " | "\t" ) ... ~~ ( "\\begin{" <> name <> "}" ) ~~
@@ -284,9 +327,25 @@ environmentRules[ numbering_Association, depth_Integer ] :=
         environmentCell[ numbering, depth, name, indent, title, trailing, inner, closingIndent ] ),
     Keys[ numbering ] ]
 
+(* An \author block is stored verbatim and the cell shows the names alone — Pavel's R3 call, and the
+   .bib trade comes with it: an author edited in the notebook does not reach the .tex. Displayed raw
+   it was the paper's second line, three brace groups under a comment. *)
+sectionCell[ "Author", indent_String, title_String, trailing_String ] :=
+  Cell[ inlineContent @ authorNames[ title ], "Author",
+    TaggingRules -> <| "MathNotebook" ->
+      <| "Indent" -> indent, "CommandTeX" -> title, "Trailing" -> trailing |> |> ]
+
+(* A leading run of content-free layout commands is carried, so the title displays as its text. It is
+   a prefix and not the whole argument, which is what keeps the title editable: an edit still reaches
+   the .tex, where the Author block's does not. The key is written only when there is one. *)
 sectionCell[ style_String, indent_String, title_String, trailing_String ] :=
-  Cell[ inlineContent[ title ], style,
-    TaggingRules -> <| "MathNotebook" -> <| "Indent" -> indent, "Trailing" -> trailing |> |> ]
+  Module[ { prefix, body },
+    { prefix, body } = commandPrefix[ title ];
+    Cell[ inlineContent[ body ], style,
+      TaggingRules -> <| "MathNotebook" -> Join[
+        <| "Indent" -> indent |>,
+        If[ prefix === "", <| |>, <| "CommandPrefix" -> prefix |> ],
+        <| "Trailing" -> trailing |> ] |> ] ]
 
 (* An environment body is split exactly as the document body is — the same display-math lift, the
    same recursion into a nested environment — so a theorem holding three equations becomes seven
@@ -936,9 +995,15 @@ blockPieces[ paragraph_String ] :=
   Flatten @ Map[ Replace[ { chunk_String :> textPieces[ chunk ], cell_Cell :> { cell, separatorMark[ "" ] } } ],
     mergeStrings @ splitDisplayMath[ paragraph ] ]
 
+(* A paragraph that prints nothing produces no cell: it becomes a separatorMark holding its own
+   source verbatim, which is why this needs no export clause at all — the "Separator" tagging rule
+   already carries arbitrary source, joinMarks concatenates it into the preceding cell's trailing
+   whitespace, and a body-initial one lands in "BodyPrefix". \maketitle, \sloppy, \tableofcontents
+   and a comment-only paragraph are the specimens' cases; they are invisible and uneditable in the
+   notebook, which is the display Pavel chose over keeping them editable. *)
 textPieces[ chunk_String ] :=
   With[ { core = StringTrim[ chunk ] },
-    If[ core === "",
+    If[ core === "" || carriedSourceQ[ core ],
       { separatorMark[ chunk ] },
       { separatorMark @ First[ StringCases[ chunk, StartOfString ~~ space : WhitespaceCharacter .. :> space, 1 ], "" ],
         Cell[ inlineContent[ core ], "Text" ],
@@ -1165,9 +1230,15 @@ referenceTeX[ ButtonBox[ boxes_, ___, ButtonData -> key_String, ___ ] ] /; FreeQ
   citationTeX[ boxes, key ]
 
 (* The style name lowercased is the command, which is what commandRules matched, so the six styles
-   whose whole content is a braced argument share one clause. *)
+   whose whole content is a braced argument share one clause.
+   A stored "CommandTeX" is the whole argument, carried verbatim because the cell shows something
+   else (the Author block); a "CommandPrefix" is a leading run of layout commands with the cell still
+   owning the rest. One clause reads both rather than two clauses differing by a condition, which WL
+   is free to order either way. *)
 cellToLaTeX[ cell : Cell[ _, "Section" | "Subsection" | "Subsubsection" | "Title" | "Author" | "Date", ___ ] ] :=
-  cellTagging[ cell, "Indent" ] <> "\\" <> ToLowerCase[ cell[[ 2 ]] ] <> "{" <> cellTeXText[ cell ] <> "}" <>
+  cellTagging[ cell, "Indent" ] <> "\\" <> ToLowerCase[ cell[[ 2 ]] ] <> "{" <>
+    Replace[ cellTagging[ cell, "CommandTeX" ],
+      "" :> cellTagging[ cell, "CommandPrefix" ] <> cellTeXText[ cell ] ] <> "}" <>
     cellTrailing[ cell ]
 
 (* The Reference cells of a .bib bibliography are not in the .tex; the commands that pulled them in

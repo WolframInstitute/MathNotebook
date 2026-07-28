@@ -492,18 +492,42 @@ $frontSource = $preamble <> "\\begin{document}\n\n\\title{\\vspace{-1cm}A Paper}
 
 $frontNotebook = latexToNotebook[ $frontSource ]
 
-(* \maketitle is the one front-matter command left as prose: it has no content, so it has no notebook
-   counterpart, and hiding it while \sloppy and \tableofcontents stay visible would be arbitrary. *)
+(* ImportDisplayDefects T3. \maketitle prints nothing, so it produces no cell at all: there is no
+   Text cell between Date and Abstract any more. *)
 VerificationTest[
   Map[ #[[ 2 ]] &, First @ $frontNotebook ],
-  { "Title", "Author", "Date", "Text", "Abstract", "Abstract", "Section" }
+  { "Title", "Author", "Date", "Abstract", "Abstract", "Section" }
 ]
 
 (* A braced argument is matched brace-balanced, not up to the first "}", or the specimen's
-   \title{\vspace{-1.5cm}...} would have been cut in half; \date{} is the empty case. *)
+   \title{\vspace{-1.5cm}...} would have been cut in half; \date{} is the empty case. What the three
+   cells now *display* is the content alone — the \vspace off the title, the names out of the block. *)
 VerificationTest[
   Cases[ First @ $frontNotebook, Cell[ content_, "Title" | "Author" | "Date", ___ ] :> content ],
-  { "\\vspace{-1cm}A Paper", "\n% a comment\n{First Author}\n", "" }
+  { "A Paper", "First Author", "" }
+]
+
+$frontTagging[ style_ ] :=
+  FirstCase[ First @ $frontNotebook,
+    Cell[ _, style, ___, TaggingRules -> <| "MathNotebook" -> tagging_Association |>, ___ ] :> tagging,
+    <| |> ]
+
+(* The two carried shapes differ in who owns the rest of the argument. A "CommandPrefix" is a leading
+   run of content-free layout commands with the cell still owning the text; a "CommandTeX" is the
+   whole argument, because the cell displays something else. *)
+VerificationTest[
+  { Lookup[ $frontTagging[ "Title" ], "CommandPrefix", None ],
+    Lookup[ $frontTagging[ "Author" ], "CommandTeX", None ],
+    Lookup[ $frontTagging[ "Title" ], "CommandTeX", None ] },
+  { "\\vspace{-1cm}", "\n% a comment\n{First Author}\n", None }
+]
+
+(* The vanished paragraph needs no export clause because it is carried as *whitespace*: it lands in
+   the preceding cell's "Separator", which already holds arbitrary source, and the export is still a
+   plain StringJoin. *)
+VerificationTest[
+  Lookup[ $frontTagging[ "Date" ], "Separator", None ],
+  "\n\n\\maketitle\n\n"
 ]
 
 (* The abstract is a block like a theorem: only its first cell is headed, so the style's "Abstract. "
@@ -522,8 +546,61 @@ VerificationTest[ (* the cell owns its content, so retitling the notebook reache
   StringContainsQ[
     notebookToLaTeX @ Notebook[ Replace[ First @ $frontNotebook,
       Cell[ _, "Title", options___ ] :> Cell[ "Renamed", "Title", options ], { 1 } ] ],
-    "\\title{Renamed}" ],
+    "\\title{\\vspace{-1cm}Renamed}" ],
   True
+]
+
+(* The other half of the trade Pavel took: the Author block is carried verbatim, so the names in the
+   cell are decorative and editing them does NOT reach the .tex. Pinned deliberately — it is the .bib
+   asymmetry, and a later session "fixing" it would be reversing a decision, not repairing a bug. *)
+VerificationTest[
+  StringContainsQ[
+    notebookToLaTeX @ Notebook[ Replace[ First @ $frontNotebook,
+      Cell[ _, "Author", options___ ] :> Cell[ "Someone Else", "Author", options ], { 1 } ] ],
+    "Someone Else" ],
+  False
+]
+
+(* Every carried shape, in one paragraph each, against a source that has nothing else in it: a bare
+   command, several on one line, a braced-argument one, and a comment-only block. All four print
+   nothing, so the body is one Section cell and the source comes back whole. *)
+$carriedSource = $preamble <> "\\begin{document}\n\n\\maketitle\n\n\\sloppy \\noindent\n\n\\vspace*{2pt}\n\n% just a comment\n% and a second line\n\n\\section{Body}\n\n\\end{document}\n"
+
+VerificationTest[
+  { Map[ #[[ 2 ]] &, First @ latexToNotebook[ $carriedSource ] ],
+    notebookToLaTeX[ latexToNotebook[ $carriedSource ] ] === $carriedSource },
+  { { "Section" }, True }
+]
+
+(* A paragraph that merely *opens* with a layout command is prose and must survive as a cell — the
+   check that the carried test is a whole-paragraph test and not a prefix test. *)
+VerificationTest[
+  Map[ #[[ 2 ]] &, First @ latexToNotebook[
+    $preamble <> "\\begin{document}\n\n\\noindent Real prose.\n\n\\end{document}\n" ] ],
+  { "Text" }
+]
+
+(* The case the specimen census cannot see, and the one that would lose source: a carried paragraph
+   that ENDS an environment body would be the cell carrying the \end{...}. environmentPieces takes the
+   body between its first and last actual Cell and folds every trailing mark into the closing
+   delimiter, so the theorem still closes and the comment still comes back. Both specimens round-trip
+   byte for byte with this broken, which is why it is asserted here. *)
+$trailingCarriedSource = $preamble <> "\\begin{document}\n\n\\begin{defn}\nA claim.\n\n% a commented-out draft\n\\end{defn}\n\n\\end{document}\n"
+
+VerificationTest[
+  { Map[ #[[ 2 ]] &, First @ latexToNotebook[ $trailingCarriedSource ] ],
+    notebookToLaTeX[ latexToNotebook[ $trailingCarriedSource ] ] === $trailingCarriedSource },
+  { { "Definition" }, True }
+]
+
+(* And a body that is nothing BUT carried source has no cell to hang the delimiters on at all, which
+   is environmentPieces' empty-body branch: one empty cell carries the whole environment. *)
+$emptyCarriedSource = $preamble <> "\\begin{document}\n\n\\begin{defn}\n% only a comment\n\\end{defn}\n\n\\end{document}\n"
+
+VerificationTest[
+  { Map[ #[[ 2 ]] &, First @ latexToNotebook[ $emptyCarriedSource ] ],
+    notebookToLaTeX[ latexToNotebook[ $emptyCarriedSource ] ] === $emptyCarriedSource },
+  { { "Definition" }, True }
 ]
 
 $listSource = $preamble <> "\\begin{document}\n\n\\begin{itemize}\n    \\item First with $x^2$.\n    \\item Second.\n\n      A second paragraph.\n\\end{itemize}\n\n\\begin{enumerate}\n\\item[(E)] Labelled.\n\\item Plain.\n\\end{enumerate}\n\n\\end{document}\n"
