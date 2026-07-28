@@ -123,3 +123,29 @@ VerificationTest[
       "Reference", "Text", "Title" },
     { } }
 ]
+
+
+(* BasicFunctionality T6: the record GoBack follows is written by the sheets, not by the kernel, and a
+   click made with nothing selected left SelectedCells[] empty — a bare First then stored an
+   unevaluated First[{}], which is a record no guard can follow. Every sheet that declares Hyperlink
+   must carry the default and none may carry the bare form. A click cannot be driven headless, so the
+   generated artifact is the only thing there is to assert.
+
+   Both patterns are wrapped in HoldPattern: written bare, SelectedCells[] would evaluate as the test
+   file is read — and First[ SelectedCells[], None ] would then quietly answer None, matching nothing.
+   Getting a sheet does not evaluate the button function either, RuleDelayed holding its right side. *)
+$hyperlinkSheets = FileNames[ "*.nb", $styleSheetDirectory ];
+
+VerificationTest[
+  Length[ $hyperlinkSheets ],
+  7
+]
+
+VerificationTest[
+  Map[
+    { file } |-> With[ { sheet = Get[ file ] },
+      { ! FreeQ[ sheet, HoldPattern[ First[ SelectedCells[ ], None ] ] ],
+        FreeQ[ sheet, HoldPattern[ First[ SelectedCells[ ] ] ] ] } ],
+    $hyperlinkSheets ],
+  ConstantArray[ { True, True }, Length[ $hyperlinkSheets ] ]
+]

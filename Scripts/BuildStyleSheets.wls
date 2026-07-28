@@ -233,8 +233,12 @@ baseStyleSheet[] := Notebook[ Flatten @ {
   Cell[ StyleData[ "Hyperlink", StyleDefinitions -> StyleData[ "Link" ] ],
     ContextMenu -> FEPrivate`FrontEndResource[ "ContextMenus", "Hyperlink" ],
     FontColor -> RGBColor[ 0, 0, 0.7 ],
+    (* BasicFunctionality T6: a click made with nothing selected leaves SelectedCells[] empty, and a
+       bare First then stored an unevaluated First[{}] in $LastHyperlinkCell — a record written wrong
+       at the source, which GoBack could only report and never follow. The default makes the empty
+       case a plain None, which is what GoBack's guard is written for. *)
     ButtonBoxOptions -> {
-      ButtonFunction :> ( ( WolframInstitute`MathNotebook`$LastHyperlinkCell = First[ SelectedCells[] ];
+      ButtonFunction :> ( ( WolframInstitute`MathNotebook`$LastHyperlinkCell = First[ SelectedCells[], None ];
         FrontEndExecute[ { NotebookLocate[ #2, "OpenInNewWindow" -> CurrentValue[ "HyperlinkModifierKey" ] ] } ] ) & ),
       Evaluator -> "Local", Method -> "Queued" } ],
 
