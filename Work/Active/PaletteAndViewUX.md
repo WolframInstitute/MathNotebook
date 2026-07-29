@@ -332,7 +332,8 @@ scope: these act on selected cells where every group above acts on the document.
 - **Prompt:** the same run.
 - **Did:** Usage strings for the two new symbols, both declared in `PacletInfo.wl`, two reference
   pages transformed from siblings (`InsertCitation` → `InsertReference`, `LabelReferences` →
-  `SortBibliography`), the tutorial rewritten in eleven passages, 0.1.18.
+  `SortBibliography`), the tutorial rewritten in eleven passages, and **0.1.19** published — 0.1.18 
+went out first and was superseded within the session by the defect below.
 - **Learned:** Four things, three of them costly.
   - **A blanket `s_String :> StringReplace[s, …]` over a reference page inserts UNEVALUATED calls
     into the examples section.** `ReplaceAll` puts its right-hand side in place unevaluated, and the
@@ -354,4 +355,12 @@ scope: these act on selected cells where every group above acts on the document.
     paragraph, both dropped conversion buttons in four places, `Tag cell`, and `Render`/`Restore`.
     `Tests/Palette.wlt` reads the palette and no test reads the tutorial, so this is `.wlt`-invisible
     exactly as `Scripts/RegenerateUsage.wls`'s audit found the reference pages to be.
+  - **Driving the INSTALLED paclet found a defect no kernel test had.** Two inserts into a fresh
+    notebook and the citation chooser offered `MathNotebookBibliography` — the anchor's own marker
+    tag — as a citable block beside the two keys. Nothing had ever run `citationChoices` over a
+    notebook that `InsertReference` had *built*: T4's fixtures were hand-written and carried no
+    anchor, and T3's tests never asked what the chooser would show. Two features correct in
+    isolation, wrong in composition, and the smoke test is what crossed them. Fixed, pinned, and
+    0.1.19 published over it rather than 0.1.18 being replaced in place, since a same-version
+    republish is invisible to `UpdateMathNotebook`.
 - **Next:** the item's remaining clause is Pavel's — reading the palette on a real paper.

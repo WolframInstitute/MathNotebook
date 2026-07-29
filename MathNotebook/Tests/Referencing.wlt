@@ -423,3 +423,12 @@ VerificationTest[
     Cell[ "Lott.", "Reference", CellTags -> "lott" ] } ],
   <| "Uncited" -> { "lott" }, "Dangling" -> { "ghost" } |>
 ]
+
+(* The bibliography anchor's tag is a marker, not a citation target. Found by driving the installed
+   0.1.18: two inserts into a fresh notebook and the chooser offered "MathNotebookBibliography"
+   beside the two keys. No kernel test had covered a notebook that InsertReference had built. *)
+VerificationTest[
+  Map[ #[ "Tag" ] &,
+    citationChoices @ insertReferenceCells[ insertReferenceCells[ $paper, "a" ], "b" ] ],
+  { "a", "b" }
+]

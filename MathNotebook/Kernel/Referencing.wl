@@ -93,10 +93,15 @@ citationChoices[ notebook_ ] :=
 $literatureGroup = "Literature"
 $blockGroup = "Blocks"
 
+(* The bibliography anchor's tag is a marker for SortBibliography and not a citation target, so it
+   is dropped here — found by driving the installed 0.1.18, where "MathNotebookBibliography" was
+   offered as a citable block. Nothing else in the notebook carries a tag it did not ask for. *)
 citationChoice[ cell : Cell[ _, style_String, ___ ] ] :=
   Map[ tag |-> <| "Tag" -> tag, "Style" -> style,
       "Group" -> If[ style === "Reference", $literatureGroup, $blockGroup ] |>,
-    Cases[ Flatten @ { Cases[ cell, ( CellTags -> tags_ ) :> tags, { 1 } ] }, _String ] ]
+    DeleteCases[
+      Cases[ Flatten @ { Cases[ cell, ( CellTags -> tags_ ) :> tags, { 1 } ] }, _String ],
+      $bibliographyAnchorTag ] ]
 
 citationChoice[ _ ] :=
   { }
