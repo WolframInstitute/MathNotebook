@@ -46,7 +46,7 @@ dialog and not a palette combobox because the palette needs no kernel to display
 *travelling* one; **T6** the palette rebuilt as six groups — `Blocks`, `Referencing`, `Selection`,
 `Document view`, `Import & Export`, `Setup` — losing `Tag cell` and the two per-selection LaTeX
 buttons and gaining a tooltip on all 24 items; **T7** two reference pages, eleven stale passages of the
-tutorial, and the release. Suite 292 → 327. The one clause left is Pavel's: reading the palette on a
+tutorial, and the release. Suite 292 → 329. The one clause left is Pavel's: reading the palette on a
 real paper.
 
 [Basic Functionality Shakedown](Done/2026-07-28-BasicFunctionality.md) closed on 2026-07-28

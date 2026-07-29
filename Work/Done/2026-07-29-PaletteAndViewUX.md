@@ -283,7 +283,7 @@ session's: reading the reorganized palette on a real paper.
   recorded `"Separator"`, which describes a gap at a place in the source rather than anything about
   the entry before it. Travelling: the cell's own `\bibitem` marker, text, tag and dingbat. A `.bib`
   paper is pinned at both ends — its last cell carries the `\bibliography` commands verbatim, so it
-  stays last and the rest sort around it. Suite 314 → 323.
+  stays last and the rest sort around it. Suite 314 → 325.
 - **Learned:** Three things.
   - **The first entry's opening and its own `\bibitem` are one string**, because
     `environmentOpened` composes them rather than keeping two keys, so the sort has to tell them
@@ -310,7 +310,7 @@ session's: reading the reorganized palette on a real paper.
   `Refresh labels` and `Sort bibliography` arrived. `LabelReferences` had been exported since the
   first release and reachable from nothing — dropping `Tag cell` is what made it necessary, since
   the front end's own Cell Tags menu sets a tag and not the `[key]` label. A tooltip on all 24
-  items, where seven had one. Suite 323 → 326.
+  items, where seven had one. Suite 325 → 328.
 - **Learned:** Three things.
   - **A group that moves is as invisible as a group that was renamed**, which is T1's finding one
     level up: the heading assertions T1 added would all have passed with the groups shuffled into
@@ -364,5 +364,10 @@ went out first and was superseded within the session by the defect below.
     anchor, and T3's tests never asked what the chooser would show. Two features correct in
     isolation, wrong in composition, and the smoke test is what crossed them. Fixed, pinned, and
     0.1.19 published over it rather than 0.1.18 being replaced in place, since a same-version
-    republish is invisible to `UpdateMathNotebook`.
+    republish is invisible to `UpdateMathNotebook`. Suite 328 → 329.
+  - **The running suite counts in the T5–T7 commit messages are wrong by two**, the arithmetic
+    having drifted at T5 and every later figure inheriting it. The progression is
+    292 → 306 → 314 → 325 → 328 → **329**; those commit messages stand as written and this is the
+    record that is read. A count is a detector in this repo, so it is worth reading off the run
+    rather than adding up in your head.
 - **Next:** the item's remaining clause is Pavel's — reading the palette on a real paper.
