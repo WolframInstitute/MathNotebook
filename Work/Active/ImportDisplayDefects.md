@@ -100,9 +100,11 @@ label, which is `BasicFunctionality`'s outstanding by-name-stylesheet clause.
 
 ## Tasks
 
-- [ ] **T4 — Re-import and confirm.** Re-import `main.tex` over `main.nb` with the fixed paclet,
-  Pavel reads the paper on screen; record his by-name stylesheet answer in `CLAUDE.md` and close
-  `BasicFunctionality`'s outstanding clause if it resolves.
+- [ ] **T4 (the reading half) — Pavel reads `main.nb` on screen.** The paclet is built, installed as
+  0.1.17 and the paper re-imported through it (Session 5); what is left is his eyes. The question to
+  answer while he is there: does a `Definition` cell show a bold `Definition 2.1.1.` label? That is
+  `BasicFunctionality`'s outstanding by-name-stylesheet clause, and `main.nb` asks for
+  `PlainArticle.nb` **by name** — the one resolution path this repo cannot verify headless.
 
 ### Done
 
@@ -274,3 +276,21 @@ label, which is `BasicFunctionality`'s outstanding by-name-stylesheet clause.
   — behave differently and only the third had ever been driven. `"Selected" -> False` is pinned
   deliberately, because writing over a genuine selection is what every editor does.
 - **Next:** `PaletteAndViewUX` T2 (inline math size), then T4 last.
+
+### Session 5 — 2026-07-29 — T4 (the building half)
+
+- **Prompt:** "I go ahead for install and re-import."
+- **Did:** Bumped to 0.1.17, staged exactly what `PublishPaclet.wls` stages (`PacletInfo.wl`, `Kernel`,
+  `FrontEnd`, `Assets`, `Tests`, `Documentation`), archived, installed with `ForceVersionInstall`, and
+  re-imported `main.tex` over `main.nb` **through the installed paclet rather than the working tree** —
+  deliberately, since a `PacletDirectoryLoad` would have hidden any staging or install fault. 0.1.17 is
+  now the only installed version. The previous `main.nb` is kept as `main-before-0.1.17.nb`.
+- **Measured on the result:** 167 cells, round trip byte-exact, sheet `PlainArticle.nb`. Zero literal
+  `\textbf`/`\emph`/`\textit` anywhere. The title displays its text with `\vspace{-1.5cm}` in
+  `"CommandPrefix"`, the author cell shows the three names with the block in `"CommandTeX"`, and
+  `\maketitle`/`\sloppy` sit in the `Date` cell's `"Separator"` with no cell of their own — each of those
+  three commands occurring exactly **once** in the file, all three inside tagging rules and none in
+  displayed content. 238 inline math islands carry the new `"InlineFormula"` style, so the math slider
+  reaches them. 14 `Reference` cells carry the hanging `[key]` dingbat against T1's 185 pt gutter.
+- **Next:** nothing here is a session's work — only Pavel reading the paper, and the by-name stylesheet
+  question he answers by looking at a `Definition` label.
