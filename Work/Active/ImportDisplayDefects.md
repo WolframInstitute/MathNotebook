@@ -83,20 +83,22 @@ goes ahead of everything above. Ask before T1.
 
 ## Hand-off
 
-Pavel asked for four more things during Session 3 and told the session to continue without
-supervision, so they were queued rather than discussed. The first is done (T5, Session 4 — and the
-answer was that the stylesheets were never at fault). The other three are palette and view work, not
-import, and live in `Work/Active/PaletteAndViewUX.md`:
-  the palette's `Environments` group must be renamed (he did not say to what — **needs-human** unless
-  the session's proposal is acceptable), `Tag Cell` goes and a Reference-entry button arrives with
-  `Insert Reference` becoming a picker over equations/theorems/literature, and inline math must scale
-  with the math font size.
+Everything in this item is done except Pavel's own reading of `main.nb`.
 
-**T4 must stay last** and is the only task that needs him at a screen. His installed 0.1.16 predates
-T1, T2 and T3, so nothing he looks at now shows any of this.
+The four extra requests he made in Session 3 are all closed: the citation face became T5 here (and the
+answer was that the stylesheets were never at fault), and the other three were palette and view work,
+which is `Work/Active/PaletteAndViewUX.md` — the group is now **`Blocks`** at his choice, and inline
+mathematics follows the math slider. What is left there is the Reference-entry button and the
+`Insert Reference` picker, neither started, neither blocked on him.
 
-Still open from Session 0: whether a `Definition` cell in `main.nb` shows a bold `Definition 2.1.1.`
-label, which is `BasicFunctionality`'s outstanding by-name-stylesheet clause.
+**0.1.17 is installed** (Session 5) and is the only installed version, so what he opens now really does
+carry T1, T2, T3, T5 and the inline-math control. `main.nb` was re-imported through the installed
+paclet, not the working tree. The previous file is kept beside it as `main-before-0.1.17.nb`.
+
+The one question for him, answerable by looking: does a `Definition` cell show a bold
+`Definition 2.1.1.` label? `main.nb` asks for `PlainArticle.nb` **by name**, which is the resolution
+path this repo cannot verify headless, so a *plain* label means the notebook fell back to `Default.nb`
+and `BasicFunctionality`'s outstanding clause is a real defect rather than a measurement gap.
 
 ## Tasks
 

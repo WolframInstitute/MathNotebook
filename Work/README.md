@@ -21,24 +21,27 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 
 ## Active
 
-[Import Display Defects](Active/ImportDisplayDefects.md) — the causal-graphs import round-trips
-byte-exact but displays wrong. T1 closed the bibliography alignment (every sheet's `Reference` reserves
-a 185 pt gutter for the hanging `[key]` dingbat), T2 the literal `\textbf`/`\emph`/`\textit` (styled
-runs whose shape was chosen by what survives a save), and T3 the front matter: the title's `\vspace`
-prefix and the whole `\author` block ride in tagging rules while `\maketitle`, `\sloppy`,
-`\tableofcontents` and comment-only paragraphs produce **no cell at all** — carried as whitespace in
-the preceding cell's `"Separator"`, which is why that needed no export clause. T5 closed Pavel's
-"the fonts are different" screenshot by **disproving** its own hypothesis: a `Citation` run already
-renders in its cell's face, and the culprit was `InsertCitation` at a cell-bracket selection, which
-destroyed the cell's content and left a `BoxData` cell that renders in the box face — one bug wearing
-two symptoms. Next: T4, the only task needing him at a screen.
+[Import Display Defects](Active/ImportDisplayDefects.md) — the causal-graphs import round-tripped
+byte-exact but displayed wrong, and all five defects are now fixed. T1 the bibliography alignment (a
+185 pt gutter for the hanging `[key]` dingbat), T2 the literal `\textbf`/`\emph`/`\textit` (styled runs
+whose shape was chosen by what survives a save), T3 the front matter (the title's `\vspace` prefix and
+the whole `\author` block in tagging rules; `\maketitle`, `\sloppy` and comment-only paragraphs produce
+**no cell at all**, carried as whitespace in the preceding cell's `"Separator"`, which is why that
+needed no export clause). T5 closed Pavel's "the fonts are different" screenshot by **disproving** its
+own premise: a `Citation` run already renders in its cell's face, and the culprit was `InsertCitation`
+at a cell-bracket selection, which destroyed the cell's content and left a `BoxData` cell rendering in
+the box face — one silent bug wearing two symptoms. **0.1.17 is installed and `main.nb` re-imported
+through it.** All that remains is Pavel reading the paper, and answering the by-name stylesheet question
+by looking at whether a `Definition` label is bold.
 
-[Palette and View UX](Active/PaletteAndViewUX.md) — the three things Pavel asked for that are not
-import defects: the palette's `Environments` group renamed (he rejected the name without giving one,
-so T1 is blocked on him), `Tag Cell` replaced by a button that inserts a `Reference` entry with
-`Insert Reference` becoming a picker over equations/theorems/literature, and inline math scaling with
-the math font size. That last cause is already known: an inline math island carries **no style name**,
-so it inherits the enclosing `Text` cell and no math-style override can reach it. Next: T2.
+[Palette and View UX](Active/PaletteAndViewUX.md) — the three requests that were not import defects.
+T1 renamed the palette's `Environments` group to **`Blocks`** (his choice) and, in doing so, found that
+nothing in the suite watched the group headings at all. T2 made inline mathematics follow the math
+slider: the island is styled `"InlineFormula"`, which resolves through the chain as `1.05*Inherited`, and
+the control scales that **ratio** rather than writing a size — so inline mathematics follows the slider
+*and* keeps tracking the cell it sits in, which an absolute size destroys. Next: the Reference-entry
+button replacing `Tag Cell`, and `Insert Reference` becoming a picker over equations, theorems and
+literature. Neither is blocked.
 
 [Basic Functionality Shakedown](Done/2026-07-28-BasicFunctionality.md) closed on 2026-07-28
 with all seven tasks done and **one clause outstanding that is Pavel's, not a session's**: applying a
