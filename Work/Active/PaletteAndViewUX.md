@@ -113,7 +113,6 @@ scope: these act on selected cells where every group above acts on the document.
 
 ## Tasks
 
-- [ ] **T4 — `InsertCitation` becomes a chooser dialog** (R3), over literature and blocks.
 - [ ] **T5 — `SortBibliography`** (R5). Four methods, delimiter re-attachment, carrier pinning. The
   test reads the delimiters off the reordered cells: a wrong reorder still round-trips, it just
   emits broken LaTeX.
@@ -123,6 +122,10 @@ scope: these act on selected cells where every group above acts on the document.
   `RegenerateUsage.wls` audit, version bump, publish, `DeployPreviews.wls`.
 
 ### Done
+
+- [x] **T4 — `InsertCitation` becomes a chooser dialog** (Session 5). The tag list is a pure
+  function of the `Notebook` expression, grouped Literature / Blocks; the filter field doubles as
+  the free-text entry for a key the document does not carry yet.
 
 - [x] **T3 — `InsertReference` and the bibliography anchor** (Session 4). Three cases, told apart by
   what the block's last cell carries. A pure core over the `Notebook` expression, because moving a
@@ -237,3 +240,28 @@ scope: these act on selected cells where every group above acts on the document.
   - The bite check was the delimiter move: not clearing `"EnvironmentClose"` off the old last cell
     fails two tests, one of them counting **two** `\end{thebibliography}` in the exported source.
 - **Next:** T4, the citation chooser dialog.
+
+### Session 5 — 2026-07-29 — T4
+
+- **Prompt:** the same run.
+- **Did:** `InsertCitation`'s `InputString` prompt is a chooser. `citationChoices` is a pure
+  function of the `Notebook` expression — literature is what a `Reference` cell carries, everything
+  else is a block, all of a cell's tags are citable rather than only the first, literature sorts
+  alphabetically and blocks stay in document order — and only the panel around it needs a dialog.
+  The filter field doubles as the free-text entry, so a key the document does not carry yet is
+  offered as its own row rather than needing a second field. Suite 306 → 314.
+- **Learned:** Three things.
+  - **A bare `DialogReturn[tag_]` as `Cases`' pattern is EVALUATED before any matching**, and the
+    call then answers `{ }` — five assertions passed nothing and read exactly like a chooser that
+    builds no buttons. `HoldPattern` is the fix, and this is the same silent-empty failure as
+    `Cases[opts, FontSize -> _]`, from a different direction: there the pattern is a `Rule` and is
+    read as a replacement, here it is an ordinary head that simply has a value. Worth generalising
+    in `CLAUDE.md`: **any** pattern argument whose head evaluates needs `HoldPattern`.
+  - **"Offer this as a new key" must be conditioned on there being no matches, not on no exact
+    tag.** `eq:` is nobody's tag and everybody's prefix, so the exact test offered to invent a key
+    from a filter that was busily narrowing a real list. That is the bite check: it fails the
+    heading test with a spurious `New key` group.
+  - A dialog built at runtime **may** call `PackageScope` helpers from its `Dynamic`, unlike a
+    palette button, whose code is stored verbatim in a `.nb` and re-read in a kernel that has none
+    of them. So the filtering can live in the paclet instead of being written out inline.
+- **Next:** T5, `SortBibliography`.

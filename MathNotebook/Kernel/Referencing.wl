@@ -17,6 +17,8 @@ PackageScope["referenceDingbat"]
 PackageScope["citationButton"]
 PackageScope["labelReferenceCells"]
 PackageScope["withInputNotebook"]
+PackageScope["citationChoices"]
+PackageScope["citationChooserRows"]
 
 (* InputNotebook[] answers $Failed when no document is open — a palette with no paper beside it,
    which is where a new author starts. SelectedCells[$Failed] then stays unevaluated, so a guard
@@ -60,9 +62,98 @@ TagSelectedCell[ notebook_NotebookObject, tag_String ] :=
 InsertCitation[] :=
   withInputNotebook[ InsertCitation ]
 
+(* Choosing the tag instead of typing it, which is T4 and Pavel's "combobox with tags of the
+   literature cells". It is a DIALOG and not a control on the palette, deliberately: the palette
+   needs no kernel to display — the property the two view sliders were built around — while a live
+   tag list can only come from a kernel query on whichever notebook is in front, so a palette-level
+   combobox would launch a kernel on every repaint and be stale between them.
+
+   The list is a pure function of the Notebook expression, which is what makes any of this testable
+   with no front end; only the panel around it needs a dialog. The filter field doubles as the free
+   text entry — a key the document does not carry yet is offered as its own row rather than needing
+   a second field, and that row is the reason a citation to a tag with no target cell must keep
+   working: citationTargetStyle answers None and the button falls back to referenceLabel's [key]. *)
 InsertCitation[ notebook_NotebookObject ] :=
-  With[ { tag = InputString[ "Citation tag:" ] },
-    If[ StringQ[ tag ], InsertCitation[ notebook, tag ] ] ]
+  With[ { tag = chooseCitationTag @ citationChoices @ NotebookGet[ notebook ] },
+    If[ StringQ[ tag ] && tag =!= "", InsertCitation[ notebook, tag ] ] ]
+
+(* Literature is what a Reference cell carries and everything else is a block — the split Pavel
+   asked for. A cell may carry several tags and each is citable, so all of them are offered; the
+   first is only privileged as the entry's printed label. Blocks stay in document order, so
+   equations and theorems appear where they occur, and literature is alphabetical. *)
+citationChoices[ notebook_ ] :=
+  With[ { choices = DeleteDuplicatesBy[
+      Flatten @ Map[ citationChoice, Cases[ notebook, Cell[ _, _String, ___ ], Infinity ] ],
+      Lookup[ "Tag" ] ] },
+    Join[
+      SortBy[ Select[ choices, #[ "Group" ] === $literatureGroup & ], Lookup[ "Tag" ] ],
+      Select[ choices, #[ "Group" ] =!= $literatureGroup & ] ] ]
+
+$literatureGroup = "Literature"
+$blockGroup = "Blocks"
+
+citationChoice[ cell : Cell[ _, style_String, ___ ] ] :=
+  Map[ tag |-> <| "Tag" -> tag, "Style" -> style,
+      "Group" -> If[ style === "Reference", $literatureGroup, $blockGroup ] |>,
+    Cases[ Flatten @ { Cases[ cell, ( CellTags -> tags_ ) :> tags, { 1 } ] }, _String ] ]
+
+citationChoice[ _ ] :=
+  { }
+
+chooseCitationTag[ choices_List ] :=
+  DialogInput[ citationChooserPanel[ choices ], WindowTitle -> "Insert citation" ]
+
+citationChooserPanel[ choices_List ] :=
+  With[ { entries = choices },
+    DynamicModule[ { filter = "" },
+      Column[ {
+        InputField[ Dynamic[ filter ], String, ContinuousAction -> True,
+          FieldHint -> "filter, or a new key", ImageSize -> { 300, Automatic } ],
+        Pane[ Dynamic @ citationChooserRows[ entries, filter ],
+          ImageSize -> { 300, 260 }, Scrollbars -> { False, Automatic } ],
+        Item[ CancelButton[ ], Alignment -> Right ]
+      }, Spacings -> 0.6 ] ] ]
+
+citationChooserRows[ entries_List, filter_String ] :=
+  With[ { matching = Select[ entries, citationChoiceMatchQ[ #, filter ] & ] },
+    Column[
+      Flatten @ Join[
+        Map[ group |-> Prepend[
+            Map[ citationChooserRow, Select[ matching, #[ "Group" ] === group & ] ],
+            citationChooserHeading[ group ] ],
+          Select[ { $literatureGroup, $blockGroup },
+            group |-> AnyTrue[ matching, #[ "Group" ] === group & ] ] ],
+        citationChooserNewRows[ matching, filter ] ],
+      Spacings -> 0.2 ] ]
+
+(* The one row the document cannot supply. It appears only while nothing matches, so a filter that
+   is narrowing a real list does not also offer to invent a key from it — and the test for that is
+   the MATCHES and not an exact tag comparison, since "eq:" is nobody's tag and everybody's prefix. *)
+citationChooserNewRows[ matching_List, filter_String ] :=
+  If[ filter === "" || matching =!= { },
+    { },
+    { citationChooserHeading[ "New key" ],
+      citationChooserButton[ referenceLabel[ filter ], "not in this notebook", filter ] } ]
+
+citationChooserHeading[ text_String ] :=
+  Style[ text, 10, Bold, GrayLevel[ 0.45 ] ]
+
+citationChooserRow[ choice_Association ] :=
+  citationChooserButton[
+    If[ choice[ "Group" ] === $literatureGroup, referenceLabel[ choice[ "Tag" ] ], choice[ "Tag" ] ],
+    choice[ "Style" ], choice[ "Tag" ] ]
+
+citationChooserButton[ label_String, note_String, tag_String ] :=
+  Button[
+    Row[ { Pane[ Style[ label, 11 ], ImageSize -> { 190, Automatic }, Alignment -> Left ],
+      Style[ note, 9, GrayLevel[ 0.5 ] ] } ],
+    DialogReturn[ tag ], Appearance -> "Frameless", Alignment -> Left,
+    ImageSize -> { 282, Automatic } ]
+
+citationChoiceMatchQ[ choice_Association, filter_String ] :=
+  filter === "" ||
+    StringContainsQ[ choice[ "Tag" ], filter, IgnoreCase -> True ] ||
+    StringContainsQ[ choice[ "Style" ], filter, IgnoreCase -> True ]
 
 (* Where the reference goes, which turns out to be the whole of ImportDisplayDefects T5. Writing at a
    cell-bracket selection REPLACES the cell: measured, "Prose here." was overwritten by the button and

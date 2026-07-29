@@ -225,3 +225,80 @@ VerificationTest[
   Count[ insertReferenceCells[ $database, "sturm" ], Cell[ "References", "Section", ___ ], Infinity ],
   0
 ]
+
+(* ---------------------------------------------------------------------------------------------
+   T4. The citation chooser's list is a pure function of the notebook, which is the whole reason
+   it is assertable — the dialog around it is not drivable headless.
+   --------------------------------------------------------------------------------------------- *)
+
+$tagged = Notebook[ {
+  Cell[ "A section", "Section", CellTags -> "sec:intro" ],
+  Cell[ "A theorem", "Theorem", CellTags -> { "Thm:main", "Thm:alias" } ],
+  Cell[ "An equation", "DisplayFormulaNumbered", CellTags -> "eq:one" ],
+  Cell[ "Untagged prose", "Text" ],
+  Cell[ "Ollivier.", "Reference", CellTags -> "ollivier" ],
+  Cell[ "Lott and Villani.", "Reference", CellTags -> "lott" ] } ]
+
+(* Literature is what a Reference cell carries; everything else is a block. Literature comes first
+   and alphabetical, blocks in document order. *)
+VerificationTest[
+  Map[ { #[ "Tag" ], #[ "Style" ], #[ "Group" ] } &, citationChoices[ $tagged ] ],
+  { { "lott", "Reference", "Literature" },
+    { "ollivier", "Reference", "Literature" },
+    { "sec:intro", "Section", "Blocks" },
+    { "Thm:main", "Theorem", "Blocks" },
+    { "Thm:alias", "Theorem", "Blocks" },
+    { "eq:one", "DisplayFormulaNumbered", "Blocks" } }
+]
+
+(* An untagged cell contributes nothing, and a repeated tag is offered once. *)
+VerificationTest[
+  Map[ #[ "Tag" ] &,
+    citationChoices @ Notebook[ {
+      Cell[ "One", "Text" ],
+      Cell[ "Two", "Theorem", CellTags -> "dup" ],
+      Cell[ "Three", "Lemma", CellTags -> "dup" ] } ] ],
+  { "dup" }
+]
+
+VerificationTest[
+  citationChoices @ Notebook[ { Cell[ "Nothing tagged", "Text" ] } ],
+  { }
+]
+
+(* Every offered choice is a button returning its own tag. The HoldPattern is not decoration: a bare
+   DialogReturn[tag_] is EVALUATED as Cases' pattern argument before any matching happens, and the
+   call then answers {} — the same silent-empty failure as Cases[opts, FontSize -> _]. *)
+VerificationTest[
+  Cases[ citationChooserRows[ citationChoices[ $tagged ], "" ], HoldPattern[ DialogReturn[ tag_ ] ] :> tag, Infinity ],
+  { "lott", "ollivier", "sec:intro", "Thm:main", "Thm:alias", "eq:one" }
+]
+
+(* The filter narrows on the tag and on the style alike. *)
+VerificationTest[
+  { Cases[ citationChooserRows[ citationChoices[ $tagged ], "thm" ], HoldPattern[ DialogReturn[ t_ ] ] :> t, Infinity ],
+    Cases[ citationChooserRows[ citationChoices[ $tagged ], "Reference" ], HoldPattern[ DialogReturn[ t_ ] ] :> t, Infinity ] },
+  { { "Thm:main", "Thm:alias" }, { "lott", "ollivier" } }
+]
+
+(* Text no tag matches is offered as a new key — this is the free-text half of the one field. *)
+VerificationTest[
+  Cases[ citationChooserRows[ citationChoices[ $tagged ], "sturm" ], HoldPattern[ DialogReturn[ t_ ] ] :> t, Infinity ],
+  { "sturm" }
+]
+
+(* A filter that is narrowing a real list does NOT also offer to invent a key from it: "ollivier"
+   matches an entry, so the only row is that entry. *)
+VerificationTest[
+  Cases[ citationChooserRows[ citationChoices[ $tagged ], "ollivier" ], HoldPattern[ DialogReturn[ t_ ] ] :> t, Infinity ],
+  { "ollivier" }
+]
+
+(* Both group headings are shown when both groups have matches, and only the one that does when not. *)
+VerificationTest[
+  { Cases[ citationChooserRows[ citationChoices[ $tagged ], "" ],
+      Style[ text_String, 10, Bold, _ ] :> text, Infinity ],
+    Cases[ citationChooserRows[ citationChoices[ $tagged ], "eq:" ],
+      Style[ text_String, 10, Bold, _ ] :> text, Infinity ] },
+  { { "Literature", "Blocks" }, { "Blocks" } }
+]
