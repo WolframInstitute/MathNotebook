@@ -468,7 +468,12 @@ referencingDrive[ parent_ ] :=
     measurements = <| "Unselected" -> dialogText @ CopyCellReference[ notebook ] |>;
     SelectionMove[ cells[[ 2 ]], All, Cell ];
     measurements[ "Copied" ] = dialogText @ CopyCellReference[ notebook ];
-    measurements[ "Clipboard" ] = Count[ NotebookGet @ ClipboardNotebook[], _Button | _ButtonBox, Infinity ];
+    (* The keys and not a button count: the clipboard round trip already splits the ButtonBox into one
+       fragment per run (4 here, 6 for a three-counter chain), so a count measures the splitter rather
+       than the copy. Every fragment carries the one key, which is what a click needs — and the key is
+       the tag the copy generated, this cell having had none: T4's auto-tag from the older drive's side. *)
+    measurements[ "Clipboard" ] = DeleteDuplicates @ Cases[ NotebookGet @ ClipboardNotebook[],
+      HoldPattern[ ButtonData -> key_ ] :> key, Infinity ];
     TagSelectedCell[ notebook, "Thm:key" ];
     measurements[ "Tagged" ] = CurrentValue[ cells[[ 2 ]], CellTags ];
     LabelReferences[ notebook ];
@@ -494,6 +499,69 @@ referencingDrive[ parent_ ] :=
     measurements[ "EntryDingbat" ] = FirstCase[ NotebookGet[ notebook ],
       Cell[ _, "Reference", options___ ] /; Lookup[ { options }, CellTags ] === "Ol09" :>
         Lookup[ { options }, CellDingbat ], None, Infinity ];
+    NotebookClose[ notebook ];
+    measurements
+  ]
+
+(* FirstReadingDefects T4: the copied reference, end to end on an imported paper — the one place the
+   defect lived. Two things had to be measured rather than asserted from the code. The number is only
+   real on a rendered page: a CounterBox in a single-cell Rasterize reads XXX and one keyed on a
+   CellID that matches every cell reads the FIRST cell's counters, which is exactly the reported
+   "Theorem 0.0". And the clipboard payload's shape decides the FACE: pasted into prose, a
+   Cell[BoxData[...]] island measured 29 px tall against the prose's 19 — T5's wrong-font defect —
+   and a bare ButtonBox pasted as its own boxes spelled out as text, so the payload is a TextData
+   cell. The paste splits it into one button per run (mergedButtons' shape), so "navigates" is
+   asserted as every fragment carrying a ButtonData the notebook can find a cell for. *)
+
+$axiomPaper = "\\documentclass{article}\n\\newtheorem{axiom}{Axiom}[subsection]\n\\begin{document}\n\n\\section{One}\n\n\\subsection{A}\n\n\\subsection{B}\n\n\\subsection{C}\n\nProse here.\n\n\\begin{axiom}\\label{ax:1}\nFirst axiom.\n\\end{axiom}\n\n\\begin{axiom}\\label{ax:2}\nSecond axiom.\n\\end{axiom}\n\n\\begin{axiom}\\label{ax:3}\nThird axiom.\n\\end{axiom}\n\n\\end{document}\n";
+
+copiedReferenceDrive[ source_String, sheet_String ] :=
+  Module[ { notebook, prose, target, pasted, file, text, measurements },
+    notebook = NotebookPut[ withSheet[ latexToNotebook[ source ], sheet ], Visible -> False ];
+    prose = First @ Cells[ notebook, CellStyle -> "Text" ];
+    target = Last @ Cells[ notebook, CellStyle -> "Theorem" ];
+    (* The defect's own cause, measured before the fix is exercised: an imported cell has no CellID,
+       and Cells[CellID -> 0] answers every cell in the document rather than none. *)
+    measurements = <| "CellID" -> CurrentValue[ target, CellID ],
+      "IDMatches" -> Length @ Cells[ notebook, CellID -> 0 ],
+      "Cells" -> Length @ Cells[ notebook ] |>;
+    SelectionMove[ target, All, Cell ];
+    CopyCellReference[ notebook ];
+    SelectionMove[ prose, After, CellContents ];
+    FrontEndExecute[ FrontEndToken[ notebook, "Paste" ] ];
+    pasted = NotebookRead[ prose ];
+    measurements[ "Keys" ] = DeleteDuplicates @ Cases[ pasted, HoldPattern[ ButtonData -> key_ ] :> key, Infinity ];
+    measurements[ "Buttons" ] = Count[ pasted, _ButtonBox, Infinity ];
+    (* Navigation: every fragment's key resolves to the cell that was copied. A CellID of 0 resolved
+       to the document's first cell, which is what made the pasted reference dead. *)
+    measurements[ "Targets" ] = Map[ Cells[ notebook, CellTags -> # ] &, measurements[ "Keys" ] ];
+    measurements[ "Target" ] = { target };
+    measurements[ "Ref" ] = StringCases[ notebookToLaTeX @ NotebookGet[ notebook ], "\\ref{" ~~ Except[ "}" ] .. ~~ "}" ];
+    file = Export[ FileNameJoin[ { $TemporaryDirectory, "MathNotebookCopiedReference.pdf" } ], notebook ];
+    text = StringDelete[ Import[ file, "Plaintext" ], Whitespace ];
+    measurements[ "Reads" ] = StringContainsQ[ text, "Prosehere.Axiom1.3.3" ];
+    measurements[ "Stale" ] = StringContainsQ[ text, "Theorem0.0" | "XXX" ];
+    NotebookClose[ notebook ];
+    measurements
+  ]
+
+(* The other half of Pavel's call: an untagged cell is tagged rather than refused or prompted for, so
+   the control never interrupts — and the tag is what makes the reference exist in the .tex too. *)
+autoTagDrive[ parent_ ] :=
+  Module[ { notebook, target, measurements },
+    notebook = NotebookPut @ Notebook[ {
+      Cell[ "A section", "Section" ],
+      Cell[ "A theorem", "Theorem" ] }, StyleDefinitions -> parent, Visible -> False ];
+    target = Last @ Cells[ notebook ];
+    measurements = <| "Before" -> CurrentValue[ target, CellTags ] |>;
+    SelectionMove[ target, All, Cell ];
+    CopyCellReference[ notebook ];
+    measurements[ "After" ] = CurrentValue[ target, CellTags ];
+    measurements[ "Key" ] = DeleteDuplicates @ Cases[ NotebookGet @ ClipboardNotebook[ ],
+      HoldPattern[ ButtonData -> key_ ] :> key, Infinity ];
+    (* A second copy reuses the tag the first one gave rather than adding another. *)
+    CopyCellReference[ notebook ];
+    measurements[ "Again" ] = CurrentValue[ target, CellTags ];
     NotebookClose[ notebook ];
     measurements
   ]
@@ -615,6 +683,8 @@ $measured = UsingFrontEnd @ <|
   "NoDocument" -> noDocumentDialogs[ ],
   "GoBack" -> goBackDrive[ ],
   "Referencing" -> referencingDrive @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
+  "Copied" -> copiedReferenceDrive[ $axiomPaper, "AMSArticle.nb" ],
+  "AutoTag" -> autoTagDrive @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
   "Placement" -> citationPlacement @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
   "InlineScaling" -> inlineMathScaling @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
   "Imported" -> importedText[ $importedSource ],
@@ -766,7 +836,7 @@ VerificationTest[
 VerificationTest[
   { $measured[ "Referencing", "Unselected" ], $measured[ "Referencing", "Copied" ],
     $measured[ "Referencing", "Clipboard" ] },
-  { "Select a cell!", Null, 1 }
+  { "Select a cell!", Null, { "ref:1" } }
 ]
 
 (* The notebook-argument overloads, driven for the first time: the tag reaches the cell and the
@@ -798,6 +868,49 @@ VerificationTest[
 VerificationTest[
   { $measured[ "Referencing", "Entries" ], $measured[ "Referencing", "EntryDingbat" ] },
   { { "Sm09", "Ol09" }, Cell[ TextData[ "[Ol09]" ] ] }
+]
+
+(* FirstReadingDefects T4, the defect's cause: an imported cell carries no CellID at all, and a
+   CellID of 0 is not "no cell" but EVERY cell — so the retired Dynamic resolved its counters at
+   whichever cell came first in the document. This is the measurement that turned a wrong word into
+   two independent defects, and it is asserted so a future CellID-keyed button cannot come back. *)
+VerificationTest[
+  { $measured[ "Copied", "CellID" ],
+    $measured[ "Copied", "IDMatches" ] === $measured[ "Copied", "Cells" ] },
+  { 0, True }
+]
+
+(* The reported reproduction, fixed and measured on the rendered page: the pasted reference to the
+   third axiom of the third subsection reads "Axiom 1.3.3" — the cell's own word over the cell's own
+   three counters — where the style's spec said "Theorem" over two, and neither the reported
+   "Theorem 0.0" nor the front end's XXX is anywhere on the page. *)
+VerificationTest[
+  { $measured[ "Copied", "Reads" ], $measured[ "Copied", "Stale" ] },
+  { True, False }
+]
+
+(* And it navigates: the paste splits the button into one fragment per run, every fragment carries
+   the one key, and that key resolves to exactly the cell that was copied. *)
+VerificationTest[
+  { $measured[ "Copied", "Keys" ],
+    $measured[ "Copied", "Buttons" ] > 0,
+    $measured[ "Copied", "Targets" ] },
+  { { "ax:3" }, True, { $measured[ "Copied", "Target" ] } }
+]
+
+(* A copied reference is a \ref on export, so it survives the round trip as the cross-reference it
+   is rather than as the number it happens to print today. *)
+VerificationTest[
+  $measured[ "Copied", "Ref" ],
+  { "\\ref{ax:3}" }
+]
+
+(* Pavel's call (2026-07-29): an untagged cell is tagged automatically rather than prompted for or
+   refused, and a second copy reuses that tag rather than accumulating one per click. *)
+VerificationTest[
+  { $measured[ "AutoTag", "Before" ], $measured[ "AutoTag", "After" ],
+    $measured[ "AutoTag", "Again" ], $measured[ "AutoTag", "Key" ] },
+  { { }, "ref:1", "ref:1", { "ref:1" } }
 ]
 
 (* PaletteAndViewUX T2: turning the math control up really does enlarge inline mathematics on the page,

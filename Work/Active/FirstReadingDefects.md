@@ -107,10 +107,12 @@ navigation and interaction defects, the classes the census and fidelity tests ca
   `citationTeX`, `mergedButtons` and `citedTags` move together. Assert a compound citation's every
   key resolves through `NotebookLocate` on the imported specimen, and the reopen-split
   (`FrontEnd.wlt`) still merges right.
-- [ ] **T4 — Copy reference reads the cell.** `CopyCellReference` takes the word and counter chain
-  from the target's own `CellDingbat`/`CellFrameLabels`, spec only as fallback — the `\ref` fix
-  applied to the copy path. The pasted button for the specimen's `axiom` 3.1.3 must read
-  `Axiom 3.1.3` and navigate.
+- [x] **T4 — Copy reference reads the cell.** (S4) The word and the counter chain come from the
+  target's own `CellDingbat`/`CellFrameLabels`, spec only as fallback — and the button keys on the
+  cell's **tag** rather than on a `CellID` an imported cell does not have, which was the second
+  defect inside the one reported string. An untagged cell is tagged automatically (Pavel's call).
+  The specimen's axiom pastes as `Axiom 1.3.3` on the rendered page and each fragment resolves to
+  the copied cell.
 - [ ] **T5 — One coherent scale for mathematics.** Confirm the model with Pavel: math follows the
   document slider when `MathFontSize` is `Automatic`; an explicit math size overrides; inline ratio
   scaled by mathScale/docScale so inline tracks display instead of double-scaling. Then implement in
@@ -237,3 +239,44 @@ navigation and interaction defects, the classes the census and fidelity tests ca
   had. And the level matters more than it reads: `content /. TextData[…] :> …` never reaches a
   TextData *inside* the replacement, so island citations had been outside the merge since T5.
 - **Next:** T4.
+
+### Session 4 — 2026-07-29 — T4, the copied reference
+
+- **Prompt:** `/next-session`.
+- **Did:** Reproduced the report and found **two** defects wearing one string. The one the triage
+  named: the word and the chain were looked up from the *style*, so an imported `axiom` — style
+  `Theorem` with a per-cell dingbat `Axiom S.SS.TheoremAxiom.` — cited as `Theorem` over `Section`
+  and `Theorem`. The one it did not: an imported cell has **no `CellID`**, `CurrentValue[cell,
+  CellID]` reads 0, and `Cells[nb, CellID -> 0]` answers the **whole document**, so the old
+  `Dynamic` resolved both counters at the paper's *first* cell — which is where the reported two
+  zeros come from — and `NotebookFind[nb, 0, All, CellID]` navigated nowhere. Measured that a
+  `CellID` cannot be repaired onto an existing cell either (`SetOptions` and `CurrentValue[…] =`
+  both silent no-ops, option list stays empty), so the copy path keys on the cell's **tag** and the
+  CellID-keyed `referenceButton` is retired: `citationSpecButton[tag, spec]` is now the one
+  rendering, shared with `\ref` and `InsertCitation`, needing no kernel and right in the PDF.
+  `cellReferenceSpec` reads the label in three cases, the third being new — a dingbat carrying no
+  `CounterBox` is *unnumbered* (a starred environment, a bibliography entry) and must read `[tag]`
+  rather than fall back to a spec whose counters that cell suppresses. The clipboard payload was
+  measured rather than chosen: a `Cell[BoxData[…]]` pastes in the box face at height 29 against the
+  prose's 19 (T5's wrong-font defect again) and a bare `ButtonBox` pastes as its own boxes spelled
+  out as text, so it is a `Cell[TextData[…]]`. Nine kernel tests in `Referencing.wlt` and five
+  `FrontEnd.wlt` measurements — the CellID cause itself, the rendered `Axiom 1.3.3` with no
+  `Theorem 0.0` and no `XXX` anywhere on the page, every fragment's key resolving to the copied
+  cell, the `\ref` on export, and the auto-tag with its reuse. Suite 345 → 358, green; both
+  specimens and all four samples byte-exact, census untouched. Two bites, each restored from a copy
+  and verified byte-identical: the style-spec read fails exactly 4 kernel assertions plus the
+  rendered page, and dropping the tag write fails exactly the auto-tag measurement — which is why
+  that one is a measurement of its own rather than a clause of the navigation test.
+- **Decision (Pavel, 2026-07-29):** a cell with neither tag nor `CellID` is **tagged
+  automatically** — first unused `ref:n` — rather than prompted for or refused, so the control never
+  interrupts; the generated tag is also what makes the reference exist in the exported `.tex`.
+- **Learned:** A button count is the wrong assertion for anything on the clipboard — the clipboard
+  alone cuts a two-counter button into 4 fragments and the paste cuts a three-counter one into 6, so
+  the older `Clipboard -> 1` assertion was measuring the splitter; it now reads the distinct
+  `ButtonData` keys, which also pins the auto-tag from that drive's side. Also: `freshReferenceTag`
+  named in a `.wlt` while file-private stayed unevaluated and the test failed with its own input as
+  the actual value — the repo's mechanical trap, hit for the fourth session running.
+- **Also:** added the tutorial line Pavel asked for — `Cmd+9` on a fresh cell inserts an `Input`
+  cell, the one to reach for when replacing an imported figure's `Import` with generating code
+  (`Scripts/BuildTutorial.wls`, regenerated; the diff is that item and nothing else).
+- **Next:** T5 — and it needs Pavel's nod on the scaling model before it is implemented.

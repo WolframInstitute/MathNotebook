@@ -72,6 +72,7 @@ tutorialNotebook = Notebook[ {
   Cell[ TextData[ { "Click a cell bracket to select the cell; drag across brackets to select several; ", key[ "Delete" ], " removes them." } ], "Item" ],
   Cell[ TextData[ { key[ "Ctrl+." ], " extends the selection outward; repeat to reach the whole cell." } ], "Item" ],
   Cell[ TextData[ { key[ "Cmd+1" ], "/", key[ "4" ], "/", key[ "5" ], "/", key[ "7" ], "/", key[ "9" ], " restyle a cell: Title, Section, Subsection, Text, Input." } ], "Item" ],
+  Cell[ TextData[ { key[ "Cmd+9" ], " on a fresh cell inserts an ", name[ "Input" ], " cell \[LongDash] the one to reach for when you replace an imported figure's ", name[ "Import" ], " with the code that draws it." } ], "Item" ],
   Cell[ TextData[ { key[ "Cmd+Shift+D" ], " divides a cell at the cursor; ", key[ "Cmd+Shift+M" ], " merges selected cells." } ], "Item" ],
   Cell[ TextData[ { key[ "Ctrl+G" ], " groups selected cells; ", key[ "Ctrl+Shift+G" ], " ungroups." } ], "Item" ],
   Cell[ TextData[ { "Double-click a group bracket to close or open the group; ", key[ "Cmd+Shift+{" ], " and ", key[ "Cmd+Shift+}" ], " open and close all subgroups." } ], "Item" ],

@@ -23,10 +23,92 @@ VerificationTest[
   { "(", { "DisplayFormulaNumbered" }, ")" }
 ]
 
+(* ---------------------------------------------------------------------------------------------
+   FirstReadingDefects T4. What a copied reference prints comes off the TARGET CELL, not off its
+   style: an imported axiom is style Theorem carrying its own dingbat, and the style lookup gave the
+   word Theorem over two counters the cell never increments. The three cases are told apart by what
+   the cell's own label carries, and the third is not the second.
+   --------------------------------------------------------------------------------------------- *)
+
+$axiomDingbat = Cell[ TextData[ { "Axiom ", CounterBox[ "Section" ], ".", CounterBox[ "Subsection" ], ".",
+  CounterBox[ "TheoremAxiom" ], "." } ], FontWeight -> "Bold", FontSlant -> "Plain" ]
+
+$axiomCell = Cell[ "First axiom.", "Theorem", CellDingbat -> $axiomDingbat,
+  CounterIncrements -> "TheoremAxiom", CellTags -> "ax:1" ]
+
+(* The word and all three counters come out of the dingbat, and the label's terminating period is
+   not part of the number. Under the old style lookup this was { "Theorem ", { "Section", "Theorem" } }. *)
 VerificationTest[
-  MatchQ[ referenceButton[ 42, $referenceLabelSpec[ "Theorem" ] ],
-    Button[ _Row, _, BaseStyle -> "Link", Appearance -> None ] ],
-  True
+  cellReferenceSpec[ $axiomCell, "Theorem" ],
+  { "Axiom ", { "Section", "Subsection", "TheoremAxiom" }, "" }
+]
+
+(* A cell carrying no dingbat of its own is the common case and keeps the style's spec. *)
+VerificationTest[
+  cellReferenceSpec[ Cell[ "A theorem", "Theorem" ], "Theorem" ],
+  $referenceLabelSpec[ "Theorem" ]
+]
+
+(* An equation's number lives in its CellFrameLabels, so that is where its chain is read — and the
+   closing parenthesis stays where the dingbat's period goes. *)
+VerificationTest[
+  cellReferenceSpec[
+    Cell[ "x = y", "DisplayFormulaNumbered",
+      CellFrameLabels -> { { None, Cell[ TextData[ { "(", CounterBox[ "Section" ], ".",
+        CounterBox[ "DisplayFormulaNumbered" ], ")" } ], "DisplayFormulaEquationNumber" ] }, { None, None } } ],
+    "DisplayFormulaNumbered" ],
+  { "(", { "Section", "DisplayFormulaNumbered" }, ")" }
+]
+
+(* A label carrying NO counter is an unnumbered environment — hodgepaper's starred ones, a
+   bibliography entry — and there is no number to print, so the reference reads [tag] rather than
+   falling back to a style spec whose counters that cell deliberately does not increment. *)
+VerificationTest[
+  { cellReferenceSpec[ Cell[ "A convention.", "Theorem", CellDingbat -> Cell[ TextData[ "Convention." ] ],
+      CounterIncrements -> { } ], "Theorem" ],
+    cellReferenceSpec[ Cell[ "Ollivier.", "Reference",
+      CellDingbat -> Cell[ TextData[ "[ollivier]" ] ] ], "Reference" ] },
+  { None, None }
+]
+
+(* A suppressed continuation cell of an environment body carries CellDingbat -> None: the number
+   belongs to the cell that heads the group, and the style's spec resolves to the same value there. *)
+VerificationTest[
+  cellReferenceSpec[ Cell[ "... continued.", "Theorem", CellDingbat -> None, CounterIncrements -> { } ], "Theorem" ],
+  $referenceLabelSpec[ "Theorem" ]
+]
+
+(* NotebookRead can answer $Failed for a selection state nobody anticipated; an unmatched argument
+   would leave CopyCellReference unevaluated and silent, which is this repo's oldest trap. *)
+VerificationTest[
+  { cellReferenceSpec[ $Failed, "Lemma" ], cellReferenceSpec[ { }, "Text" ] },
+  { $referenceLabelSpec[ "Lemma" ], None }
+]
+
+(* And the button the copy path builds from that spec is the front end's own cross-reference, keyed
+   on the tag: three CounterBoxes where the style says two, and the word the cell prints. *)
+VerificationTest[
+  citationSpecButton[ "ax:1", cellReferenceSpec[ $axiomCell, "Theorem" ] ],
+  ButtonBox[
+    RowBox[ { "Axiom ", CounterBox[ "Section", "ax:1" ], ".", CounterBox[ "Subsection", "ax:1" ], ".",
+      CounterBox[ "TheoremAxiom", "ax:1" ] } ],
+    BaseStyle -> "Citation", ButtonData -> "ax:1" ]
+]
+
+(* An unnumbered target's spec is None, and that reads as the bare tag rather than as a CounterBox
+   the front end would render XXX. *)
+VerificationTest[
+  citationSpecButton[ "ollivier", None ],
+  citationButton[ "ollivier" ]
+]
+
+(* The generated tag is the first unused ref:n, so a second copy of an untagged cell reuses the name
+   its first copy gave rather than accumulating one per click. *)
+VerificationTest[
+  { freshReferenceTag @ Notebook[ { Cell[ "Prose", "Text" ] } ],
+    freshReferenceTag @ Notebook[ { Cell[ "One", "Theorem", CellTags -> "ref:1" ],
+      Cell[ "Two", "Lemma", CellTags -> { "ref:2", "other" } ] } ] },
+  { "ref:1", "ref:3" }
 ]
 
 VerificationTest[

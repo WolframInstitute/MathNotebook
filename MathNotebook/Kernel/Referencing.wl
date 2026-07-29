@@ -12,10 +12,12 @@ PackageExport[$LastHyperlinkCell]
 
 PackageScope["$theoremEnvironments"]
 PackageScope["$referenceLabelSpec"]
-PackageScope["referenceButton"]
+PackageScope["citationSpecButton"]
+PackageScope["freshReferenceTag"]
 PackageScope["referenceLabel"]
 PackageScope["referenceDingbat"]
 PackageScope["citationButton"]
+PackageScope["cellReferenceSpec"]
 PackageScope["labelReferenceCells"]
 PackageScope["withInputNotebook"]
 PackageScope["citationChoices"]
@@ -36,13 +38,87 @@ withInputNotebook[ operation_ ] :=
 CopyCellReference[] :=
   withInputNotebook[ CopyCellReference ]
 
+(* Two defects met here, and the second is why this button changed key. Reported: a copied reference
+   to Axiom 3.1.3 pasted as "Theorem 0.0". The word and the chain were looked up from the STYLE — an
+   imported axiom is style Theorem carrying a per-cell dingbat of "Axiom S.SS.TheoremAxiom." — which
+   is the \ref rule ("read the chain off the target cell, not the target's style", labelCounters in
+   Document.wl) that this path never got. But the two zeros are a defect of their own: an imported
+   cell has NO CellID, CurrentValue[cell, CellID] reads 0, and Cells[CellID -> 0] matches EVERY cell,
+   so the old Dynamic resolved its counters at the document's first cell — where a paper's Section
+   counter is 0 — and NotebookFind[nb, 0, All, CellID] navigates nowhere. Measured: a CellID cannot be
+   written onto an existing cell either; SetOptions and CurrentValue[...] = are both silent no-ops.
+
+   So the copy keys on the cell's TAG, which is what CounterBox's second argument wants, and this
+   button becomes the same front-end cross-reference \ref and InsertCitation already build: no kernel
+   to resolve, right in the printed PDF, and it follows the target when cells move. Pavel's call
+   (2026-07-29) for a cell with no tag: tag it automatically rather than prompting or refusing, so
+   the control never interrupts — the generated tag exports as the \label such a reference needs. *)
 CopyCellReference[ notebook_NotebookObject ] :=
   Replace[ SelectedCells[ notebook ], {
-    { cell_, ___ } :>
-      With[ { style = First @ Flatten @ { CurrentValue[ cell, CellStyle ] } },
-        CopyToClipboard @ referenceButton[ CurrentValue[ cell, CellID ], Lookup[ $referenceLabelSpec, style, { "", { style }, "" } ] ]
-      ],
+    { cell_, ___ } :> copyCellReference[ notebook, cell ],
     _ :> MessageDialog[ "Select a cell!" ] } ]
+
+(* The clipboard payload is a Text cell holding the button, and the shape was measured rather than
+   chosen: pasted into prose, a Cell[BoxData[...]] island renders in the BOX face — 29 px tall against
+   the prose's 19 — which is ImportDisplayDefects T5's wrong-font defect again, and a bare ButtonBox
+   pastes as its own boxes spelled out as text. The TextData form is the prose face. The paste splits
+   it into one button per run, the reopen-split shape mergedButtons already rejoins: every fragment
+   carries the same ButtonData, so each navigates, and the export still emits the one \ref. *)
+copyCellReference[ notebook_NotebookObject, cell_CellObject ] :=
+  CopyToClipboard @ Cell[
+    TextData @ { citationSpecButton[ referenceAnchorTag[ notebook, cell ],
+      cellReferenceSpec[ NotebookRead[ cell ], First @ Flatten @ { CurrentValue[ cell, CellStyle ] } ] ] },
+    "Text" ]
+
+(* An untagged cell is tagged here, which is also what makes it referenceable in the exported .tex.
+   The name is the first unused ref:n, so a second copy of the same cell reuses the tag it already
+   gave it rather than accumulating one per click. *)
+referenceAnchorTag[ notebook_NotebookObject, cell_CellObject ] :=
+  Replace[ FirstCase[ Flatten @ { CurrentValue[ cell, CellTags ] }, tag_String /; tag =!= "" ], {
+    tag_String :> tag,
+    _ :> With[ { tag = freshReferenceTag @ NotebookGet[ notebook ] }, tagCell[ cell, tag ]; tag ] } ]
+
+$referenceTagPrefix = "ref:"
+
+freshReferenceTag[ notebook_ ] :=
+  With[ { taken = Cases[ Flatten @ Cases[ notebook, ( CellTags -> tags_ ) :> tags, Infinity ], _String ] },
+    $referenceTagPrefix <> ToString @ FirstCase[ Range[ Length[ taken ] + 1 ],
+      n_ /; ! MemberQ[ taken, $referenceTagPrefix <> ToString[ n ] ] ] ]
+
+(* What the reference prints is what the target's own label prints. Three cases, and the third is not
+   the second: a cell carrying NO dingbat of its own takes its style's spec (the common case — the
+   sheets number the twelve environments), a cell whose dingbat carries CounterBoxes takes the word
+   and the chain out of it, and a cell whose dingbat carries NONE is unnumbered — a starred
+   environment, a bibliography entry — so there is no number to print and the reference reads [tag].
+   The label's trailing period is its terminator rather than part of the number, so the suffix drops
+   it; an equation's closing parenthesis stays. *)
+cellReferenceSpec[ cell_Cell, style_String ] :=
+  Replace[ cellNumberLabel[ cell, style ], {
+    None :> Lookup[ $referenceLabelSpec, style, None ],
+    label_ :> labelReferenceSpec[ label ] } ]
+
+(* NotebookRead can answer $Failed or {} for a selection state nobody anticipated; an unmatched
+   argument here would leave CopyCellReference unevaluated and silent, the repo's own trap. *)
+cellReferenceSpec[ _, style_String ] :=
+  Lookup[ $referenceLabelSpec, style, None ]
+
+cellNumberLabel[ cell_, "DisplayFormula" | "DisplayFormulaNumbered" ] :=
+  FirstCase[ cell, ( CellFrameLabels -> value_ ) :> value, None ]
+
+cellNumberLabel[ cell_, _ ] :=
+  FirstCase[ cell, ( CellDingbat -> value_ ) :> value, None ]
+
+labelReferenceSpec[ label_ ] :=
+  Replace[ FirstCase[ label, TextData[ parts_ ] :> Flatten @ { parts }, None, { 0, Infinity } ],
+    { parts_List /; ! FreeQ[ parts, _CounterBox ] :> partsReferenceSpec[ parts ],
+      _ :> None } ]
+
+partsReferenceSpec[ parts_List ] :=
+  With[ { positions = Flatten @ Position[ parts, _CounterBox, { 1 }, Heads -> False ] },
+    { StringJoin @ Cases[ Take[ parts, First[ positions ] - 1 ], _String ],
+      Cases[ parts, box_CounterBox :> First[ box ] ],
+      StringDelete[ StringJoin @ Cases[ Drop[ parts, Last[ positions ] ], _String ],
+        "." ~~ EndOfString ] } ]
 
 TagSelectedCell[] :=
   withInputNotebook[ TagSelectedCell ]
@@ -269,14 +345,18 @@ citationButton[ tag_String ] :=
 (* A citation to a numbered environment reads as its number. CounterBox[counter, tag] resolves
    against the tagged cell rather than the citation's own position, in the front end and with no
    kernel, so the number follows the target when cells move; an unknown tag renders as XXX.
-   referenceButton cannot use it — a CellID is not a tag — hence the two renderings of one spec. *)
+   The copy path shares this now: it passes the spec it read off the target cell rather than a style
+   name, which is what retired the CellID-keyed rendering that could not resolve a tag. *)
 citationButton[ tag_String, style_ ] :=
-  Replace[ Lookup[ $referenceLabelSpec, style, None ], {
-    { prefix_, counters_, suffix_ } :>
-      ButtonBox[
-        RowBox @ DeleteCases[ Flatten @ { prefix, Riffle[ Map[ CounterBox[ #, tag ] &, counters ], "." ], suffix }, "" ],
-        BaseStyle -> "Citation", ButtonData -> tag ],
-    _ :> citationButton[ tag ] } ]
+  citationSpecButton[ tag, Lookup[ $referenceLabelSpec, style, None ] ]
+
+citationSpecButton[ tag_String, { prefix_, counters_, suffix_ } ] :=
+  ButtonBox[
+    RowBox @ DeleteCases[ Flatten @ { prefix, Riffle[ Map[ CounterBox[ #, tag ] &, counters ], "." ], suffix }, "" ],
+    BaseStyle -> "Citation", ButtonData -> tag ]
+
+citationSpecButton[ tag_String, _ ] :=
+  citationButton[ tag ]
 
 citationTargetStyle[ notebook_NotebookObject, tag_String ] :=
   Replace[ Cells[ notebook, CellTags -> tag ], {
@@ -352,15 +432,6 @@ $referenceLabelSpec = Join[
   |>,
   AssociationMap[ { # <> " ", { "Section", "Theorem" }, "" } &, Keys[ $theoremEnvironments ] ]
 ]
-
-referenceButton[ id_Integer, { prefix_, counters_, suffix_ } ] :=
-  Button[
-    Row @ { prefix,
-      Dynamic[ Row[ Riffle[ Map[ CurrentValue[ First[ Cells[ CellID -> id ], $Failed ], { "CounterValue", # } ] &, counters ], "." ] ] ],
-      suffix },
-    NotebookFind[ InputNotebook[], id, All, CellID ],
-    BaseStyle -> "Link", Appearance -> None
-  ]
 
 writeEnvironmentCell[ notebook_NotebookObject, cell_Cell ] := (
   SelectionMove[ notebook, After, Cell ];
