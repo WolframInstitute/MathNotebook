@@ -15,55 +15,90 @@ $paletteSource = StringDelete[
 buttonQ[ label_String ] :=
   StringContainsQ[ $paletteSource, "ButtonBox[\"" <> label <> "\"" ];
 
-(* Every conversion is named by its verb alone and takes its direction from the group heading. *)
-VerificationTest[
-  Select[ { "Import .tex file\\[Ellipsis]", "Export to .tex\\[Ellipsis]", "Export submission\\[Ellipsis]",
-      "Typeset", "Show source", "Render", "Restore" },
-    ! buttonQ[ # ] & ],
-  { }
-]
+(* ---------------------------------------------------------------------------------------------
+   PaletteAndViewUX T6. Six groups, Pavel's order, reviewed group by group on 2026-07-29.
+   --------------------------------------------------------------------------------------------- *)
 
-(* The defect these replaced: four labels built from three interchangeable words, two of which
-   differ by one letter. *)
 VerificationTest[
-  Select[ { "TeX \\[Rule] math", "Math \\[Rule] TeX", "Math \\[Rule] MaTeX", "MaTeX \\[Rule] math" },
-    buttonQ ],
-  { }
-]
-
-(* PaletteAndViewUX T1: the other four group headings, which nothing asserted — renaming "Environments"
-   to "Blocks" at Pavel's request (2026-07-29) left the whole suite green, so the rename was invisible to
-   every test in the repo. The old name is asserted ABSENT rather than only the new one present: a
-   heading left behind in a second place would otherwise pass. *)
-VerificationTest[
-  { Select[ { "Referencing", "Blocks", "Stylesheet", "Setup" },
-      ! StringContainsQ[ $paletteSource, # ] & ],
-    StringContainsQ[ $paletteSource, "Environments" ] },
-  { { }, False }
-]
-
-(* A verb alone only reads if the heading says which direction it goes. *)
-VerificationTest[
-  Select[ { "Whole paper (LaTeX)", "Selection: LaTeX \\[LeftRightArrow] math",
-      "Selection: math \\[LeftRightArrow] MaTeX" },
+  Select[ { "Insert environment", "Proof", "Equation", "Equation (n)", "Reference",
+      "Copy reference", "Insert citation", "\\[UpArrow] Go back", "Refresh labels", "Sort bibliography",
+      "math \\[Rule] MaTeX", "MaTeX \\[Rule] math",
+      "Apply stylesheet", "Reset view",
+      "Import .tex file\\[Ellipsis]", "Export to .tex\\[Ellipsis]", "Export submission\\[Ellipsis]",
+      "Install LaTeX fonts", "Install MaTeX", "MaTeX preferences", "Update from cloud", "Tutorial" },
     ! StringContainsQ[ $paletteSource, # ] & ],
   { }
 ]
 
+(* The three buttons taken off on 2026-07-29. Tag cell because the front end's own Cell Tags menu
+   does it; the two per-selection LaTeX conversions because the whole-paper export is the route out
+   to LaTeX and these read as a competing one. All three functions remain public — asserted below,
+   since "gone from the palette" must not become "gone from the paclet". *)
 VerificationTest[
-  StringCount[ $paletteSource, "TooltipBox[" ],
-  7
+  Select[ { "Tag cell", "Typeset", "Show source" }, buttonQ ],
+  { }
 ]
 
-(* Seven routes out to LaTeX, seven tooltips, each the sentence for its own button. *)
+VerificationTest[
+  Map[ Head @ ToExpression[ "WolframInstitute`MathNotebook`" <> # <> "::usage" ] &,
+    { "TagSelectedCell", "ConvertLaTeXCells", "ConvertMathCells" } ],
+  { String, String, String }
+]
+
+(* The headings, and the ORDER of them, which is what he actually asked for: what an author makes,
+   then what points at it, then the two per-selection conversions, then how the document looks,
+   then the ways out, then the things done once. Order is asserted because a group moved is exactly
+   as invisible to a presence test as a group renamed was to the whole suite before T1. *)
+VerificationTest[
+  Ordering @ Map[ First @ First @ StringPosition[ $paletteSource, "\"" <> # <> "\"" ] &,
+    { "Blocks", "Referencing", "Selection", "Document view", "Import & Export", "Setup" } ],
+  Range[ 6 ]
+]
+
+(* Every heading these replaced, asserted ABSENT — a name left behind in a second place would
+   otherwise pass. "Stylesheet" is among them because that group no longer exists: applying a sheet
+   already clears the view tagging rules and so resets both sliders, so the menu lives in Document
+   view beside the controls it resets. Its own label is "Apply stylesheet", lower case. *)
+VerificationTest[
+  Select[ { "Environments", "Stylesheet", "Whole paper (LaTeX)",
+      "Selection: LaTeX \\[LeftRightArrow] math", "Selection: math \\[LeftRightArrow] MaTeX" },
+    StringContainsQ[ $paletteSource, # ] & ],
+  { }
+]
+
+(* T6 gave a sentence to every button, menu and slider, where before only the seven conversion
+   routes had one. The count is the assertion that none was dropped; the sample below is the
+   assertion that they say what they should. *)
+VerificationTest[
+  StringCount[ $paletteSource, "TooltipBox[" ],
+  24
+]
+
 VerificationTest[
   Select[ { "Reads a LaTeX paper into a new notebook",
       "Writes the whole notebook out as a LaTeX paper",
       "Writes the whole paper into a directory as an arXiv submission",
-      "Reads the selected cells as LaTeX",
-      "Turns the typeset mathematics of the selected cells back into LaTeX source",
       "Renders the selected display equations through real LaTeX",
-      "Turns rendered MaTeX images back into editable typeset math" },
+      "Turns rendered MaTeX images back into editable typeset math",
+      "Adds a bibliography entry at the end of the bibliography rather than at the selection",
+      "Rebuilds the [key] label on every bibliography entry",
+      "Reorders the bibliography by first citation",
+      "Opens a list of everything this notebook has tagged" },
+    ! StringContainsQ[ $paletteSource, # ] & ],
+  { }
+]
+
+(* The .bib asymmetry is on the palette and not only in CLAUDE.md: an author sorting the
+   bibliography of such a paper is told the order shown is the notebook's alone. *)
+VerificationTest[
+  StringContainsQ[ $paletteSource,
+    "the order shown here is the notebook's alone" ],
+  True
+]
+
+(* T5's four orders are all reachable. *)
+VerificationTest[
+  Select[ { "By first use", "By key", "By entry", "Report uncited" },
     ! StringContainsQ[ $paletteSource, # ] & ],
   { }
 ]
@@ -93,24 +128,23 @@ VerificationTest[
    SubmissionBundle T4 adds the third: ExportLaTeXBundle takes a DIRECTORY where the other two take a
    file, so its dialog is a "Directory" one and the count of dialogs is what says all three are wired.
    The bundle button existing is not the same as it being reachable — a generated palette can carry a
-   label whose code was never regenerated. *)
+   label whose code was never regenerated. T6 adds the same check for the two new symbols. *)
 VerificationTest[
-  { StringContainsQ[ $paletteSource, "MathNotebook`ImportLaTeXDocument" ],
-    StringContainsQ[ $paletteSource, "MathNotebook`ExportLaTeXDocument" ],
-    StringContainsQ[ $paletteSource, "MathNotebook`ExportLaTeXBundle" ],
+  { Select[ { "ImportLaTeXDocument", "ExportLaTeXDocument", "ExportLaTeXBundle",
+        "InsertReference", "SortBibliography", "LabelReferences" },
+      ! StringContainsQ[ $paletteSource, "MathNotebook`" <> # ] & ],
     StringCount[ $paletteSource, "SystemDialogInput" ],
     StringCount[ $paletteSource, "SystemDialogInput[\"Directory\"" ] },
-  { True, True, True, 3, 1 }
+  { { }, 3, 1 }
 ]
-
 
 (* BasicFunctionality T5: the palette's own half of the $Failed hole. Its stored code cannot call the
    paclet's withInputNotebook — a PackageScope symbol, where a button may hold only System` symbols and
    fully qualified public ones — so the guard is written out by BuildPalette.wls and has to land in the
    artifact nine times: once per stylesheet menu item including Default, and once in each of the two
    export buttons, where it must come BEFORE the dialog or an author with no document is asked where to
-   save and the answer is discarded. The two view sliders are guarded the other way, by calling the
-   argumentless form the kernel now guards, so no bare two-argument setter may remain. *)
+   save and the answer is discarded. Every other new entry point is guarded the other way, by calling an
+   argumentless or one-string form the kernel guards — which is why T5's four sort orders add none. *)
 VerificationTest[
   { StringCount[ $paletteSource, "Open a notebook first!" ],
     StringCount[ $paletteSource, "SetDocumentFontSize[#]" ],

@@ -219,6 +219,11 @@ SortBibliography[ ] :=
 SortBibliography[ notebook_NotebookObject ] :=
   SortBibliography[ notebook, "FirstUse" ]
 
+(* The form the palette's menu items call, so each item is one guarded call and the "Open a notebook
+   first!" dialog stays in the kernel rather than being written out four more times into the .nb. *)
+SortBibliography[ method_String ] :=
+  withInputNotebook[ SortBibliography[ #, method ] & ]
+
 SortBibliography[ notebook_NotebookObject, "Uncited" ] :=
   With[ { audit = bibliographyAudit @ NotebookGet[ notebook ] },
     MessageDialog @ bibliographyAuditText[ audit ];

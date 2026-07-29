@@ -113,12 +113,14 @@ scope: these act on selected cells where every group above acts on the document.
 
 ## Tasks
 
-- [ ] **T6 — The palette reorganized** (R7). Six groups, the new and dropped buttons, tooltips
-  throughout, palette and image regenerated, `Tests/Palette.wlt` rewritten.
 - [ ] **T7 — Documentation and release.** Two reference pages, `Usage.wl`, `PacletInfo.wl`, the
   `RegenerateUsage.wls` audit, version bump, publish, `DeployPreviews.wls`.
 
 ### Done
+
+- [x] **T6 — The palette reorganized** (Session 7). Six groups in Pavel's order, three buttons
+  gone, three arrived, a tooltip on all 24 items, and `Tests/Palette.wlt` now asserting the group
+  **order** and not only the names.
 
 - [x] **T5 — `SortBibliography`** (Session 6). Four orders. Three parts of the block are
   **positional** — the `\begin`, the `\end` and each recorded separator — and only the `\bibitem`
@@ -295,3 +297,31 @@ scope: these act on selected cells where every group above acts on the document.
     `.wlt` names must be `PackageScope`**, and the symptom is always a failure with the right shape
     and impossible values rather than a message.
 - **Next:** T6, the palette itself.
+
+### Session 7 — 2026-07-29 — T6
+
+- **Prompt:** the same run.
+- **Did:** `Blocks`, `Referencing`, `Selection`, `Document view`, `Import & Export`, `Setup` — six
+  groups where there were eight. `Stylesheet` folded into `Document view`; the two conversion groups
+  merged into `Selection`, having between them lost the LaTeX pair; `Tag cell` gone; `Reference`,
+  `Refresh labels` and `Sort bibliography` arrived. `LabelReferences` had been exported since the
+  first release and reachable from nothing — dropping `Tag cell` is what made it necessary, since
+  the front end's own Cell Tags menu sets a tag and not the `[key]` label. A tooltip on all 24
+  items, where seven had one. Suite 323 → 326.
+- **Learned:** Three things.
+  - **A group that moves is as invisible as a group that was renamed**, which is T1's finding one
+    level up: the heading assertions T1 added would all have passed with the groups shuffled into
+    any order, and the order is the whole of what Pavel asked for. `Tests/Palette.wlt` now asserts
+    `Ordering` over the headings' first positions is `Range[6]`; the bite check swaps two groups,
+    regenerates, and reads `{1, 2, 4, 3, 5, 6}`.
+  - **"Gone from the palette" must not be allowed to become "gone from the paclet."** Three
+    functions lost their buttons and stay public, so the test reads a usage string off each of
+    `TagSelectedCell`, `ConvertLaTeXCells` and `ConvertMathCells` — otherwise a later session
+    tidying up "unused" code has nothing telling it these are deliberate.
+  - **A menu item can be guarded in the kernel instead of in the artifact.** The nine literal
+    `"Open a notebook first!"` guards written into the `.nb` exist because a button's stored code
+    cannot call `withInputNotebook`; T5's four sort orders add none, because `SortBibliography[
+    method_String ]` is a one-string form the kernel guards. That is the cheaper shape, and the
+    stylesheet menu is the one place it is not available — the items set an option rather than call
+    a paclet symbol.
+- **Next:** T7, documentation and release.

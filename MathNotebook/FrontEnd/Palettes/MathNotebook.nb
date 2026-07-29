@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       154,          7]
-NotebookDataLength[     48209,       1069]
-NotebookOptionsPosition[     47500,       1044]
-NotebookOutlinePosition[     48239,       1071]
-CellTagsIndexPosition[     48196,       1068]
+NotebookDataLength[     51484,       1146]
+NotebookOptionsPosition[     50825,       1122]
+NotebookOutlinePosition[     51514,       1148]
+CellTagsIndexPosition[     51471,       1145]
 WindowTitle->MathNotebook
 WindowFrame->Palette*)
 
@@ -21,6 +21,210 @@ WindowFrame->Palette*)
 Notebook[{
 Cell[BoxData[
  TagBox[GridBox[{
+    {
+     TagBox[GridBox[{
+        {
+         TemplateBox[{
+           OpenerBox[
+            Dynamic[
+             CurrentValue[
+              EvaluationNotebook[], {TaggingRules, "BlocksOpen"}, True]]], 
+           PaneSelectorBox[{True -> TagBox[
+               PaneBox[
+                PaneSelectorBox[{False -> StyleBox["\"Blocks\"", 11, Bold, 
+                    GrayLevel[0.4], StripOnInput -> False], True -> 
+                  StyleBox["\"Blocks\"", 11, Bold, 
+                    GrayLevel[0.15], StripOnInput -> False]}, 
+                 Dynamic[
+                  CurrentValue["MouseOver"]], ImageSize -> Automatic, 
+                 FrameMargins -> 0], ImageSize -> {182, 20}, 
+                Alignment -> {Left, Center}], 
+               EventHandlerTag[{"MouseClicked" :> (CurrentValue[
+                    EvaluationNotebook[], {TaggingRules, "BlocksOpen"}, True] = 
+                  False), Method -> "Preemptive", PassEventsDown -> Automatic,
+                  PassEventsUp -> True}]], False -> TagBox[
+               PaneBox[
+                PaneSelectorBox[{False -> StyleBox["\"Blocks\"", 11, Bold, 
+                    GrayLevel[0.4], StripOnInput -> False], True -> 
+                  StyleBox["\"Blocks\"", 11, Bold, 
+                    GrayLevel[0.15], StripOnInput -> False]}, 
+                 Dynamic[
+                  CurrentValue["MouseOver"]], ImageSize -> Automatic, 
+                 FrameMargins -> 0], ImageSize -> {182, 20}, 
+                Alignment -> {Left, Center}], 
+               EventHandlerTag[{"MouseClicked" :> (CurrentValue[
+                    EvaluationNotebook[], {TaggingRules, "BlocksOpen"}, True] = 
+                  True), Method -> "Preemptive", PassEventsDown -> Automatic, 
+                 PassEventsUp -> True}]]}, 
+            Dynamic[
+             CurrentValue[
+              EvaluationNotebook[], {TaggingRules, "BlocksOpen"}, True]], 
+            ImageSize -> Automatic]},
+          "RowDefault"]},
+        {
+         PaneSelectorBox[{True->
+          TagBox[GridBox[{
+             {
+              TagBox[
+               TooltipBox[
+                
+                ActionMenuBox["\<\"Insert environment\"\>",{
+                 "\"Theorem\"" :> (Needs["WolframInstitute`MathNotebook`"]; 
+                   WolframInstitute`MathNotebook`InsertEnvironment[
+                    "Theorem"]), 
+                  "\"Lemma\"" :> (Needs["WolframInstitute`MathNotebook`"]; 
+                   WolframInstitute`MathNotebook`InsertEnvironment["Lemma"]), 
+                  "\"Proposition\"" :> (
+                   Needs["WolframInstitute`MathNotebook`"]; 
+                   WolframInstitute`MathNotebook`InsertEnvironment[
+                    "Proposition"]), 
+                  "\"Corollary\"" :> (Needs["WolframInstitute`MathNotebook`"]; 
+                   WolframInstitute`MathNotebook`InsertEnvironment[
+                    "Corollary"]), 
+                  "\"Conjecture\"" :> (
+                   Needs["WolframInstitute`MathNotebook`"]; 
+                   WolframInstitute`MathNotebook`InsertEnvironment[
+                    "Conjecture"]), 
+                  "\"Claim\"" :> (Needs["WolframInstitute`MathNotebook`"]; 
+                   WolframInstitute`MathNotebook`InsertEnvironment["Claim"]), 
+                  "\"Definition\"" :> (
+                   Needs["WolframInstitute`MathNotebook`"]; 
+                   WolframInstitute`MathNotebook`InsertEnvironment[
+                    "Definition"]), 
+                  "\"Example\"" :> (Needs["WolframInstitute`MathNotebook`"]; 
+                   WolframInstitute`MathNotebook`InsertEnvironment[
+                    "Example"]), 
+                  "\"Construction\"" :> (
+                   Needs["WolframInstitute`MathNotebook`"]; 
+                   WolframInstitute`MathNotebook`InsertEnvironment[
+                    "Construction"]), 
+                  "\"Remark\"" :> (Needs["WolframInstitute`MathNotebook`"]; 
+                   WolframInstitute`MathNotebook`InsertEnvironment["Remark"]),
+                   "\"Question\"" :> (Needs["WolframInstitute`MathNotebook`"]; 
+                   WolframInstitute`MathNotebook`InsertEnvironment[
+                    "Question"]), 
+                  "\"Observation\"" :> (
+                   Needs["WolframInstitute`MathNotebook`"]; 
+                   WolframInstitute`MathNotebook`InsertEnvironment[
+                    "Observation"])},
+                 Appearance->"PopupMenu",
+                 Evaluator->Automatic,
+                 ImageSize->{200, 27},
+                 Method->"Queued"],
+                
+                "\"Inserts an empty theorem-like block after the selected \
+cell. The block numbers itself under the document's stylesheet, and a tag on \
+it can be cited from anywhere in the paper.\"",
+                TooltipStyle->"TextStyling"],
+               
+               Annotation[#, 
+                "Inserts an empty theorem-like block after the selected cell. \
+The block numbers itself under the document's stylesheet, and a tag on it can \
+be cited from anywhere in the paper.", "Tooltip"]& ]},
+             {
+              TagBox[
+               TooltipBox[
+                ButtonBox["\<\"Proof\"\>",
+                 Appearance->"Palette",
+                 
+                 ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
+                  WolframInstitute`MathNotebook`InsertEnvironment["Proof"]),
+                 Evaluator->Automatic,
+                 ImageSize->{200, 27},
+                 Method->"Queued"],
+                
+                "\"Inserts a Proof block after the selected cell. It takes no \
+number of its own and ends with the QED square.\"",
+                TooltipStyle->"TextStyling"],
+               
+               Annotation[#, 
+                "Inserts a Proof block after the selected cell. It takes no \
+number of its own and ends with the QED square.", "Tooltip"]& ]},
+             {
+              TagBox[
+               TooltipBox[
+                ButtonBox["\<\"Equation\"\>",
+                 Appearance->"Palette",
+                 
+                 ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
+                  WolframInstitute`MathNotebook`InsertEnvironment[
+                   "DisplayFormula"]),
+                 Evaluator->Automatic,
+                 ImageSize->{200, 27},
+                 Method->"Queued"],
+                
+                "\"Inserts an unnumbered display equation after the selected \
+cell.\"",
+                TooltipStyle->"TextStyling"],
+               
+               Annotation[#, 
+                "Inserts an unnumbered display equation after the selected \
+cell.", "Tooltip"]& ]},
+             {
+              TagBox[
+               TooltipBox[
+                ButtonBox["\<\"Equation (n)\"\>",
+                 Appearance->"Palette",
+                 
+                 ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
+                  WolframInstitute`MathNotebook`InsertEnvironment[
+                   "DisplayFormulaNumbered"]),
+                 Evaluator->Automatic,
+                 ImageSize->{200, 27},
+                 Method->"Queued"],
+                
+                "\"Inserts a numbered display equation after the selected \
+cell. The number belongs to the document and follows the equation when cells \
+move.\"",
+                TooltipStyle->"TextStyling"],
+               
+               Annotation[#, 
+                "Inserts a numbered display equation after the selected cell. \
+The number belongs to the document and follows the equation when cells move.",
+                 "Tooltip"]& ]},
+             {
+              TagBox[
+               TooltipBox[
+                ButtonBox["\<\"Reference\"\>",
+                 Appearance->"Palette",
+                 
+                 ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
+                  WolframInstitute`MathNotebook`InsertReference[]),
+                 Evaluator->Automatic,
+                 ImageSize->{200, 27},
+                 Method->"Queued"],
+                
+                "\"Adds a bibliography entry at the end of the bibliography \
+rather than at the selection, and starts one under a References heading if \
+this notebook has none yet. Type the citation key; Insert citation then \
+offers it.\"",
+                TooltipStyle->"TextStyling"],
+               
+               Annotation[#, 
+                "Adds a bibliography entry at the end of the bibliography \
+rather than at the selection, and starts one under a References heading if \
+this notebook has none yet. Type the citation key; Insert citation then \
+offers it.", "Tooltip"]& ]}
+            },
+            DefaultBaseStyle->"Column",
+            GridBoxAlignment->{"Columns" -> {{Left}}},
+            
+            GridBoxItemSize->{
+             "Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
+            GridBoxSpacings->{"Columns" -> {{Automatic}}, "Rows" -> {{0}}}],
+           "Column"], False->
+          TemplateBox[{0},
+           "Spacer1"]}, Dynamic[
+           CurrentValue[
+            EvaluationNotebook[], {TaggingRules, "BlocksOpen"}, True]],
+          ImageSize->Automatic]}
+       },
+       DefaultBaseStyle->"Column",
+       GridBoxAlignment->{"Columns" -> {{Left}}},
+       GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
+       
+       GridBoxSpacings->{"Columns" -> {{Automatic}}, "Rows" -> {{0}}}],
+      "Column"]},
     {
      TagBox[GridBox[{
         {
@@ -70,41 +274,121 @@ Cell[BoxData[
          PaneSelectorBox[{True->
           TagBox[GridBox[{
              {
-              ButtonBox["\<\"Copy reference\"\>",
-               Appearance->"Palette",
+              TagBox[
+               TooltipBox[
+                ButtonBox["\<\"Copy reference\"\>",
+                 Appearance->"Palette",
+                 
+                 ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
+                  WolframInstitute`MathNotebook`CopyCellReference[]),
+                 Evaluator->Automatic,
+                 ImageSize->{200, 27},
+                 Method->"Queued"],
+                
+                "\"Copies a link to the selected cell to the clipboard. \
+Pasted anywhere in the paper it becomes a live cross-reference reading as \
+that cell's own number.\"",
+                TooltipStyle->"TextStyling"],
                
-               ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
-                WolframInstitute`MathNotebook`CopyCellReference[]),
-               Evaluator->Automatic,
-               ImageSize->{200, 27},
-               Method->"Queued"]},
+               Annotation[#, 
+                "Copies a link to the selected cell to the clipboard. Pasted \
+anywhere in the paper it becomes a live cross-reference reading as that \
+cell's own number.", "Tooltip"]& ]},
              {
-              ButtonBox["\<\"Tag cell\"\>",
-               Appearance->"Palette",
+              TagBox[
+               TooltipBox[
+                ButtonBox["\<\"Insert citation\"\>",
+                 Appearance->"Palette",
+                 
+                 ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
+                  WolframInstitute`MathNotebook`InsertCitation[]),
+                 Evaluator->Automatic,
+                 ImageSize->{200, 27},
+                 Method->"Queued"],
+                
+                "\"Opens a list of everything this notebook has tagged, \
+literature entries and numbered blocks alike, and inserts a citation to the \
+one you pick. Typing a key it does not have cites that instead.\"",
+                TooltipStyle->"TextStyling"],
                
-               ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
-                WolframInstitute`MathNotebook`TagSelectedCell[]),
-               Evaluator->Automatic,
-               ImageSize->{200, 27},
-               Method->"Queued"]},
+               Annotation[#, 
+                "Opens a list of everything this notebook has tagged, \
+literature entries and numbered blocks alike, and inserts a citation to the \
+one you pick. Typing a key it does not have cites that instead.", 
+                "Tooltip"]& ]},
              {
-              ButtonBox["\<\"Insert citation\"\>",
-               Appearance->"Palette",
+              TagBox[
+               TooltipBox[
+                ButtonBox["\<\"\[UpArrow] Go back\"\>",
+                 Appearance->"Palette",
+                 
+                 ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
+                  WolframInstitute`MathNotebook`GoBack[]),
+                 Evaluator->Automatic,
+                 ImageSize->{200, 27},
+                 Method->"Queued"],
+                
+                "\"Returns to the cell the last hyperlink was followed \
+from.\"",
+                TooltipStyle->"TextStyling"],
                
-               ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
-                WolframInstitute`MathNotebook`InsertCitation[]),
-               Evaluator->Automatic,
-               ImageSize->{200, 27},
-               Method->"Queued"]},
+               Annotation[#, 
+                "Returns to the cell the last hyperlink was followed from.", 
+                "Tooltip"]& ]},
              {
-              ButtonBox["\<\"\[UpArrow] Go back\"\>",
-               Appearance->"Palette",
+              TagBox[
+               TooltipBox[
+                ButtonBox["\<\"Refresh labels\"\>",
+                 Appearance->"Palette",
+                 
+                 ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
+                  WolframInstitute`MathNotebook`LabelReferences[]),
+                 Evaluator->Automatic,
+                 ImageSize->{200, 27},
+                 Method->"Queued"],
+                
+                "\"Rebuilds the [key] label on every bibliography entry from \
+that cell's tag. Use it after tagging an entry from the Cell menu, which sets \
+the tag and not the label.\"",
+                TooltipStyle->"TextStyling"],
                
-               ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
-                WolframInstitute`MathNotebook`GoBack[]),
-               Evaluator->Automatic,
-               ImageSize->{200, 27},
-               Method->"Queued"]}
+               Annotation[#, 
+                "Rebuilds the [key] label on every bibliography entry from \
+that cell's tag. Use it after tagging an entry from the Cell menu, which sets \
+the tag and not the label.", "Tooltip"]& ]},
+             {
+              TagBox[
+               TooltipBox[
+                
+                ActionMenuBox["\<\"Sort bibliography\"\>",{
+                 "\"By first use\"" :> (
+                   Needs["WolframInstitute`MathNotebook`"]; 
+                   WolframInstitute`MathNotebook`SortBibliography[
+                    "FirstUse"]), 
+                  "\"By key\"" :> (Needs["WolframInstitute`MathNotebook`"]; 
+                   WolframInstitute`MathNotebook`SortBibliography["Key"]), 
+                  "\"By entry\"" :> (Needs["WolframInstitute`MathNotebook`"]; 
+                   WolframInstitute`MathNotebook`SortBibliography["Entry"]), 
+                  Delimiter, 
+                  "\"Report uncited\"" :> (
+                   Needs["WolframInstitute`MathNotebook`"]; 
+                   WolframInstitute`MathNotebook`SortBibliography["Uncited"])},
+                 Appearance->"PopupMenu",
+                 Evaluator->Automatic,
+                 ImageSize->{200, 27},
+                 Method->"Queued"],
+                
+                "\"Reorders the bibliography by first citation, by key, or by \
+the entry text, and reports what nothing cites. In a paper whose entries come \
+from a .bib file the order shown here is the notebook's alone: the .bib and \
+its style decide the compiled one.\"",
+                TooltipStyle->"TextStyling"],
+               
+               Annotation[#, 
+                "Reorders the bibliography by first citation, by key, or by \
+the entry text, and reports what nothing cites. In a paper whose entries come \
+from a .bib file the order shown here is the notebook's alone: the .bib and \
+its style decide the compiled one.", "Tooltip"]& ]}
             },
             DefaultBaseStyle->"Column",
             GridBoxAlignment->{"Columns" -> {{Left}}},
@@ -132,245 +416,88 @@ Cell[BoxData[
            OpenerBox[
             Dynamic[
              CurrentValue[
-              EvaluationNotebook[], {TaggingRules, "BlocksOpen"}, True]]], 
+              EvaluationNotebook[], {TaggingRules, "ConvertOpen"}, True]]], 
            PaneSelectorBox[{True -> TagBox[
                PaneBox[
-                PaneSelectorBox[{False -> StyleBox["\"Blocks\"", 11, Bold, 
+                
+                PaneSelectorBox[{
+                 False -> StyleBox["\"Selection\"", 11, Bold, 
                     GrayLevel[0.4], StripOnInput -> False], True -> 
-                  StyleBox["\"Blocks\"", 11, Bold, 
+                  StyleBox["\"Selection\"", 11, Bold, 
                     GrayLevel[0.15], StripOnInput -> False]}, 
                  Dynamic[
                   CurrentValue["MouseOver"]], ImageSize -> Automatic, 
                  FrameMargins -> 0], ImageSize -> {182, 20}, 
                 Alignment -> {Left, Center}], 
                EventHandlerTag[{"MouseClicked" :> (CurrentValue[
-                    EvaluationNotebook[], {TaggingRules, "BlocksOpen"}, True] = 
-                  False), Method -> "Preemptive", PassEventsDown -> Automatic,
-                  PassEventsUp -> True}]], False -> TagBox[
-               PaneBox[
-                PaneSelectorBox[{False -> StyleBox["\"Blocks\"", 11, Bold, 
-                    GrayLevel[0.4], StripOnInput -> False], True -> 
-                  StyleBox["\"Blocks\"", 11, Bold, 
-                    GrayLevel[0.15], StripOnInput -> False]}, 
-                 Dynamic[
-                  CurrentValue["MouseOver"]], ImageSize -> Automatic, 
-                 FrameMargins -> 0], ImageSize -> {182, 20}, 
-                Alignment -> {Left, Center}], 
-               EventHandlerTag[{"MouseClicked" :> (CurrentValue[
-                    EvaluationNotebook[], {TaggingRules, "BlocksOpen"}, True] = 
-                  True), Method -> "Preemptive", PassEventsDown -> Automatic, 
-                 PassEventsUp -> True}]]}, 
-            Dynamic[
-             CurrentValue[
-              EvaluationNotebook[], {TaggingRules, "BlocksOpen"}, True]], 
-            ImageSize -> Automatic]},
-          "RowDefault"]},
-        {
-         PaneSelectorBox[{True->
-          TagBox[GridBox[{
-             {
-              
-              ActionMenuBox["\<\"Insert environment\"\>",{
-               "\"Theorem\"" :> (Needs["WolframInstitute`MathNotebook`"]; 
-                 WolframInstitute`MathNotebook`InsertEnvironment["Theorem"]), 
-                "\"Lemma\"" :> (Needs["WolframInstitute`MathNotebook`"]; 
-                 WolframInstitute`MathNotebook`InsertEnvironment["Lemma"]), 
-                "\"Proposition\"" :> (Needs["WolframInstitute`MathNotebook`"]; 
-                 WolframInstitute`MathNotebook`InsertEnvironment[
-                  "Proposition"]), 
-                "\"Corollary\"" :> (Needs["WolframInstitute`MathNotebook`"]; 
-                 WolframInstitute`MathNotebook`InsertEnvironment[
-                  "Corollary"]), 
-                "\"Conjecture\"" :> (Needs["WolframInstitute`MathNotebook`"]; 
-                 WolframInstitute`MathNotebook`InsertEnvironment[
-                  "Conjecture"]), 
-                "\"Claim\"" :> (Needs["WolframInstitute`MathNotebook`"]; 
-                 WolframInstitute`MathNotebook`InsertEnvironment["Claim"]), 
-                "\"Definition\"" :> (Needs["WolframInstitute`MathNotebook`"]; 
-                 WolframInstitute`MathNotebook`InsertEnvironment[
-                  "Definition"]), 
-                "\"Example\"" :> (Needs["WolframInstitute`MathNotebook`"]; 
-                 WolframInstitute`MathNotebook`InsertEnvironment["Example"]), 
-                "\"Construction\"" :> (
-                 Needs["WolframInstitute`MathNotebook`"]; 
-                 WolframInstitute`MathNotebook`InsertEnvironment[
-                  "Construction"]), 
-                "\"Remark\"" :> (Needs["WolframInstitute`MathNotebook`"]; 
-                 WolframInstitute`MathNotebook`InsertEnvironment["Remark"]), 
-                "\"Question\"" :> (Needs["WolframInstitute`MathNotebook`"]; 
-                 WolframInstitute`MathNotebook`InsertEnvironment["Question"]),
-                 "\"Observation\"" :> (
-                 Needs["WolframInstitute`MathNotebook`"]; 
-                 WolframInstitute`MathNotebook`InsertEnvironment[
-                  "Observation"])},
-               Appearance->"PopupMenu",
-               Evaluator->Automatic,
-               ImageSize->{200, 27},
-               Method->"Queued"]},
-             {
-              ButtonBox["\<\"Proof\"\>",
-               Appearance->"Palette",
-               
-               ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
-                WolframInstitute`MathNotebook`InsertEnvironment["Proof"]),
-               Evaluator->Automatic,
-               ImageSize->{200, 27},
-               Method->"Queued"]},
-             {
-              ButtonBox["\<\"Equation\"\>",
-               Appearance->"Palette",
-               
-               ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
-                WolframInstitute`MathNotebook`InsertEnvironment[
-                 "DisplayFormula"]),
-               Evaluator->Automatic,
-               ImageSize->{200, 27},
-               Method->"Queued"]},
-             {
-              ButtonBox["\<\"Equation (n)\"\>",
-               Appearance->"Palette",
-               
-               ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
-                WolframInstitute`MathNotebook`InsertEnvironment[
-                 "DisplayFormulaNumbered"]),
-               Evaluator->Automatic,
-               ImageSize->{200, 27},
-               Method->"Queued"]}
-            },
-            DefaultBaseStyle->"Column",
-            GridBoxAlignment->{"Columns" -> {{Left}}},
-            
-            GridBoxItemSize->{
-             "Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
-            GridBoxSpacings->{"Columns" -> {{Automatic}}, "Rows" -> {{0}}}],
-           "Column"], False->
-          TemplateBox[{0},
-           "Spacer1"]}, Dynamic[
-           CurrentValue[
-            EvaluationNotebook[], {TaggingRules, "BlocksOpen"}, True]],
-          ImageSize->Automatic]}
-       },
-       DefaultBaseStyle->"Column",
-       GridBoxAlignment->{"Columns" -> {{Left}}},
-       GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
-       
-       GridBoxSpacings->{"Columns" -> {{Automatic}}, "Rows" -> {{0}}}],
-      "Column"]},
-    {
-     TagBox[GridBox[{
-        {
-         TemplateBox[{
-           OpenerBox[
-            Dynamic[
-             CurrentValue[
-              EvaluationNotebook[], {TaggingRules, "StylesheetOpen"}, True]]], 
-           PaneSelectorBox[{True -> TagBox[
-               PaneBox[
-                PaneSelectorBox[{False -> StyleBox["\"Stylesheet\"", 11, Bold, 
-                    GrayLevel[0.4], StripOnInput -> False], True -> 
-                  StyleBox["\"Stylesheet\"", 11, Bold, 
-                    GrayLevel[0.15], StripOnInput -> False]}, 
-                 Dynamic[
-                  CurrentValue["MouseOver"]], ImageSize -> Automatic, 
-                 FrameMargins -> 0], ImageSize -> {182, 20}, 
-                Alignment -> {Left, Center}], 
-               EventHandlerTag[{"MouseClicked" :> (CurrentValue[
-                    EvaluationNotebook[], {TaggingRules, "StylesheetOpen"}, 
+                    EvaluationNotebook[], {TaggingRules, "ConvertOpen"}, 
                     True] = False), Method -> "Preemptive", PassEventsDown -> 
                  Automatic, PassEventsUp -> True}]], False -> TagBox[
                PaneBox[
-                PaneSelectorBox[{False -> StyleBox["\"Stylesheet\"", 11, Bold, 
+                
+                PaneSelectorBox[{
+                 False -> StyleBox["\"Selection\"", 11, Bold, 
                     GrayLevel[0.4], StripOnInput -> False], True -> 
-                  StyleBox["\"Stylesheet\"", 11, Bold, 
+                  StyleBox["\"Selection\"", 11, Bold, 
                     GrayLevel[0.15], StripOnInput -> False]}, 
                  Dynamic[
                   CurrentValue["MouseOver"]], ImageSize -> Automatic, 
                  FrameMargins -> 0], ImageSize -> {182, 20}, 
                 Alignment -> {Left, Center}], 
                EventHandlerTag[{"MouseClicked" :> (CurrentValue[
-                    EvaluationNotebook[], {TaggingRules, "StylesheetOpen"}, 
+                    EvaluationNotebook[], {TaggingRules, "ConvertOpen"}, 
                     True] = True), Method -> "Preemptive", PassEventsDown -> 
                  Automatic, PassEventsUp -> True}]]}, 
             Dynamic[
              CurrentValue[
-              EvaluationNotebook[], {TaggingRules, "StylesheetOpen"}, True]], 
+              EvaluationNotebook[], {TaggingRules, "ConvertOpen"}, True]], 
             ImageSize -> Automatic]},
           "RowDefault"]},
         {
          PaneSelectorBox[{True->
           TagBox[GridBox[{
              {
-              
-              ActionMenuBox["\<\"Apply stylesheet\"\>",{
-               "\"AMSArticle\"" :> 
-                Replace[
-                 InputNotebook[], {
-                  Pattern[$CellContext`notebook$, Blank[NotebookObject]] :> (
-                    SetOptions[$CellContext`notebook$, StyleDefinitions -> 
-                    FrontEnd`FileName[{"MathNotebook"}, "AMSArticle.nb", 
-                    CharacterEncoding -> "UTF-8"], LightDark -> "Light"]; 
-                    CurrentValue[$CellContext`notebook$, {
-                    TaggingRules, "MathNotebook"}] = Inherited), Blank[] :> 
-                   MessageDialog["Open a notebook first!"]}], 
-                "\"ArXivArticle\"" :> 
-                Replace[
-                 InputNotebook[], {
-                  Pattern[$CellContext`notebook$, Blank[NotebookObject]] :> (
-                    SetOptions[$CellContext`notebook$, StyleDefinitions -> 
-                    FrontEnd`FileName[{"MathNotebook"}, "ArXivArticle.nb", 
-                    CharacterEncoding -> "UTF-8"], LightDark -> "Light"]; 
-                    CurrentValue[$CellContext`notebook$, {
-                    TaggingRules, "MathNotebook"}] = Inherited), Blank[] :> 
-                   MessageDialog["Open a notebook first!"]}], 
-                "\"SpringerJournal\"" :> 
-                Replace[
-                 InputNotebook[], {
-                  Pattern[$CellContext`notebook$, Blank[NotebookObject]] :> (
-                    SetOptions[$CellContext`notebook$, StyleDefinitions -> 
-                    FrontEnd`FileName[{"MathNotebook"}, "SpringerJournal.nb", 
-                    CharacterEncoding -> "UTF-8"], LightDark -> "Light"]; 
-                    CurrentValue[$CellContext`notebook$, {
-                    TaggingRules, "MathNotebook"}] = Inherited), Blank[] :> 
-                   MessageDialog["Open a notebook first!"]}], "\"RevTeXAPS\"" :> 
-                Replace[
-                 InputNotebook[], {
-                  Pattern[$CellContext`notebook$, Blank[NotebookObject]] :> (
-                    SetOptions[$CellContext`notebook$, StyleDefinitions -> 
-                    FrontEnd`FileName[{"MathNotebook"}, "RevTeXAPS.nb", 
-                    CharacterEncoding -> "UTF-8"], LightDark -> "Light"]; 
-                    CurrentValue[$CellContext`notebook$, {
-                    TaggingRules, "MathNotebook"}] = Inherited), Blank[] :> 
-                   MessageDialog["Open a notebook first!"]}], 
-                "\"ComplexSystems\"" :> 
-                Replace[
-                 InputNotebook[], {
-                  Pattern[$CellContext`notebook$, Blank[NotebookObject]] :> (
-                    SetOptions[$CellContext`notebook$, StyleDefinitions -> 
-                    FrontEnd`FileName[{"MathNotebook"}, "ComplexSystems.nb", 
-                    CharacterEncoding -> "UTF-8"], LightDark -> "Light"]; 
-                    CurrentValue[$CellContext`notebook$, {
-                    TaggingRules, "MathNotebook"}] = Inherited), Blank[] :> 
-                   MessageDialog["Open a notebook first!"]}], 
-                "\"PlainArticle\"" :> 
-                Replace[
-                 InputNotebook[], {
-                  Pattern[$CellContext`notebook$, Blank[NotebookObject]] :> (
-                    SetOptions[$CellContext`notebook$, StyleDefinitions -> 
-                    FrontEnd`FileName[{"MathNotebook"}, "PlainArticle.nb", 
-                    CharacterEncoding -> "UTF-8"], LightDark -> "Light"]; 
-                    CurrentValue[$CellContext`notebook$, {
-                    TaggingRules, "MathNotebook"}] = Inherited), Blank[] :> 
-                   MessageDialog["Open a notebook first!"]}], "\"Default\"" :> 
-                Replace[
-                 InputNotebook[], {
-                  Pattern[$CellContext`notebook, Blank[NotebookObject]] :> 
-                   SetOptions[$CellContext`notebook, StyleDefinitions -> 
-                    "Default.nb", LightDark -> Automatic], Blank[] :> 
-                   MessageDialog["Open a notebook first!"]}]},
-               Appearance->"PopupMenu",
-               Evaluator->Automatic,
-               ImageSize->{200, 27},
-               Method->"Queued"]}
+              TagBox[
+               TooltipBox[
+                ButtonBox["\<\"math \[Rule] MaTeX\"\>",
+                 Appearance->"Palette",
+                 
+                 ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
+                  WolframInstitute`MathNotebook`ConvertToMaTeX[]),
+                 Evaluator->Automatic,
+                 ImageSize->{200, 27},
+                 Method->"Queued"],
+                
+                "\"Renders the selected display equations through real LaTeX, \
+at the size Math size is showing. The result is an image rather than editable \
+math, so render last. Optional: needs MaTeX, a TeX distribution and \
+Ghostscript.\"",
+                TooltipStyle->"TextStyling"],
+               
+               Annotation[#, 
+                "Renders the selected display equations through real LaTeX, \
+at the size Math size is showing. The result is an image rather than editable \
+math, so render last. Optional: needs MaTeX, a TeX distribution and \
+Ghostscript.", "Tooltip"]& ]},
+             {
+              TagBox[
+               TooltipBox[
+                ButtonBox["\<\"MaTeX \[Rule] math\"\>",
+                 Appearance->"Palette",
+                 
+                 ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
+                  WolframInstitute`MathNotebook`ConvertFromMaTeX[]),
+                 Evaluator->Automatic,
+                 ImageSize->{200, 27},
+                 Method->"Queued"],
+                
+                "\"Turns rendered MaTeX images back into editable typeset \
+math, from the LaTeX each of those cells stores.\"",
+                TooltipStyle->"TextStyling"],
+               
+               Annotation[#, 
+                "Turns rendered MaTeX images back into editable typeset math, \
+from the LaTeX each of those cells stores.", "Tooltip"]& ]}
             },
             DefaultBaseStyle->"Column",
             GridBoxAlignment->{"Columns" -> {{Left}}},
@@ -382,7 +509,7 @@ Cell[BoxData[
           TemplateBox[{0},
            "Spacer1"]}, Dynamic[
            CurrentValue[
-            EvaluationNotebook[], {TaggingRules, "StylesheetOpen"}, True]],
+            EvaluationNotebook[], {TaggingRules, "ConvertOpen"}, True]],
           ImageSize->Automatic]}
        },
        DefaultBaseStyle->"Column",
@@ -439,60 +566,186 @@ Cell[BoxData[
          PaneSelectorBox[{True->
           TagBox[GridBox[{
              {
-              TemplateBox[{
-                PaneBox[
-                 StyleBox["\"Text size\"", 10, 
-                  GrayLevel[0.35], StripOnInput -> False], 
-                 ImageSize -> {72, 20}, Alignment -> {Left, Center}], 
-                SliderBox[
-                 Dynamic[
-                  CurrentValue[
-                   FrontEnd`InputNotebook[], {
-                   TaggingRules, "MathNotebook", "DocumentFontSize"}, 13], (
-                  Needs["WolframInstitute`MathNotebook`"]; 
-                  WolframInstitute`MathNotebook`SetDocumentFontSize[#])& ], {
-                 8, 28, 1}, ImageSize -> {92, 18}, ContinuousAction -> False], 
-                PaneBox[
-                 DynamicBox[
-                  ToBoxes[
-                   CurrentValue[
+              TagBox[
+               TooltipBox[
+                
+                ActionMenuBox["\<\"Apply stylesheet\"\>",{
+                 "\"AMSArticle\"" :> 
+                  Replace[
+                   InputNotebook[], {
+                    Pattern[$CellContext`notebook$, Blank[
+                    NotebookObject]] :> (
+                    SetOptions[$CellContext`notebook$, StyleDefinitions -> 
+                    FrontEnd`FileName[{"MathNotebook"}, "AMSArticle.nb", 
+                    CharacterEncoding -> "UTF-8"], LightDark -> "Light"]; 
+                    CurrentValue[$CellContext`notebook$, {
+                    TaggingRules, "MathNotebook"}] = Inherited), Blank[] :> 
+                    MessageDialog["Open a notebook first!"]}], 
+                  "\"ArXivArticle\"" :> 
+                  Replace[
+                   InputNotebook[], {
+                    Pattern[$CellContext`notebook$, Blank[
+                    NotebookObject]] :> (
+                    SetOptions[$CellContext`notebook$, StyleDefinitions -> 
+                    FrontEnd`FileName[{"MathNotebook"}, "ArXivArticle.nb", 
+                    CharacterEncoding -> "UTF-8"], LightDark -> "Light"]; 
+                    CurrentValue[$CellContext`notebook$, {
+                    TaggingRules, "MathNotebook"}] = Inherited), Blank[] :> 
+                    MessageDialog["Open a notebook first!"]}], 
+                  "\"SpringerJournal\"" :> 
+                  Replace[
+                   InputNotebook[], {
+                    Pattern[$CellContext`notebook$, Blank[
+                    NotebookObject]] :> (
+                    SetOptions[$CellContext`notebook$, StyleDefinitions -> 
+                    FrontEnd`FileName[{"MathNotebook"}, "SpringerJournal.nb", 
+                    CharacterEncoding -> "UTF-8"], LightDark -> "Light"]; 
+                    CurrentValue[$CellContext`notebook$, {
+                    TaggingRules, "MathNotebook"}] = Inherited), Blank[] :> 
+                    MessageDialog["Open a notebook first!"]}], 
+                  "\"RevTeXAPS\"" :> 
+                  Replace[
+                   InputNotebook[], {
+                    Pattern[$CellContext`notebook$, Blank[
+                    NotebookObject]] :> (
+                    SetOptions[$CellContext`notebook$, StyleDefinitions -> 
+                    FrontEnd`FileName[{"MathNotebook"}, "RevTeXAPS.nb", 
+                    CharacterEncoding -> "UTF-8"], LightDark -> "Light"]; 
+                    CurrentValue[$CellContext`notebook$, {
+                    TaggingRules, "MathNotebook"}] = Inherited), Blank[] :> 
+                    MessageDialog["Open a notebook first!"]}], 
+                  "\"ComplexSystems\"" :> 
+                  Replace[
+                   InputNotebook[], {
+                    Pattern[$CellContext`notebook$, Blank[
+                    NotebookObject]] :> (
+                    SetOptions[$CellContext`notebook$, StyleDefinitions -> 
+                    FrontEnd`FileName[{"MathNotebook"}, "ComplexSystems.nb", 
+                    CharacterEncoding -> "UTF-8"], LightDark -> "Light"]; 
+                    CurrentValue[$CellContext`notebook$, {
+                    TaggingRules, "MathNotebook"}] = Inherited), Blank[] :> 
+                    MessageDialog["Open a notebook first!"]}], 
+                  "\"PlainArticle\"" :> 
+                  Replace[
+                   InputNotebook[], {
+                    Pattern[$CellContext`notebook$, Blank[
+                    NotebookObject]] :> (
+                    SetOptions[$CellContext`notebook$, StyleDefinitions -> 
+                    FrontEnd`FileName[{"MathNotebook"}, "PlainArticle.nb", 
+                    CharacterEncoding -> "UTF-8"], LightDark -> "Light"]; 
+                    CurrentValue[$CellContext`notebook$, {
+                    TaggingRules, "MathNotebook"}] = Inherited), Blank[] :> 
+                    MessageDialog["Open a notebook first!"]}], "\"Default\"" :> 
+                  Replace[
+                   InputNotebook[], {
+                    Pattern[$CellContext`notebook, Blank[NotebookObject]] :> 
+                    SetOptions[$CellContext`notebook, StyleDefinitions -> 
+                    "Default.nb", LightDark -> Automatic], Blank[] :> 
+                    MessageDialog["Open a notebook first!"]}]},
+                 Appearance->"PopupMenu",
+                 Evaluator->Automatic,
+                 ImageSize->{200, 27},
+                 Method->"Queued"],
+                
+                "\"Retypesets the whole document in a journal's style. \
+Neither the content nor the numbering changes: those belong to the document, \
+and the sheet owns only the typography. Applying a sheet clears the two size \
+overrides below.\"",
+                TooltipStyle->"TextStyling"],
+               
+               Annotation[#, 
+                "Retypesets the whole document in a journal's style. Neither \
+the content nor the numbering changes: those belong to the document, and the \
+sheet owns only the typography. Applying a sheet clears the two size \
+overrides below.", "Tooltip"]& ]},
+             {
+              TagBox[
+               TooltipBox[
+                TemplateBox[{
+                  PaneBox[
+                   StyleBox["\"Text size\"", 10, 
+                    GrayLevel[0.35], StripOnInput -> False], 
+                   ImageSize -> {72, 20}, Alignment -> {Left, Center}], 
+                  SliderBox[
+                   Dynamic[
+                    CurrentValue[
+                    FrontEnd`InputNotebook[], {
+                    TaggingRules, "MathNotebook", "DocumentFontSize"}, 13], (
+                    Needs["WolframInstitute`MathNotebook`"]; 
+                    WolframInstitute`MathNotebook`SetDocumentFontSize[#])& ], \
+{8, 28, 1}, ImageSize -> {92, 18}, ContinuousAction -> False], 
+                  PaneBox[
+                   DynamicBox[
+                    ToBoxes[
+                    CurrentValue[
                     FrontEnd`InputNotebook[], {
                     TaggingRules, "MathNotebook", "DocumentFontSize"}, 13], 
-                   StandardForm]], Alignment -> {Right, Center}, 
-                 ImageSize -> {34, 20}, ScrollPosition -> {0., 0.}]},
-               "RowDefault"]},
+                    StandardForm]], Alignment -> {Right, Center}, 
+                   ImageSize -> {34, 20}, ScrollPosition -> {0., 0.}]},
+                 "RowDefault"],
+                
+                "\"Scales the prose of the focused document, on screen and in \
+print alike.\"",
+                TooltipStyle->"TextStyling"],
+               
+               Annotation[#, 
+                "Scales the prose of the focused document, on screen and in \
+print alike.", "Tooltip"]& ]},
              {
-              TemplateBox[{
-                PaneBox[
-                 StyleBox["\"Math size\"", 10, 
-                  GrayLevel[0.35], StripOnInput -> False], 
-                 ImageSize -> {72, 20}, Alignment -> {Left, Center}], 
-                SliderBox[
-                 Dynamic[
-                  CurrentValue[
-                   FrontEnd`InputNotebook[], {
-                   TaggingRules, "MathNotebook", "MathFontSize"}, 13], (
-                  Needs["WolframInstitute`MathNotebook`"]; 
-                  WolframInstitute`MathNotebook`SetMathFontSize[#])& ], {8, 
-                 28, 1}, ImageSize -> {92, 18}, ContinuousAction -> False], 
-                PaneBox[
-                 DynamicBox[
-                  ToBoxes[
-                   CurrentValue[
+              TagBox[
+               TooltipBox[
+                TemplateBox[{
+                  PaneBox[
+                   StyleBox["\"Math size\"", 10, 
+                    GrayLevel[0.35], StripOnInput -> False], 
+                   ImageSize -> {72, 20}, Alignment -> {Left, Center}], 
+                  SliderBox[
+                   Dynamic[
+                    CurrentValue[
+                    FrontEnd`InputNotebook[], {
+                    TaggingRules, "MathNotebook", "MathFontSize"}, 13], (
+                    Needs["WolframInstitute`MathNotebook`"]; 
+                    WolframInstitute`MathNotebook`SetMathFontSize[#])& ], {8, 
+                   28, 1}, ImageSize -> {92, 18}, ContinuousAction -> False], 
+                  
+                  PaneBox[
+                   DynamicBox[
+                    ToBoxes[
+                    CurrentValue[
                     FrontEnd`InputNotebook[], {
                     TaggingRules, "MathNotebook", "MathFontSize"}, 13], 
-                   StandardForm]], Alignment -> {Right, Center}, 
-                 ImageSize -> {34, 20}, ScrollPosition -> {0., 0.}]},
-               "RowDefault"]},
-             {
-              ButtonBox["\<\"Reset view\"\>",
-               Appearance->"Palette",
+                    StandardForm]], Alignment -> {Right, Center}, 
+                   ImageSize -> {34, 20}, ScrollPosition -> {0., 0.}]},
+                 "RowDefault"],
+                
+                "\"Scales the display and inline mathematics of the focused \
+document. Inline mathematics is scaled relative to the prose it sits in, so \
+it keeps tracking its own cell.\"",
+                TooltipStyle->"TextStyling"],
                
-               ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
-                WolframInstitute`MathNotebook`ResetDocumentView[]),
-               Evaluator->Automatic,
-               ImageSize->{200, 27},
-               Method->"Queued"]}
+               Annotation[#, 
+                "Scales the display and inline mathematics of the focused \
+document. Inline mathematics is scaled relative to the prose it sits in, so \
+it keeps tracking its own cell.", "Tooltip"]& ]},
+             {
+              TagBox[
+               TooltipBox[
+                ButtonBox["\<\"Reset view\"\>",
+                 Appearance->"Palette",
+                 
+                 ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
+                  WolframInstitute`MathNotebook`ResetDocumentView[]),
+                 Evaluator->Automatic,
+                 ImageSize->{200, 27},
+                 Method->"Queued"],
+                
+                "\"Clears both size overrides and returns the document to its \
+stylesheet's own sizes.\"",
+                TooltipStyle->"TextStyling"],
+               
+               Annotation[#, 
+                "Clears both size overrides and returns the document to its \
+stylesheet's own sizes.", "Tooltip"]& ]}
             },
             DefaultBaseStyle->"Column",
             GridBoxAlignment->{"Columns" -> {{Left}}},
@@ -525,9 +778,9 @@ Cell[BoxData[
                PaneBox[
                 
                 PaneSelectorBox[{
-                 False -> StyleBox["\"Whole paper (LaTeX)\"", 11, Bold, 
+                 False -> StyleBox["\"Import & Export\"", 11, Bold, 
                     GrayLevel[0.4], StripOnInput -> False], True -> 
-                  StyleBox["\"Whole paper (LaTeX)\"", 11, Bold, 
+                  StyleBox["\"Import & Export\"", 11, Bold, 
                     GrayLevel[0.15], StripOnInput -> False]}, 
                  Dynamic[
                   CurrentValue["MouseOver"]], ImageSize -> Automatic, 
@@ -540,9 +793,9 @@ Cell[BoxData[
                PaneBox[
                 
                 PaneSelectorBox[{
-                 False -> StyleBox["\"Whole paper (LaTeX)\"", 11, Bold, 
+                 False -> StyleBox["\"Import & Export\"", 11, Bold, 
                     GrayLevel[0.4], StripOnInput -> False], True -> 
-                  StyleBox["\"Whole paper (LaTeX)\"", 11, Bold, 
+                  StyleBox["\"Import & Export\"", 11, Bold, 
                     GrayLevel[0.15], StripOnInput -> False]}, 
                  Dynamic[
                   CurrentValue["MouseOver"]], ImageSize -> Automatic, 
@@ -630,14 +883,15 @@ CellContext`notebook, $CellContext`file]]]], Blank[] :>
                  Method->"Queued"],
                 
                 "\"Writes the whole notebook out as a LaTeX paper. This is \
-the export route; the selection buttons below only change how a few cells are \
-written and are a convenience beside it.\"",
+the route out to LaTeX; a .tex alone names figure files and a .bib that stay \
+behind, so use Export submission to send the paper anywhere.\"",
                 TooltipStyle->"TextStyling"],
                
                Annotation[#, 
                 "Writes the whole notebook out as a LaTeX paper. This is the \
-export route; the selection buttons below only change how a few cells are \
-written and are a convenience beside it.", "Tooltip"]& ]},
+route out to LaTeX; a .tex alone names figure files and a .bib that stay \
+behind, so use Export submission to send the paper anywhere.", 
+                "Tooltip"]& ]},
              {
               TagBox[
                TooltipBox[
@@ -706,235 +960,6 @@ when done and reports anything it could not find.", "Tooltip"]& ]}
            OpenerBox[
             Dynamic[
              CurrentValue[
-              EvaluationNotebook[], {TaggingRules, "ConvertOpen"}, True]]], 
-           PaneSelectorBox[{True -> TagBox[
-               PaneBox[
-                
-                PaneSelectorBox[{
-                 False -> StyleBox[
-                   "\"Selection: LaTeX \[LeftRightArrow] math\"", 11, Bold, 
-                    GrayLevel[0.4], StripOnInput -> False], True -> 
-                  StyleBox[
-                   "\"Selection: LaTeX \[LeftRightArrow] math\"", 11, Bold, 
-                    GrayLevel[0.15], StripOnInput -> False]}, 
-                 Dynamic[
-                  CurrentValue["MouseOver"]], ImageSize -> Automatic, 
-                 FrameMargins -> 0], ImageSize -> {182, 20}, 
-                Alignment -> {Left, Center}], 
-               EventHandlerTag[{"MouseClicked" :> (CurrentValue[
-                    EvaluationNotebook[], {TaggingRules, "ConvertOpen"}, 
-                    True] = False), Method -> "Preemptive", PassEventsDown -> 
-                 Automatic, PassEventsUp -> True}]], False -> TagBox[
-               PaneBox[
-                
-                PaneSelectorBox[{
-                 False -> StyleBox[
-                   "\"Selection: LaTeX \[LeftRightArrow] math\"", 11, Bold, 
-                    GrayLevel[0.4], StripOnInput -> False], True -> 
-                  StyleBox[
-                   "\"Selection: LaTeX \[LeftRightArrow] math\"", 11, Bold, 
-                    GrayLevel[0.15], StripOnInput -> False]}, 
-                 Dynamic[
-                  CurrentValue["MouseOver"]], ImageSize -> Automatic, 
-                 FrameMargins -> 0], ImageSize -> {182, 20}, 
-                Alignment -> {Left, Center}], 
-               EventHandlerTag[{"MouseClicked" :> (CurrentValue[
-                    EvaluationNotebook[], {TaggingRules, "ConvertOpen"}, 
-                    True] = True), Method -> "Preemptive", PassEventsDown -> 
-                 Automatic, PassEventsUp -> True}]]}, 
-            Dynamic[
-             CurrentValue[
-              EvaluationNotebook[], {TaggingRules, "ConvertOpen"}, True]], 
-            ImageSize -> Automatic]},
-          "RowDefault"]},
-        {
-         PaneSelectorBox[{True->
-          TagBox[GridBox[{
-             {
-              TagBox[
-               TooltipBox[
-                ButtonBox["\<\"Typeset\"\>",
-                 Appearance->"Palette",
-                 
-                 ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
-                  WolframInstitute`MathNotebook`ConvertLaTeXCells[]),
-                 Evaluator->Automatic,
-                 ImageSize->{200, 27},
-                 Method->"Queued"],
-                
-                "\"Reads the selected cells as LaTeX and replaces the \
-mathematics in them with editable typeset math. With nothing selected, the \
-whole notebook. Input, Code and Output cells are skipped, so a $ in code is \
-safe.\"",
-                TooltipStyle->"TextStyling"],
-               
-               Annotation[#, 
-                "Reads the selected cells as LaTeX and replaces the \
-mathematics in them with editable typeset math. With nothing selected, the \
-whole notebook. Input, Code and Output cells are skipped, so a $ in code is \
-safe.", "Tooltip"]& ]},
-             {
-              TagBox[
-               TooltipBox[
-                ButtonBox["\<\"Show source\"\>",
-                 Appearance->"Palette",
-                 
-                 ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
-                  WolframInstitute`MathNotebook`ConvertMathCells[]),
-                 Evaluator->Automatic,
-                 ImageSize->{200, 27},
-                 Method->"Queued"],
-                
-                "\"Turns the typeset mathematics of the selected cells back \
-into LaTeX source, to read or paste elsewhere. With nothing selected, the \
-whole notebook. To write out a paper, use Export to .tex above.\"",
-                TooltipStyle->"TextStyling"],
-               
-               Annotation[#, 
-                "Turns the typeset mathematics of the selected cells back \
-into LaTeX source, to read or paste elsewhere. With nothing selected, the \
-whole notebook. To write out a paper, use Export to .tex above.", 
-                "Tooltip"]& ]}
-            },
-            DefaultBaseStyle->"Column",
-            GridBoxAlignment->{"Columns" -> {{Left}}},
-            
-            GridBoxItemSize->{
-             "Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
-            GridBoxSpacings->{"Columns" -> {{Automatic}}, "Rows" -> {{0}}}],
-           "Column"], False->
-          TemplateBox[{0},
-           "Spacer1"]}, Dynamic[
-           CurrentValue[
-            EvaluationNotebook[], {TaggingRules, "ConvertOpen"}, True]],
-          ImageSize->Automatic]}
-       },
-       DefaultBaseStyle->"Column",
-       GridBoxAlignment->{"Columns" -> {{Left}}},
-       GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
-       
-       GridBoxSpacings->{"Columns" -> {{Automatic}}, "Rows" -> {{0}}}],
-      "Column"]},
-    {
-     TagBox[GridBox[{
-        {
-         TemplateBox[{
-           OpenerBox[
-            Dynamic[
-             CurrentValue[
-              EvaluationNotebook[], {TaggingRules, "MaTeXOpen"}, True]]], 
-           PaneSelectorBox[{True -> TagBox[
-               PaneBox[
-                
-                PaneSelectorBox[{
-                 False -> StyleBox[
-                   "\"Selection: math \[LeftRightArrow] MaTeX\"", 11, Bold, 
-                    GrayLevel[0.4], StripOnInput -> False], True -> 
-                  StyleBox[
-                   "\"Selection: math \[LeftRightArrow] MaTeX\"", 11, Bold, 
-                    GrayLevel[0.15], StripOnInput -> False]}, 
-                 Dynamic[
-                  CurrentValue["MouseOver"]], ImageSize -> Automatic, 
-                 FrameMargins -> 0], ImageSize -> {182, 20}, 
-                Alignment -> {Left, Center}], 
-               EventHandlerTag[{"MouseClicked" :> (CurrentValue[
-                    EvaluationNotebook[], {TaggingRules, "MaTeXOpen"}, True] = 
-                  False), Method -> "Preemptive", PassEventsDown -> Automatic,
-                  PassEventsUp -> True}]], False -> TagBox[
-               PaneBox[
-                
-                PaneSelectorBox[{
-                 False -> StyleBox[
-                   "\"Selection: math \[LeftRightArrow] MaTeX\"", 11, Bold, 
-                    GrayLevel[0.4], StripOnInput -> False], True -> 
-                  StyleBox[
-                   "\"Selection: math \[LeftRightArrow] MaTeX\"", 11, Bold, 
-                    GrayLevel[0.15], StripOnInput -> False]}, 
-                 Dynamic[
-                  CurrentValue["MouseOver"]], ImageSize -> Automatic, 
-                 FrameMargins -> 0], ImageSize -> {182, 20}, 
-                Alignment -> {Left, Center}], 
-               EventHandlerTag[{"MouseClicked" :> (CurrentValue[
-                    EvaluationNotebook[], {TaggingRules, "MaTeXOpen"}, True] = 
-                  True), Method -> "Preemptive", PassEventsDown -> Automatic, 
-                 PassEventsUp -> True}]]}, 
-            Dynamic[
-             CurrentValue[
-              EvaluationNotebook[], {TaggingRules, "MaTeXOpen"}, True]], 
-            ImageSize -> Automatic]},
-          "RowDefault"]},
-        {
-         PaneSelectorBox[{True->
-          TagBox[GridBox[{
-             {
-              TagBox[
-               TooltipBox[
-                ButtonBox["\<\"Render\"\>",
-                 Appearance->"Palette",
-                 
-                 ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
-                  WolframInstitute`MathNotebook`ConvertToMaTeX[]),
-                 Evaluator->Automatic,
-                 ImageSize->{200, 27},
-                 Method->"Queued"],
-                
-                "\"Renders the selected display equations through real LaTeX, \
-at the size Math size is showing. The result is an image rather than editable \
-math, so render last. Optional: needs MaTeX, a TeX distribution and \
-Ghostscript.\"",
-                TooltipStyle->"TextStyling"],
-               
-               Annotation[#, 
-                "Renders the selected display equations through real LaTeX, \
-at the size Math size is showing. The result is an image rather than editable \
-math, so render last. Optional: needs MaTeX, a TeX distribution and \
-Ghostscript.", "Tooltip"]& ]},
-             {
-              TagBox[
-               TooltipBox[
-                ButtonBox["\<\"Restore\"\>",
-                 Appearance->"Palette",
-                 
-                 ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
-                  WolframInstitute`MathNotebook`ConvertFromMaTeX[]),
-                 Evaluator->Automatic,
-                 ImageSize->{200, 27},
-                 Method->"Queued"],
-                
-                "\"Turns rendered MaTeX images back into editable typeset \
-math, from the LaTeX each of those cells stores.\"",
-                TooltipStyle->"TextStyling"],
-               
-               Annotation[#, 
-                "Turns rendered MaTeX images back into editable typeset math, \
-from the LaTeX each of those cells stores.", "Tooltip"]& ]}
-            },
-            DefaultBaseStyle->"Column",
-            GridBoxAlignment->{"Columns" -> {{Left}}},
-            
-            GridBoxItemSize->{
-             "Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
-            GridBoxSpacings->{"Columns" -> {{Automatic}}, "Rows" -> {{0}}}],
-           "Column"], False->
-          TemplateBox[{0},
-           "Spacer1"]}, Dynamic[
-           CurrentValue[
-            EvaluationNotebook[], {TaggingRules, "MaTeXOpen"}, True]],
-          ImageSize->Automatic]}
-       },
-       DefaultBaseStyle->"Column",
-       GridBoxAlignment->{"Columns" -> {{Left}}},
-       GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
-       
-       GridBoxSpacings->{"Columns" -> {{Automatic}}, "Rows" -> {{0}}}],
-      "Column"]},
-    {
-     TagBox[GridBox[{
-        {
-         TemplateBox[{
-           OpenerBox[
-            Dynamic[
-             CurrentValue[
               EvaluationNotebook[], {TaggingRules, "SetupOpen"}, True]]], 
            PaneSelectorBox[{True -> TagBox[
                PaneBox[
@@ -972,49 +997,102 @@ from the LaTeX each of those cells stores.", "Tooltip"]& ]}
          PaneSelectorBox[{True->
           TagBox[GridBox[{
              {
-              ButtonBox["\<\"Install LaTeX fonts\"\>",
-               Appearance->"Palette",
+              TagBox[
+               TooltipBox[
+                ButtonBox["\<\"Install LaTeX fonts\"\>",
+                 Appearance->"Palette",
+                 
+                 ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
+                  WolframInstitute`MathNotebook`InstallLaTeXFonts[]),
+                 Evaluator->Automatic,
+                 ImageSize->{200, 27},
+                 Method->"Queued"],
+                
+                "\"Installs the Latin Modern and TeX Gyre families the \
+stylesheets ask for. Restart the front end afterwards.\"",
+                TooltipStyle->"TextStyling"],
                
-               ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
-                WolframInstitute`MathNotebook`InstallLaTeXFonts[]),
-               Evaluator->Automatic,
-               ImageSize->{200, 27},
-               Method->"Queued"]},
+               Annotation[#, 
+                "Installs the Latin Modern and TeX Gyre families the \
+stylesheets ask for. Restart the front end afterwards.", "Tooltip"]& ]},
              {
-              ButtonBox["\<\"Install MaTeX\"\>",
-               Appearance->"Palette",
-               ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
-                WolframInstitute`MathNotebook`InstallMaTeX[]),
-               Evaluator->Automatic,
-               ImageSize->{200, 27},
-               Method->"Queued"]},
-             {
-              ButtonBox["\<\"MaTeX preferences\"\>",
-               Appearance->"Palette",
+              TagBox[
+               TooltipBox[
+                ButtonBox["\<\"Install MaTeX\"\>",
+                 Appearance->"Palette",
+                 
+                 ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
+                  WolframInstitute`MathNotebook`InstallMaTeX[]),
+                 Evaluator->Automatic,
+                 ImageSize->{200, 27},
+                 Method->"Queued"],
+                
+                "\"Installs the MaTeX paclet, which renders equations through \
+a real LaTeX. A TeX distribution and Ghostscript must already be on the \
+machine.\"",
+                TooltipStyle->"TextStyling"],
                
-               ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
-                WolframInstitute`MathNotebook`OpenMaTeXPreferences[]),
-               Evaluator->Automatic,
-               ImageSize->{200, 27},
-               Method->"Queued"]},
+               Annotation[#, 
+                "Installs the MaTeX paclet, which renders equations through a \
+real LaTeX. A TeX distribution and Ghostscript must already be on the \
+machine.", "Tooltip"]& ]},
              {
-              ButtonBox["\<\"Update from cloud\"\>",
-               Appearance->"Palette",
+              TagBox[
+               TooltipBox[
+                ButtonBox["\<\"MaTeX preferences\"\>",
+                 Appearance->"Palette",
+                 
+                 ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
+                  WolframInstitute`MathNotebook`OpenMaTeXPreferences[]),
+                 Evaluator->Automatic,
+                 ImageSize->{200, 27},
+                 Method->"Queued"],
+                
+                "\"Opens MaTeX's own configuration, where the pdfLaTeX and \
+Ghostscript paths are set.\"",
+                TooltipStyle->"TextStyling"],
                
-               ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
-                WolframInstitute`MathNotebook`UpdateMathNotebook[]),
-               Evaluator->Automatic,
-               ImageSize->{200, 27},
-               Method->"Queued"]},
+               Annotation[#, 
+                "Opens MaTeX's own configuration, where the pdfLaTeX and \
+Ghostscript paths are set.", "Tooltip"]& ]},
              {
-              ButtonBox["\<\"Tutorial\"\>",
-               Appearance->"Palette",
+              TagBox[
+               TooltipBox[
+                ButtonBox["\<\"Update from cloud\"\>",
+                 Appearance->"Palette",
+                 
+                 ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
+                  WolframInstitute`MathNotebook`UpdateMathNotebook[]),
+                 Evaluator->Automatic,
+                 ImageSize->{200, 27},
+                 Method->"Queued"],
+                
+                "\"Checks the cloud for a newer MathNotebook, installs it if \
+there is one, and reopens this palette.\"",
+                TooltipStyle->"TextStyling"],
                
-               ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
-                WolframInstitute`MathNotebook`OpenTutorial[]),
-               Evaluator->Automatic,
-               ImageSize->{200, 27},
-               Method->"Queued"]}
+               Annotation[#, 
+                "Checks the cloud for a newer MathNotebook, installs it if \
+there is one, and reopens this palette.", "Tooltip"]& ]},
+             {
+              TagBox[
+               TooltipBox[
+                ButtonBox["\<\"Tutorial\"\>",
+                 Appearance->"Palette",
+                 
+                 ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
+                  WolframInstitute`MathNotebook`OpenTutorial[]),
+                 Evaluator->Automatic,
+                 ImageSize->{200, 27},
+                 Method->"Queued"],
+                
+                "\"Opens the tutorial notebook, which walks through the whole \
+palette on a real paper.\"",
+                TooltipStyle->"TextStyling"],
+               
+               Annotation[#, 
+                "Opens the tutorial notebook, which walks through the whole \
+palette on a real paper.", "Tooltip"]& ]}
             },
             DefaultBaseStyle->"Column",
             GridBoxAlignment->{"Columns" -> {{Left}}},
@@ -1040,7 +1118,7 @@ from the LaTeX each of those cells stores.", "Tooltip"]& ]}
    GridBoxAlignment->{"Columns" -> {{Left}}},
    GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
    GridBoxSpacings->{"Columns" -> {{Automatic}}, "Rows" -> {{0.4}}}],
-  "Column"]],ExpressionUUID->"0c1eab4f-b345-4a6e-a3ce-bd5765688d85"]
+  "Column"]],ExpressionUUID->"84dd3811-2c94-4988-ad3e-4d8a3c50dcc6"]
 },
 Editable->False,
 Saveable->False,
@@ -1052,12 +1130,11 @@ WindowFloating->True,
 WindowTitle->"MathNotebook",
 ShowCellBracket->False,
 TaggingRules-><|
- "ReferencingOpen" -> True, "BlocksOpen" -> True, "StylesheetOpen" -> True, 
-  "ViewOpen" -> True, "DocumentOpen" -> True, "ConvertOpen" -> True, 
-  "MaTeXOpen" -> True, "SetupOpen" -> True|>,
+ "BlocksOpen" -> True, "ReferencingOpen" -> True, "ConvertOpen" -> True, 
+  "ViewOpen" -> True, "DocumentOpen" -> True, "SetupOpen" -> True|>,
 FrontEndVersion->"15.0 for Mac OS X ARM (64-bit) (May 19, 2026)",
 StyleDefinitions->"Palette.nb",
-ExpressionUUID->"e055cec7-8bf0-4720-8cb0-398b646fa74d"
+ExpressionUUID->"3dd278ad-4341-4c36-8e54-dd00a467c5f0"
 ]
 (* End of Notebook Content *)
 
@@ -1070,7 +1147,7 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[581, 21, 46915, 1021, 827, InheritFromParent,ExpressionUUID->"0c1eab4f-b345-4a6e-a3ce-bd5765688d85"]
+Cell[581, 21, 50240, 1099, 778, InheritFromParent,ExpressionUUID->"84dd3811-2c94-4988-ad3e-4d8a3c50dcc6"]
 }
 ]
 *)
