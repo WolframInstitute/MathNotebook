@@ -25,6 +25,8 @@ PackageScope["citedTags"]
 PackageScope["referenceKey"]
 PackageScope["$bibliographySortMethods"]
 PackageScope["$bibliographyAnchorTag"]
+PackageScope["unescapedRun"]
+PackageScope["escapedRun"]
 
 ImportLaTeXDocument[ file_String ] :=
   With[ { source = Import[ file, "Text" ] },
@@ -1181,6 +1183,85 @@ textPieces[ chunk_String ] :=
         Cell[ inlineContent[ core ], "Text" ],
         separatorMark @ First[ StringCases[ chunk, space : WhitespaceCharacter .. ~~ EndOfString :> space, 1 ], "" ] } ] ]
 
+(* ---- The TeX character escapes (FirstReadingDefects T2) ----------------------------------------
+   \&, \%, \_, \#, \$ unescape into displayed text on import and re-escape on export, but a blanket
+   inverse is impossible: the importer deliberately leaves raw TeX in displayed text — a comment
+   line, a failed math span, a whole table glued to its paragraph by a line-continuation % — and
+   raw TeX is full of the same five characters (hodgepaper displays 49 bare %s, a #1 macro
+   parameter and a failed equation carrying _). So both directions scan a run with the SAME
+   segmentation, rawSegments, and touch only the plain segments; the two cannot disagree, and a
+   raw-TeX span goes back out verbatim. Three deliberate corners, each measured absent from the
+   corpus and each still byte-exact on the round trip: a # adjacent to a digit is never touched
+   (that shape is a macro parameter), a % is only a percent when strictly mid-line (line-initial
+   and line-final %s are comments and continuations — measured 39 and 10 in hodgepaper, and 0
+   mid-line), and every rule list opens with identity rules for the escaped forms so a \& the
+   unescape left behind is never double-escaped. *)
+
+(* U+F8FF, private use: \$ has to vanish before splitInlineMath reads its $ as a math delimiter,
+   and a sentinel is the only rewrite that survives the split — the T1 pattern. The identity rule
+   keeps \\$ (a line break, then a dollar) out of the mask. *)
+$dollarSentinel = FromCharacterCode[ 63743 ]
+
+dollarMasked[ text_String ] :=
+  StringReplace[ text, { "\\\\" -> "\\\\", "\\$" -> $dollarSentinel } ]
+
+(* One regex, shared by both directions: a complete environment (back-reference, so a nested
+   \end{gathered} cannot close a \begin{equation}), a failed display or inline span still wearing
+   its dollars, a comment line (line-initial or run-initial %), and the line-continuation %. *)
+(* The environment back-reference is a NAMED group: binding the whole regex to a pattern variable
+   wraps it in a group of its own, renumbering \1 out from under a numeric back-reference. *)
+$rawTeXSpan = RegularExpression @ StringJoin[
+  "(?s)\\\\begin\\{(?P<mnenv>[^}]*)\\}.*?\\\\end\\{(?P=mnenv)\\}",
+  "|\\$\\$.+?\\$\\$",
+  "|(?<!\\\\)\\$[^$]+(?<!\\\\)\\$",
+  "|(?:(?<=\n)|^)%[^\n]*",
+  "|%(?=\n|$)" ]
+
+rawSegments[ run_String ] :=
+  StringSplit[ run, span : $rawTeXSpan :> rawSpan[ span ] ]
+
+$unescapeRules = {
+  "\\\\" -> "\\\\",
+  "\\&" -> "&",
+  "\\_" -> "_",
+  RegularExpression[ "\\\\#(?![0-9])" ] -> "#",
+  RegularExpression[ "(?<=[^\n])\\\\%(?=[^\n])" ] -> "%",
+  $dollarSentinel -> "$" }
+
+$escapeRules = {
+  "\\\\" -> "\\\\",
+  "\\&" -> "\\&", "\\%" -> "\\%", "\\_" -> "\\_", "\\#" -> "\\#", "\\$" -> "\\$",
+  "&" -> "\\&",
+  "_" -> "\\_",
+  "$" -> "\\$",
+  RegularExpression[ "#(?![0-9])" ] -> "\\#",
+  RegularExpression[ "(?<=[^\n])%(?=[^\n])" ] -> "\\%" }
+
+unescapedRun[ run_String ] :=
+  StringJoin @ Replace[ rawSegments[ run ],
+    { plain_String :> StringReplace[ plain, $unescapeRules ],
+      rawSpan[ span_String ] :> StringReplace[ span, $dollarSentinel -> "\\$" ] },
+    { 1 } ]
+
+escapedRun[ run_String ] :=
+  StringJoin @ Replace[ rawSegments[ run ],
+    { plain_String :> StringReplace[ plain, $escapeRules ],
+      rawSpan[ span_String ] :> span },
+    { 1 } ]
+
+(* A \$ inside a math span rides the mask into the island: its SourceTeX must give the escape
+   back or the export writes a private-use character into the .tex. The With-condition idiom
+   forces the replacement string to evaluate before insertion, so a held box takes a plain
+   string rather than an unevaluated call. *)
+dollarRestoredPart[ part_String ] :=
+  part
+
+dollarRestoredPart[ part_ ] :=
+  If[ FreeQ[ part, s_String /; StringContainsQ[ s, $dollarSentinel ] ],
+    part,
+    part /. s_String /; StringContainsQ[ s, $dollarSentinel ] :>
+      With[ { restored = StringReplace[ s, $dollarSentinel -> "\\$" ] }, restored /; True ] ]
+
 (* StringSplit of the empty string is {} and not {""}, so an empty environment body — or an empty
    section title — would otherwise become TextData[{}], which no exporter reads back as text. *)
 inlineContent[ text_String ] :=
@@ -1189,11 +1270,16 @@ inlineContent[ text_String ] :=
 
 (* Font commands split before inline math because their argument may hold a math span whole
    (\emph{degree $n$}); the argument recurses through the same pipeline, so math and nested
-   commands inside a styled run come out converted too. *)
+   commands inside a styled run come out converted too. The escapes unescape on the final plain
+   runs, after every splitter has taken its pieces, so a ButtonData key and a SourceTeX mirror
+   stay verbatim. *)
 inlineParts[ text_String ] :=
-  mergeStrings @ Flatten @ Replace[ fontSplit[ text ],
-    part_String :> Replace[ splitInlineMath[ part ], piece_String :> citationSplit[ piece ], { 1 } ],
-    { 1 } ]
+  mergeStrings @ Map[ dollarRestoredPart,
+    Flatten @ Replace[ fontSplit @ dollarMasked[ text ],
+      part_String :> Replace[ splitInlineMath[ part ],
+        piece_String :> Replace[ citationSplit[ piece ], run_String :> unescapedRun[ run ], { 1 } ],
+        { 1 } ],
+      { 1 } ] ]
 
 $fontCommands = <|
   "textbf" -> { FontWeight -> "Bold" },
@@ -1375,10 +1461,19 @@ referenceContent[ TextData[ parts_ ], labels_Association ] :=
 referenceContent[ content_, _Association ] :=
   content
 
+(* A \ref inside a failed inline span must stay in the span: splitting it into a button strands the
+   span's two dollars in separate runs, where the T2 export escape reads each as a loose \$-dollar
+   and the round trip breaks. The span is exactly the text a $-pair still delimits — converted
+   mathematics is an island by now — so it is matched with the same pattern rawSegments uses. *)
 referenceSplit[ text_String, labels_Association ] :=
-  StringSplit[ text,
-    command : ( "\\eqref" | "\\ref" ) ~~ "{" ~~ key : Except[ "}" ] .. ~~ "}" :>
-      referenceBox[ command, key, Lookup[ labels, key, None ] ] ]
+  mergeStrings @ Flatten @ Replace[
+    StringSplit[ text, span : RegularExpression[ "(?s)(?<!\\\\)\\$[^$]+(?<!\\\\)\\$" ] :> rawSpan[ span ] ],
+    { rawSpan[ span_String ] :> span,
+      plain_String :>
+        StringSplit[ plain,
+          command : ( "\\eqref" | "\\ref" ) ~~ "{" ~~ key : Except[ "}" ] .. ~~ "}" :>
+            referenceBox[ command, key, Lookup[ labels, key, None ] ] ] },
+    { 1 } ]
 
 referenceBox[ command_String, key_String, counters_List ] :=
   ButtonBox[
@@ -1439,8 +1534,42 @@ cellToLaTeX[ cell_Cell ] :=
   cellBodyLaTeX[ cell ]
 
 cellBodyLaTeX[ cell_Cell ] :=
-  Replace[ convertMathCell @ referencesToTeX[ cell ],
+  Replace[ convertMathCell @ referencesToTeX @ escapedTextCell[ cell ],
     { Cell[ text_String, ___ ] :> text, other_ :> ToString[ other, InputForm ] } ]
+
+(* The export half of the T2 escape pair, applied to displayed text only — before referencesToTeX,
+   because that pass turns every ButtonBox into a command string (\cite{a_key}) whose underscore is
+   not prose. A BoxData island re-exports from its SourceTeX mirror and a ButtonBox from its
+   ButtonData, so both pass through untouched; a font run is displayed text and recurses. *)
+escapedTextCell[ Cell[ text_String, rest___ ] ] :=
+  Cell[ escapedRun @ text, rest ]
+
+escapedTextCell[ Cell[ TextData[ parts_ ], rest___ ] ] :=
+  Cell[ TextData @ escapedTextParts @ Flatten @ { parts }, rest ]
+
+escapedTextCell[ cell_ ] :=
+  cell
+
+escapedTextParts[ parts_List ] :=
+  Map[ escapedTextPart, parts ]
+
+escapedTextPart[ text_String ] :=
+  escapedRun[ text ]
+
+escapedTextPart[ StyleBox[ text_String, rest___ ] ] :=
+  StyleBox[ escapedRun @ text, rest ]
+
+escapedTextPart[ StyleBox[ TextData[ parts_ ], rest___ ] ] :=
+  StyleBox[ TextData @ escapedTextParts @ Flatten @ { parts }, rest ]
+
+escapedTextPart[ StyleBox[ parts_List, rest___ ] ] :=
+  StyleBox[ escapedTextParts @ parts, rest ]
+
+escapedTextPart[ Cell[ TextData[ parts_ ], rest___ ] ] :=
+  Cell[ TextData @ escapedTextParts @ Flatten @ { parts }, rest ]
+
+escapedTextPart[ part_ ] :=
+  part
 
 (* A display formula's tag is a mirror of the \label already inside its stored source, not the
    origin of one, so writing it back out again would emit the label twice — which is what happens
@@ -1456,7 +1585,8 @@ cellTrailing[ cell_Cell ] :=
     cellTagging[ cell, "TrailingAfter" ]
 
 cellTeXText[ cell : Cell[ content_, ___ ] ] :=
-  Replace[ convertMathCell @ referencesToTeX @ Cell[ content, "Text" ], { Cell[ text_String, ___ ] :> text, _ :> "" } ]
+  Replace[ convertMathCell @ referencesToTeX @ escapedTextCell @ Cell[ content, "Text" ],
+    { Cell[ text_String, ___ ] :> text, _ :> "" } ]
 
 referencesToTeX[ Cell[ content_, rest___ ] ] :=
   Cell[ Replace[ content /. TextData[ parts_List ] :> TextData @ mergedButtons[ parts ],

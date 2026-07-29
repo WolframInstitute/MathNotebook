@@ -98,7 +98,7 @@ navigation and interaction defects, the classes the census and fidelity tests ca
   private-use character rather than patching one. Assert by rendered ink (a `\varnothing` island
   measures > 0 against the blank it is today) and by character code kernel-side; round trip stays
   byte-exact (inline math re-exports from `"SourceTeX"`).
-- [ ] **T2 — The character escapes.** Unescape `\&`, `\%`, `\_`, `\#`, `\$` into displayed text on
+- [x] **T2 — The character escapes.** Unescape `\&`, `\%`, `\_`, `\#`, `\$` into displayed text on
   import — prose, section titles, environment titles, captions, wherever `inlineContent` reaches —
   and re-escape on export so both specimens stay byte-exact. Watch the specimen census: cell counts
   must not move.
@@ -172,3 +172,35 @@ navigation and interaction defects, the classes the census and fidelity tests ca
   kernel's `Global`` shadows from old sessions survive every reload; fresh `wolframscript` per
   probe was what made the measurements trustworthy.
 - **Next:** T2.
+
+### Session 2 — 2026-07-29 — T2, the character escapes
+
+- **Prompt:** `/next-session`.
+- **Did:** Measured first, and the measurement killed the planned blanket inverse: the importer
+  deliberately leaves raw TeX in displayed text, and raw TeX is full of the five characters —
+  hodgepaper *displays* 49 bare `%`s (39 line-initial comment lines, 10 line-final continuations,
+  0 mid-line), a `#1` macro parameter inside a table its `%`-continuation glues to a Proof
+  paragraph, and a failed `\begin{equation}` still wearing its `_`. So both directions scan a run
+  with the **same segmentation** (`rawSegments` in `Document.wl`: complete environments by
+  back-reference, `$…$`/`$$…$$` failed spans, comment lines, the lone continuation `%`) and touch
+  only the plain segments — `unescapedRun` on the final prose runs of `inlineParts`,
+  `escapedRun` via `escapedTextCell` ahead of `referencesToTeX` in `cellBodyLaTeX`/`cellTeXText`.
+  `\$` is masked to a private-use sentinel before `splitInlineMath` reads its dollar as a
+  delimiter (T1's pattern), restored per segment, and `\$` inside a converted span restores in
+  the island's `SourceTeX`. Three corners taken as decisions, each pinned by a test: `#` beside a
+  digit is a macro parameter and is never touched; `%` is a percent only strictly mid-line; and
+  every rule list opens with identity rules for the escaped forms, so a missed unescape can never
+  double-escape and still round-trips byte-exact. `referenceSplit` now keeps a `\ref` inside a
+  failed math span in the span — button-splitting it stranded the span's dollars in separate runs
+  where the export escape read each as a loose `\$`. Suite 334 → 341 green, both specimens
+  byte-exact, census untouched; both halves bitten separately (import bite fails exactly the 3
+  display assertions, export bite exactly the 6 pair tests).
+- **Learned:** Binding a regex to a pattern variable (`span : RegularExpression[…]`) wraps it in
+  a capture group of its own, silently renumbering a numeric back-reference — `\1` matched the
+  wrapper and the environment alternative matched nothing; `(?P<name>…)`/`(?P=name)` is immune.
+  Now in CLAUDE.md. Also: Pavel's reported "environment title displays `\&`" could not be
+  reproduced because environment titles are not displayed at all — the `[…]` title rides verbatim
+  in `EnvironmentOpen` — so the escape fix covers it for free if titles ever display; and a
+  `\ref` whose target is absent now merges into its neighbouring prose run (the old test asserted
+  it as a standalone `TextData` part; amended to assert the content, plus that no button exists).
+- **Next:** T3.

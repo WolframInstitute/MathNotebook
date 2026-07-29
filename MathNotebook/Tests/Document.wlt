@@ -138,9 +138,11 @@ VerificationTest[ (* \ref is the bare counter chain of the target's style, \eqre
 ]
 
 VerificationTest[ (* a key no converted cell carries at all is left as source rather than rendered as
-                     the front end's XXX *)
-  ! FreeQ[ First @ $referenceNotebook, "\\ref{fig:absent}" ],
-  True
+                     the front end's XXX — inside a prose run since T2's referenceSplit merges the
+                     fallback with its neighbours, and never as a button *)
+  { ! FreeQ[ First @ $referenceNotebook, s_String /; StringContainsQ[ s, "\\ref{fig:absent}" ] ],
+    FreeQ[ First @ $referenceNotebook, ButtonBox[ ___, ButtonData -> "fig:absent", ___ ] ] },
+  { True, True }
 ]
 
 VerificationTest[ (* out and back, with both commands distinguished *)
@@ -939,4 +941,98 @@ VerificationTest[
         ( StyleDefinitions -> FrontEnd`FileName[ { "MathNotebook" }, sheet_String, ___ ] ) :> sheet, { 1 } ],
       notebookToLaTeX @ latexToNotebook[ article ] === article } ],
   { { "PlainArticle.nb" }, { "AMSArticle.nb" }, True }
+]
+
+(* FirstReadingDefects T2: the TeX character escapes. \&, \%, \_, \#, \$ unescape into displayed
+   text — a section title, prose, wherever inlineContent reaches — and re-escape on export, so the
+   escape never reaches the reader and the round trip stays byte-exact. A blanket inverse is
+   impossible (the importer deliberately leaves raw TeX in displayed text, and raw TeX is full of
+   these characters), so both directions scan a run with the same segmentation and touch only the
+   plain segments; each protected shape below is pinned by the round trip of a source that carries
+   it. *)
+
+$escapeSource = "\\section{Conclusion \\& Further Work}\n\nJohnson \\& Johnson keep 100\\% of \\#Tag and pay \\$5 for a\\_b.\n"
+
+(* the displayed text drops every escape; the export writes each one back *)
+VerificationTest[
+  With[ { notebook = latexToNotebook[ $escapeSource ] },
+    { FirstCase[ First @ notebook, Cell[ text_, "Section", ___ ] :> text ],
+      FirstCase[ First @ notebook, Cell[ text_, "Text", ___ ] :> text ],
+      notebookToLaTeX[ notebook ] === $escapeSource } ],
+  { "Conclusion & Further Work",
+    "Johnson & Johnson keep 100% of #Tag and pay $5 for a_b.",
+    True }
+]
+
+(* a styled run is displayed text too: the escape inside \emph unescapes and comes back *)
+VerificationTest[
+  With[ { source = "Pairs \\emph{of \\& degree} hold.\n" },
+    With[ { notebook = latexToNotebook[ source ] },
+      { FirstCase[ First @ notebook, Cell[ TextData[ parts_ ], "Text", ___ ] :>
+          FirstCase[ parts, StyleBox[ text_, ___ ] :> text ] ],
+        notebookToLaTeX[ notebook ] === source } ] ],
+  { "of & degree", True }
+]
+
+(* raw TeX left in displayed text goes back out verbatim: a comment line and a line-continuation %
+   are never percents, an environment glued to its paragraph keeps its column & and macro #1, and a
+   \ref inside a failed inline span stays in the span rather than stranding its dollars. *)
+VerificationTest[
+  Map[ notebookToLaTeX @ latexToNotebook[ # ] === # &, {
+    "Prose \\& one.\n%comment \\& stays\nMore prose.\n",
+    "Glued.%\nTogether \\& fine.\n",
+    "Some \\begin{tabular}{ll}\na & \\#1 \\\\\n\\end{tabular} glued \\& prose.\n",
+    "Where $a \\ref{eq} b$ fails, 100\\% holds.\n" } ],
+  { True, True, True, True }
+]
+
+(* \$ has to vanish before the math splitter reads its dollar as a delimiter: without the mask the
+   span below runs from the escaped dollar to the opening delimiter and swallows the prose between *)
+VerificationTest[
+  With[ { source = "Pay \\$5 where $x + y$ converts.\n" },
+    With[ { notebook = latexToNotebook[ source ] },
+      { FirstCase[ First @ notebook, Cell[ TextData[ { first_String, ___ } ], "Text", ___ ] :> first ],
+        Count[ First @ notebook, Cell[ _, "InlineFormula", ___ ], Infinity ],
+        notebookToLaTeX[ notebook ] === source } ] ],
+  { "Pay $5 where ", 1, True }
+]
+
+(* a \$ inside a math span rides the mask into the island, so its SourceTeX must give the escape
+   back — the private-use sentinel may never reach the .tex *)
+VerificationTest[
+  With[ { source = "Odd $a \\$ b$ span.\n" },
+    With[ { notebook = latexToNotebook[ source ] },
+      { FreeQ[ notebook, s_String /; StringContainsQ[ s, FromCharacterCode[ 63743 ] ] ],
+        notebookToLaTeX[ notebook ] === source } ] ],
+  { True, True }
+]
+
+(* the export half alone, on text a notebook author typed: prose characters are escaped, a raw span
+   and a comment are not, and an escape already present is never doubled *)
+VerificationTest[
+  Map[ escapedRun, {
+    "A & B pay 100% of #x for a_b and $5.",
+    "keep \\& this \\$ that",
+    "\\begin{tabular}{ll}\na & b \\\\\n\\end{tabular} out & side",
+    "prose.%\n%comment & tail\nmore & prose" } ],
+  { "A \\& B pay 100\\% of \\#x for a\\_b and \\$5.",
+    "keep \\& this \\$ that",
+    "\\begin{tabular}{ll}\na & b \\\\\n\\end{tabular} out \\& side",
+    "prose.%\n%comment & tail\nmore \\& prose" }
+]
+
+(* the deliberate corners, pinned as decisions: a # adjacent to a digit is a macro parameter and is
+   never touched in either direction, and a % that is not strictly mid-line is a comment or a
+   continuation, so \% beside a newline stays verbatim rather than turning into one *)
+VerificationTest[
+  { unescapedRun[ "issue \\#42 and \\#Tag" ],
+    escapedRun[ "issue #42 and #Tag" ],
+    notebookToLaTeX @ latexToNotebook[ "Keep 100\\%\nof the line.\n" ] ===
+      "Keep 100\\%\nof the line.\n",
+    FirstCase[ First @ latexToNotebook[ "Keep 100\\%\nof the line.\n" ],
+      Cell[ text_, "Text", ___ ] :> text ] },
+  { "issue \\#42 and #Tag",
+    "issue #42 and \\#Tag",
+    True,
+    "Keep 100\\%\nof the line." }
 ]
