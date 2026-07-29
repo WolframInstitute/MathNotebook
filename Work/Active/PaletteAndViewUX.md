@@ -72,12 +72,14 @@ the name of one of its groups, and the math font-size control.
 
 ## Tasks
 
-- [ ] **T1 — Rename the group.** Get the name from Pavel, apply it in `BuildPalette.wls`, regenerate
-  the palette, update `Tests/Palette.wlt`. Blocked on him; everything else here is not.
 - [ ] **T3 — Reference-entry button, `Tag Cell` removed.**
 - [ ] **T4 — `Insert Reference` becomes a picker** over the three reference kinds in the document.
 
 ### Done
+
+- [x] **T1 — Rename the group** (Session 2). `Environments` → **`Blocks`**, Pavel's choice. Heading and
+  fold-state key both, the palette regenerated. The rename was invisible to the whole suite, so
+  `Tests/Palette.wlt` now pins the four group headings and asserts the old name **absent**.
 
 - [x] **T2 — Inline math scales with the math font size** (Session 1). The island is styled
   `"InlineFormula"`, which resolves through the chain as `1.05*Inherited`; `SetMathFontSize` scales that
@@ -123,3 +125,17 @@ the name of one of its groups, and the math font-size control.
   unresolved in the test and two assertions matched nothing, silently.
 - **Next:** T1 still needs a group name from Pavel. T3 and T4 (the Reference-entry button and the
   picker) are untouched.
+
+### Session 2 — 2026-07-29 — T1
+
+- **Prompt:** "Instead Statements better something like Blocks or something like that."
+- **Did:** `Environments` → `Blocks`, heading and fold-state key together, palette regenerated. Only
+  the group was renamed: the `Insert environment` button keeps its label, because he named the group
+  and the LaTeX word is the right one for what that menu inserts.
+- **Learned:** The rename left the **entire suite green** — `Tests/Palette.wlt` pinned the three
+  conversion headings (`Whole paper (LaTeX)` and the two `Selection:` ones) and none of the other four,
+  so a group could be renamed, or lost, with no test noticing. It now pins all four and asserts
+  `Environments` **absent** rather than only `Blocks` present, so a heading left behind somewhere else
+  fails too. Suite 291 → 292.
+- **Next:** T3 and T4 — the Reference-entry button and the `Insert Reference` picker. Nothing here is
+  blocked on Pavel any more.

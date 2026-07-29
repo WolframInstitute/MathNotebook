@@ -31,6 +31,17 @@ VerificationTest[
   { }
 ]
 
+(* PaletteAndViewUX T1: the other four group headings, which nothing asserted — renaming "Environments"
+   to "Blocks" at Pavel's request (2026-07-29) left the whole suite green, so the rename was invisible to
+   every test in the repo. The old name is asserted ABSENT rather than only the new one present: a
+   heading left behind in a second place would otherwise pass. *)
+VerificationTest[
+  { Select[ { "Referencing", "Blocks", "Stylesheet", "Setup" },
+      ! StringContainsQ[ $paletteSource, # ] & ],
+    StringContainsQ[ $paletteSource, "Environments" ] },
+  { { }, False }
+]
+
 (* A verb alone only reads if the heading says which direction it goes. *)
 VerificationTest[
   Select[ { "Whole paper (LaTeX)", "Selection: LaTeX \\[LeftRightArrow] math",

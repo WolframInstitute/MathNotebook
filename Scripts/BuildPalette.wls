@@ -127,7 +127,12 @@ $groups = {
     kernelButton[ "Tag cell", WolframInstitute`MathNotebook`TagSelectedCell[] ],
     kernelButton[ "Insert citation", WolframInstitute`MathNotebook`InsertCitation[] ],
     kernelButton[ "\[UpArrow] Go back", WolframInstitute`MathNotebook`GoBack[] ] } },
-  { "Environments", "Environments", {
+  (* Pavel rejected "Environments" as the heading (2026-07-29) and asked for something like "Blocks".
+     The first element is the fold-state key, renamed with it: the state lives in the front end's
+     init.m under a flat key, so the group opens in its default state once for anyone who had folded
+     it, which is cosmetic. The "Insert environment" button below keeps its own label — he named the
+     group, not the button, and the LaTeX word is the right one for what that menu inserts. *)
+  { "Blocks", "Blocks", {
     ActionMenu[ "Insert environment", Map[ environmentItem, $environments ],
       Appearance -> "PopupMenu", ImageSize -> $buttonSize ],
     kernelButton[ "Proof", WolframInstitute`MathNotebook`InsertEnvironment[ "Proof" ] ],

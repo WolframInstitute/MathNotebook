@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       154,          7]
-NotebookDataLength[     48360,       1074]
-NotebookOptionsPosition[     47645,       1049]
-NotebookOutlinePosition[     48390,       1076]
-CellTagsIndexPosition[     48347,       1073]
+NotebookDataLength[     48209,       1069]
+NotebookOptionsPosition[     47500,       1044]
+NotebookOutlinePosition[     48239,       1071]
+CellTagsIndexPosition[     48196,       1068]
 WindowTitle->MathNotebook
 WindowFrame->Palette*)
 
@@ -132,43 +132,38 @@ Cell[BoxData[
            OpenerBox[
             Dynamic[
              CurrentValue[
-              EvaluationNotebook[], {TaggingRules, "EnvironmentsOpen"}, 
-              True]]], 
+              EvaluationNotebook[], {TaggingRules, "BlocksOpen"}, True]]], 
            PaneSelectorBox[{True -> TagBox[
                PaneBox[
-                
-                PaneSelectorBox[{
-                 False -> StyleBox["\"Environments\"", 11, Bold, 
+                PaneSelectorBox[{False -> StyleBox["\"Blocks\"", 11, Bold, 
                     GrayLevel[0.4], StripOnInput -> False], True -> 
-                  StyleBox["\"Environments\"", 11, Bold, 
+                  StyleBox["\"Blocks\"", 11, Bold, 
                     GrayLevel[0.15], StripOnInput -> False]}, 
                  Dynamic[
                   CurrentValue["MouseOver"]], ImageSize -> Automatic, 
                  FrameMargins -> 0], ImageSize -> {182, 20}, 
                 Alignment -> {Left, Center}], 
                EventHandlerTag[{"MouseClicked" :> (CurrentValue[
-                    EvaluationNotebook[], {TaggingRules, "EnvironmentsOpen"}, 
-                    True] = False), Method -> "Preemptive", PassEventsDown -> 
-                 Automatic, PassEventsUp -> True}]], False -> TagBox[
+                    EvaluationNotebook[], {TaggingRules, "BlocksOpen"}, True] = 
+                  False), Method -> "Preemptive", PassEventsDown -> Automatic,
+                  PassEventsUp -> True}]], False -> TagBox[
                PaneBox[
-                
-                PaneSelectorBox[{
-                 False -> StyleBox["\"Environments\"", 11, Bold, 
+                PaneSelectorBox[{False -> StyleBox["\"Blocks\"", 11, Bold, 
                     GrayLevel[0.4], StripOnInput -> False], True -> 
-                  StyleBox["\"Environments\"", 11, Bold, 
+                  StyleBox["\"Blocks\"", 11, Bold, 
                     GrayLevel[0.15], StripOnInput -> False]}, 
                  Dynamic[
                   CurrentValue["MouseOver"]], ImageSize -> Automatic, 
                  FrameMargins -> 0], ImageSize -> {182, 20}, 
                 Alignment -> {Left, Center}], 
                EventHandlerTag[{"MouseClicked" :> (CurrentValue[
-                    EvaluationNotebook[], {TaggingRules, "EnvironmentsOpen"}, 
-                    True] = True), Method -> "Preemptive", PassEventsDown -> 
-                 Automatic, PassEventsUp -> True}]]}, 
+                    EvaluationNotebook[], {TaggingRules, "BlocksOpen"}, True] = 
+                  True), Method -> "Preemptive", PassEventsDown -> Automatic, 
+                 PassEventsUp -> True}]]}, 
             Dynamic[
              CurrentValue[
-              EvaluationNotebook[], {TaggingRules, "EnvironmentsOpen"}, 
-              True]], ImageSize -> Automatic]},
+              EvaluationNotebook[], {TaggingRules, "BlocksOpen"}, True]], 
+            ImageSize -> Automatic]},
           "RowDefault"]},
         {
          PaneSelectorBox[{True->
@@ -215,6 +210,7 @@ Cell[BoxData[
              {
               ButtonBox["\<\"Proof\"\>",
                Appearance->"Palette",
+               
                ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
                 WolframInstitute`MathNotebook`InsertEnvironment["Proof"]),
                Evaluator->Automatic,
@@ -251,7 +247,7 @@ Cell[BoxData[
           TemplateBox[{0},
            "Spacer1"]}, Dynamic[
            CurrentValue[
-            EvaluationNotebook[], {TaggingRules, "EnvironmentsOpen"}, True]],
+            EvaluationNotebook[], {TaggingRules, "BlocksOpen"}, True]],
           ImageSize->Automatic]}
        },
        DefaultBaseStyle->"Column",
@@ -987,7 +983,6 @@ from the LaTeX each of those cells stores.", "Tooltip"]& ]}
              {
               ButtonBox["\<\"Install MaTeX\"\>",
                Appearance->"Palette",
-               
                ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
                 WolframInstitute`MathNotebook`InstallMaTeX[]),
                Evaluator->Automatic,
@@ -1045,7 +1040,7 @@ from the LaTeX each of those cells stores.", "Tooltip"]& ]}
    GridBoxAlignment->{"Columns" -> {{Left}}},
    GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
    GridBoxSpacings->{"Columns" -> {{Automatic}}, "Rows" -> {{0.4}}}],
-  "Column"]],ExpressionUUID->"5e2a8ae5-63b7-4a37-9bc0-721887d06004"]
+  "Column"]],ExpressionUUID->"0c1eab4f-b345-4a6e-a3ce-bd5765688d85"]
 },
 Editable->False,
 Saveable->False,
@@ -1057,12 +1052,12 @@ WindowFloating->True,
 WindowTitle->"MathNotebook",
 ShowCellBracket->False,
 TaggingRules-><|
- "ReferencingOpen" -> True, "EnvironmentsOpen" -> True, "StylesheetOpen" -> 
-  True, "ViewOpen" -> True, "DocumentOpen" -> True, "ConvertOpen" -> True, 
+ "ReferencingOpen" -> True, "BlocksOpen" -> True, "StylesheetOpen" -> True, 
+  "ViewOpen" -> True, "DocumentOpen" -> True, "ConvertOpen" -> True, 
   "MaTeXOpen" -> True, "SetupOpen" -> True|>,
 FrontEndVersion->"15.0 for Mac OS X ARM (64-bit) (May 19, 2026)",
 StyleDefinitions->"Palette.nb",
-ExpressionUUID->"3b109902-577c-4025-b783-2ff8eb950fa2"
+ExpressionUUID->"e055cec7-8bf0-4720-8cb0-398b646fa74d"
 ]
 (* End of Notebook Content *)
 
@@ -1075,7 +1070,7 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[581, 21, 47060, 1026, 827, InheritFromParent,ExpressionUUID->"5e2a8ae5-63b7-4a37-9bc0-721887d06004"]
+Cell[581, 21, 46915, 1021, 827, InheritFromParent,ExpressionUUID->"0c1eab4f-b345-4a6e-a3ce-bd5765688d85"]
 }
 ]
 *)
