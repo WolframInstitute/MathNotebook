@@ -21,18 +21,24 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 
 ## Active
 
-[Import Display Defects](Active/ImportDisplayDefects.md) — the causal-graphs import round-tripped
-byte-exact but displayed wrong, and all five defects are now fixed. T1 the bibliography alignment (a
-185 pt gutter for the hanging `[key]` dingbat), T2 the literal `\textbf`/`\emph`/`\textit` (styled runs
-whose shape was chosen by what survives a save), T3 the front matter (the title's `\vspace` prefix and
-the whole `\author` block in tagging rules; `\maketitle`, `\sloppy` and comment-only paragraphs produce
-**no cell at all**, carried as whitespace in the preceding cell's `"Separator"`, which is why that
-needed no export clause). T5 closed Pavel's "the fonts are different" screenshot by **disproving** its
-own premise: a `Citation` run already renders in its cell's face, and the culprit was `InsertCitation`
-at a cell-bracket selection, which destroyed the cell's content and left a `BoxData` cell rendering in
-the box face — one silent bug wearing two symptoms. **0.1.17 is installed and `main.nb` re-imported
-through it.** All that remains is Pavel reading the paper, and answering the by-name stylesheet question
-by looking at whether a `Definition` label is bold.
+[First Reading Defects](Active/FirstReadingDefects.md) — Pavel read the imported causal-graphs paper
+and reported six defects, all triaged with measured causes on 2026-07-29: `\varnothing` becomes an
+unnamed private-use character the front end cannot draw (T1 sweeps the whole macro table, not the one
+glyph); `\&` and its sibling escapes display verbatim (T2, an unescape/re-escape pair that must keep
+both specimens byte-exact); a composed `\cite{a, b}` is one button whose compound `ButtonData`
+navigates nowhere (T3 splits it per key and recomposes on export); `CopyCellReference` reads the
+*style's* label spec so the specimen's `Axiom 3.1.3` pastes as `Theorem 0.0` (T4 applies the existing
+"read the chain off the target cell" fix to the copy path); the two font sliders disagree about
+mathematics — inline math tracks the document slider, display math the math slider, and with both set
+inline math double-scales (T5, model to confirm with Pavel); and `LabelReferences` rewrites the whole
+notebook to relabel 14 cells, the prime suspect for the reported freezes (T6 ends with a measured
+number).
+
+[Import Display Defects](Done/2026-07-29-ImportDisplayDefects.md) closed on 2026-07-29 — all five
+display defects fixed, 0.1.17 installed, `main.nb` re-imported through it, and the reading half of T4
+finally happened: its output is the six-point report that became First Reading Defects above. The
+Definition-dingbat question turned out unanswerable from an imported paper (its dingbats are per-cell),
+so the by-name stylesheet clause stays with `BasicFunctionality`.
 
 [Palette and View UX](Done/2026-07-29-PaletteAndViewUX.md) closed on 2026-07-29 with all seven tasks
 done and **0.1.19 published**, in one run after Pavel reviewed the palette group by group. T1 renamed

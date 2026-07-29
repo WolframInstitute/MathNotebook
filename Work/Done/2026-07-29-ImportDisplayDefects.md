@@ -83,7 +83,8 @@ goes ahead of everything above. Ask before T1.
 
 ## Hand-off
 
-Everything in this item is done except Pavel's own reading of `main.nb`.
+Closed 2026-07-29: Pavel read `main.nb` and reported six defects, which are
+`Work/Active/FirstReadingDefects.md`. Nothing else remains here.
 
 The four extra requests he made in Session 3 are all closed: the citation face became T5 here (and the
 answer was that the stylesheets were never at fault), and the other three were palette and view work,
@@ -102,13 +103,16 @@ and `BasicFunctionality`'s outstanding clause is a real defect rather than a mea
 
 ## Tasks
 
-- [ ] **T4 (the reading half) — Pavel reads `main.nb` on screen.** The paclet is built, installed as
-  0.1.17 and the paper re-imported through it (Session 5); what is left is his eyes. The question to
-  answer while he is there: does a `Definition` cell show a bold `Definition 2.1.1.` label? That is
-  `BasicFunctionality`'s outstanding by-name-stylesheet clause, and `main.nb` asks for
-  `PlainArticle.nb` **by name** — the one resolution path this repo cannot verify headless.
-
 ### Done
+
+- [x] **T4 (the reading half) — Pavel read `main.nb` on screen** (Session 6, 2026-07-29). The
+  reading happened and its output is a six-point defect report — `\varnothing` rendering blank,
+  literal `\&`, math scaling incoherence, `CopyCellReference` reading `Theorem 0.0` for an Axiom,
+  a freeze around `LabelReferences`, and compound `\cite` buttons that navigate nowhere — now
+  triaged and tracked as `Work/Active/FirstReadingDefects.md`. The Definition-dingbat question
+  stays **unanswered**: an imported paper's dingbats are written per-cell by the importer, so a
+  bold label here would not have exercised by-name stylesheet resolution anyway — that clause
+  remains `BasicFunctionality`'s, answerable only by applying a sheet from the palette menu.
 
 - [x] **T5 — The reference's face, which was not the stylesheets** (Session 4). The hypothesis in this
   task as written — that `Citation` inherits `Link`'s Times 12 and needs pinning to each sheet's face —
