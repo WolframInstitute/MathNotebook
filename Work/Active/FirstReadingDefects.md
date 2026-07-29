@@ -83,7 +83,11 @@ navigation and interaction defects, the classes the census and fidelity tests ca
 - Each fix lands with a test that **bites** (reintroduce the defect, watch it fail), per the repo
   rule; display claims go in `Tests/FrontEnd.wlt`.
 - Defect 3's model changes what two shipped controls do — confirm the proposed model with Pavel
-  before or at T5, and record his call in this file.
+  before or at T5, and record his call in this file. **Confirmed by Pavel 2026-07-29 (S4): the
+  proposed model as stated in defect 3 above, unamended.** So T5 implements rather than asks: with
+  `MathFontSize` untouched the math styles and MaTeX follow the *document* ratio, an explicit
+  `MathFontSize` overrides it, and the inline ratio is scaled by mathScale/docScale so inline math
+  tracks display instead of double-scaling.
 
 ### Out of scope
 
@@ -113,9 +117,10 @@ navigation and interaction defects, the classes the census and fidelity tests ca
   defect inside the one reported string. An untagged cell is tagged automatically (Pavel's call).
   The specimen's axiom pastes as `Axiom 1.3.3` on the rendered page and each fragment resolves to
   the copied cell.
-- [ ] **T5 — One coherent scale for mathematics.** Confirm the model with Pavel: math follows the
-  document slider when `MathFontSize` is `Automatic`; an explicit math size overrides; inline ratio
-  scaled by mathScale/docScale so inline tracks display instead of double-scaling. Then implement in
+- [ ] **T5 — One coherent scale for mathematics.** The model is **confirmed** (Pavel, 2026-07-29 —
+  see Requirements), so this task implements it and does not ask: math follows the document slider
+  when `MathFontSize` is `Automatic`; an explicit math size overrides; the inline ratio is scaled by
+  mathScale/docScale so inline tracks display instead of double-scaling. Implement in
   `viewStyleCells`/`inlineMathCells`/`maTeXFontSize` and measure rendered sizes under all four
   slider states.
 - [ ] **T6 — The freeze.** Rewrite `LabelReferences` to touch only the `Reference` cells, time it on

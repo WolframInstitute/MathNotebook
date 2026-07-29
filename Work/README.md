@@ -33,7 +33,8 @@ chain off the target cell and keys on the cell's tag rather than on a `CellID` a
 not have — the reported `Theorem 0.0` was two defects in one string, and the specimen's axiom now
 pastes as `Axiom 1.3.3` on the rendered page and navigates (T4, S4, suite 345 → 358). **Next: T5** —
 the two font sliders disagree about mathematics: inline math tracks the document slider, display math
-the math slider, and with both set inline math double-scales (model to confirm with Pavel). Then
+the math slider, and with both set inline math double-scales. The model is **confirmed** (Pavel,
+2026-07-29), so T5 implements it rather than asking. Then
 `LabelReferences` rewrites the whole notebook to relabel 14 cells, the prime suspect for the reported
 freezes (T6 ends with a measured number).
 
