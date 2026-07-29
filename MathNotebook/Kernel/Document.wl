@@ -19,6 +19,11 @@ PackageScope["citationBox"]
 PackageScope["cellTagging"]
 PackageScope["insertReferenceCells"]
 PackageScope["bibliographyDatabaseQ"]
+PackageScope["sortBibliographyCells"]
+PackageScope["bibliographyAudit"]
+PackageScope["citedTags"]
+PackageScope["referenceKey"]
+PackageScope["$bibliographySortMethods"]
 PackageScope["$bibliographyAnchorTag"]
 
 ImportLaTeXDocument[ file_String ] :=
@@ -882,6 +887,107 @@ bibliographyAnchorCell[ ] :=
     TaggingRules -> <| "MathNotebook" -> <| "Suppressed" -> "True" |> |> ]
 
 $bibliographyAnchorTag = "MathNotebookBibliography"
+
+(* T5. Reordering the block, which is three moving parts and only one of them travels with a cell.
+   POSITIONAL: the \begin{thebibliography} prefix, which belongs to whichever entry is first; the
+   \end, which belongs to whichever is last; and the recorded whitespace after each entry, which
+   describes the gap at a place in the source rather than anything about the entry that happens to
+   sit before it. TRAVELLING: the cell's own \bibitem marker, its text, its tag and its dingbat.
+   Get that split wrong and the round trip still succeeds — the export is a StringJoin either way —
+   it just emits a \begin in the middle of the list, which is why the test reads the delimiters off
+   the reordered cells rather than asserting that the source comes back.
+
+   A .bib paper is the exception at both ends: its entries are not the source, and its LAST cell
+   carries the \bibliography commands verbatim, so that one is pinned and the rest sort around it. *)
+sortBibliographyCells[ Notebook[ cells_List, options___ ], method_String ] :=
+  With[ { positions = Position[ cells, Cell[ _, "Reference", ___ ] ] },
+    Notebook[
+      If[ Length[ positions ] < 2,
+        cells,
+        ReplacePart[ cells,
+          MapThread[ Rule,
+            { positions,
+              sortedBibliographyEntries[ Notebook[ cells, options ],
+                Map[ Extract[ cells, # ] &, positions ], method ] } ] ] ],
+      options ] ]
+
+sortedBibliographyEntries[ notebook_, entries_List, method_String ] :=
+  If[ cellTagging[ Last @ entries, "BibliographyTeX" ] =!= "",
+    Append[ Most[ entries ][[ bibliographyOrder[ notebook, Most @ entries, method ] ]], Last @ entries ],
+    rehungBibliography[ entries, bibliographyOrder[ notebook, entries, method ] ] ]
+
+rehungBibliography[ entries_List, order_List ] :=
+  With[ { opening = bibliographyOpening @ First @ entries },
+    MapThread[
+      { cell, closing, separator, index } |->
+        retagged[ cell, <|
+          "EnvironmentOpen" -> If[ index === 1, opening, "" ] <> bibitemMarkerOf[ cell, opening ],
+          "EnvironmentClose" -> closing,
+          "Separator" -> separator |> ],
+      { entries[[ order ]],
+        Map[ cellTagging[ #, "EnvironmentClose" ] &, entries ],
+        Map[ cellTagging[ #, "Separator" ] &, entries ],
+        Range @ Length @ entries } ] ]
+
+(* The first entry's stored opening is \begin{thebibliography}{99} and its own \bibitem run
+   together in one string — environmentOpened composes them rather than keeping two keys — so the
+   two are told apart at the LAST \bibitem in it. *)
+bibliographyOpening[ cell_Cell ] :=
+  With[ { stored = cellTagging[ cell, "EnvironmentOpen" ] },
+    Replace[ StringPosition[ stored, "\\bibitem" ], {
+      { ___, { start_Integer, _ } } :> StringTake[ stored, start - 1 ],
+      _ :> stored } ] ]
+
+bibitemMarkerOf[ cell_Cell, opening_String ] :=
+  With[ { stored = cellTagging[ cell, "EnvironmentOpen" ] },
+    If[ opening =!= "" && StringStartsQ[ stored, opening ],
+      StringDrop[ stored, StringLength @ opening ],
+      stored ] ]
+
+(* Ordering rather than Sort, and every key is paired with the entry's current index so that a tie
+   keeps document order instead of depending on whether the sort happens to be stable. *)
+bibliographyOrder[ notebook_, entries_List, method_String ] :=
+  Ordering @ Transpose @
+    { bibliographySortKeys[ notebook, entries, method ], Range @ Length @ entries }
+
+bibliographySortKeys[ notebook_, entries_List, "FirstUse" ] :=
+  With[ { cited = citedTags[ notebook ] },
+    Map[ cell |-> Replace[ FirstPosition[ cited, referenceKey[ cell ] ],
+        { { n_Integer } :> n, _ :> Length[ cited ] + 1 } ],
+      entries ] ]
+
+bibliographySortKeys[ _, entries_List, "Key" ] :=
+  Map[ ToLowerCase @ referenceKey[ # ] &, entries ]
+
+bibliographySortKeys[ _, entries_List, "Entry" ] :=
+  Map[ ToLowerCase @ referenceText[ # ] &, entries ]
+
+$bibliographySortMethods = { "FirstUse", "Key", "Entry", "Uncited" }
+
+referenceKey[ cell_Cell ] :=
+  First[ Cases[ Flatten @ { Cases[ cell, ( CellTags -> tags_ ) :> tags, { 1 } ] }, _String ], "" ]
+
+referenceText[ Cell[ content_, ___ ] ] :=
+  StringJoin @ Cases[ { content }, _String, Infinity ]
+
+(* Document order, and DeleteDuplicates keeps the FIRST use of each key — which is the whole of what
+   unsrt means. A reopened notebook has split every ButtonBox into one per run, so the same key
+   arrives many times over and is collapsed here rather than needing mergedButtons first. *)
+citedTags[ notebook_ ] :=
+  DeleteDuplicates @ Cases[ notebook,
+    box : ButtonBox[ ___, BaseStyle -> "Citation", ___ ] :> buttonKey[ box ], Infinity ]
+
+(* What a sort cannot fix and an author still wants to know: entries nothing points at, and
+   citations pointing at no cell in the document. The second is deliberately measured against EVERY
+   tag rather than against the bibliography's, since a \ref to a theorem is a Citation button too
+   and is not a dangling reference. *)
+bibliographyAudit[ notebook_ ] :=
+  With[ {
+      keys = Map[ referenceKey, Cases[ notebook, Cell[ _, "Reference", ___ ], Infinity ] ],
+      tags = Cases[ Flatten @ Cases[ notebook, ( CellTags -> tags_ ) :> tags, Infinity ], _String ],
+      cited = citedTags[ notebook ] },
+    <| "Uncited" -> Sort @ DeleteCases[ Complement[ keys, cited ], "" ],
+      "Dangling" -> Sort @ Complement[ cited, tags ] |> ]
 
 (* Whether the entries belong to a .bib rather than to the notebook, which decides whether an entry
    added here can ever reach the .tex. The tell is the block's last cell carrying the \bibliography

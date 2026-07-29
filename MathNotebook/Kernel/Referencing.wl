@@ -6,6 +6,7 @@ PackageExport[GoBack]
 PackageExport[InsertEnvironment]
 PackageExport[InsertCitation]
 PackageExport[InsertReference]
+PackageExport[SortBibliography]
 PackageExport[LabelReferences]
 PackageExport[$LastHyperlinkCell]
 
@@ -206,6 +207,40 @@ InsertReference::bibfile =
   "The bibliography of this notebook comes from a .bib file, which stays the source of truth. The \
 new entry will be shown in the notebook but will not be written into the exported .tex; add it to \
 the .bib as well."
+
+(* Ordering the bibliography, which the notebook can do and the compiled paper cannot always: a
+   thebibliography prints its entries in the order they stand, so this IS the printed order, while
+   a .bib paper's order belongs to its bibliography style and this only changes what the notebook
+   shows. "FirstUse" is BibTeX's unsrt and the default because it is what a reader of the numbered
+   list expects. "Uncited" sorts nothing — it is the question a sort cannot answer. *)
+SortBibliography[ ] :=
+  withInputNotebook[ SortBibliography ]
+
+SortBibliography[ notebook_NotebookObject ] :=
+  SortBibliography[ notebook, "FirstUse" ]
+
+SortBibliography[ notebook_NotebookObject, "Uncited" ] :=
+  With[ { audit = bibliographyAudit @ NotebookGet[ notebook ] },
+    MessageDialog @ bibliographyAuditText[ audit ];
+    audit ]
+
+SortBibliography[ notebook_NotebookObject, method_String ] :=
+  If[ MemberQ[ $bibliographySortMethods, method ],
+    NotebookPut[ sortBibliographyCells[ NotebookGet[ notebook ], method ], notebook ],
+    Message[ SortBibliography::method, method, $bibliographySortMethods ]; $Failed ]
+
+SortBibliography::method =
+  "`1` is not a bibliography order. Use one of `2`."
+
+bibliographyAuditText[ audit_Association ] :=
+  Replace[
+    StringRiffle[ DeleteCases[ {
+      bibliographyAuditLine[ "Never cited: ", audit[ "Uncited" ] ],
+      bibliographyAuditLine[ "Citing nothing in this notebook: ", audit[ "Dangling" ] ] }, "" ], "\n" ],
+    "" -> "Every entry is cited, and every citation has a target." ]
+
+bibliographyAuditLine[ prefix_String, keys_List ] :=
+  If[ keys === { }, "", prefix <> StringRiffle[ keys, ", " ] ]
 
 LabelReferences[ notebook_NotebookObject ] :=
   NotebookPut[ labelReferenceCells @ NotebookGet[ notebook ], notebook ]

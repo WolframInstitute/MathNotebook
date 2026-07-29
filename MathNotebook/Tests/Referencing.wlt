@@ -302,3 +302,124 @@ VerificationTest[
       Style[ text_String, 10, Bold, _ ] :> text, Infinity ] },
   { { "Literature", "Blocks" }, { "Blocks" } }
 ]
+
+(* ---------------------------------------------------------------------------------------------
+   T5. Sorting the block. Three parts move and only one of them travels with a cell — a wrong split
+   still round-trips, so these read the delimiters off the reordered cells and off the source.
+   --------------------------------------------------------------------------------------------- *)
+
+$bibliography = Notebook[ {
+  Cell[ TextData[ { "As shown in ",
+    ButtonBox[ "[lott]", BaseStyle -> "Citation", ButtonData -> "lott" ], " and ",
+    ButtonBox[ "[sturm]", BaseStyle -> "Citation", ButtonData -> "sturm" ], "." } ], "Text" ],
+  Cell[ "Bourbaki.", "Reference", CellTags -> "bourbaki",
+    TaggingRules -> <| "MathNotebook" -> <|
+      "EnvironmentOpen" -> "\\begin{thebibliography}{99}\n\n\\bibitem{bourbaki}\n",
+      "Separator" -> "\n\n" |> |> ],
+  Cell[ "Sturm.", "Reference", CellTags -> "sturm",
+    TaggingRules -> <| "MathNotebook" -> <|
+      "EnvironmentOpen" -> "\\bibitem{sturm}\n", "Separator" -> "\n\n" |> |> ],
+  Cell[ "Lott and Villani.", "Reference", CellTags -> "lott",
+    TaggingRules -> <| "MathNotebook" -> <|
+      "EnvironmentOpen" -> "\\bibitem{lott}\n",
+      "EnvironmentClose" -> "\n\n\\end{thebibliography}", "Separator" -> "\n" |> |> ] } ]
+
+$order = notebook |-> Map[ referenceKey, Cases[ notebook, Cell[ _, "Reference", ___ ], Infinity ] ]
+
+(* Order of first citation, which is BibTeX's unsrt: lott is cited before sturm, and bourbaki is
+   cited nowhere and so goes last. *)
+VerificationTest[
+  { citedTags[ $bibliography ], $order @ sortBibliographyCells[ $bibliography, "FirstUse" ] },
+  { { "lott", "sturm" }, { "lott", "sturm", "bourbaki" } }
+]
+
+VerificationTest[
+  { $order @ sortBibliographyCells[ $bibliography, "Key" ],
+    $order @ sortBibliographyCells[ $bibliography, "Entry" ] },
+  { { "bourbaki", "lott", "sturm" }, { "bourbaki", "lott", "sturm" } }
+]
+
+(* The \begin follows whichever entry is first and the \end whichever is last. Reordering without
+   moving them emits a \begin in the middle of the list and still round-trips. *)
+VerificationTest[
+  Map[ cell |-> { referenceKey[ cell ],
+      StringContainsQ[ cellTagging[ cell, "EnvironmentOpen" ], "\\begin{thebibliography}" ],
+      cellTagging[ cell, "EnvironmentClose" ] =!= "" },
+    Cases[ sortBibliographyCells[ $bibliography, "FirstUse" ], Cell[ _, "Reference", ___ ], Infinity ] ],
+  { { "lott", True, False }, { "sturm", False, False }, { "bourbaki", False, True } }
+]
+
+(* Each entry keeps its own \bibitem, and the source carries exactly one environment. *)
+VerificationTest[
+  With[ { source = notebookToLaTeX @ sortBibliographyCells[ $bibliography, "FirstUse" ] },
+    { StringCases[ source, "\\bibitem{" ~~ key : Except[ "}" ] .. ~~ "}" :> key ],
+      StringCount[ source, "\\begin{thebibliography}" ],
+      StringCount[ source, "\\end{thebibliography}" ] } ],
+  { { "lott", "sturm", "bourbaki" }, 1, 1 }
+]
+
+(* And the \begin really does stand before every entry. Counting the delimiters cannot see this:
+   with the opening left to travel on its original cell there is still exactly ONE \begin and ONE
+   \end in the source, both simply at the end of the list — measured, that bite fails the per-cell
+   reading above and this file's every source-level count. *)
+VerificationTest[
+  With[ { source = notebookToLaTeX @ sortBibliographyCells[ $bibliography, "FirstUse" ] },
+    { Order[ First @ First @ StringPosition[ source, "\\begin{thebibliography}" ],
+        First @ First @ StringPosition[ source, "\\bibitem" ] ],
+      Order[ First @ Last @ StringPosition[ source, "\\bibitem" ],
+        First @ First @ StringPosition[ source, "\\end{thebibliography}" ] ] } ],
+  { 1, 1 }
+]
+
+(* A separator describes the gap at a place in the source, not the entry that happens to precede
+   it, so it stays where it was: the block still ends with the single newline it ended with. *)
+VerificationTest[
+  Map[ cellTagging[ #, "Separator" ] &,
+    Cases[ sortBibliographyCells[ $bibliography, "Key" ], Cell[ _, "Reference", ___ ], Infinity ] ],
+  { "\n\n", "\n\n", "\n" }
+]
+
+(* The .bib carrier is pinned last however the rest are ordered. *)
+$databaseBibliography = Notebook[ {
+  Cell[ TextData[ { ButtonBox[ "[sturm]", BaseStyle -> "Citation", ButtonData -> "sturm" ] } ], "Text" ],
+  Cell[ "Lott.", "Reference", CellTags -> "lott",
+    TaggingRules -> <| "MathNotebook" -> <| "Suppressed" -> "True" |> |> ],
+  Cell[ "Sturm.", "Reference", CellTags -> "sturm",
+    TaggingRules -> <| "MathNotebook" -> <| "Suppressed" -> "True" |> |> ],
+  Cell[ "Bourbaki.", "Reference", CellTags -> "bourbaki",
+    TaggingRules -> <| "MathNotebook" -> <| "Suppressed" -> "",
+      "BibliographyTeX" -> "\\bibliography{refs}" |> |> ] } ]
+
+VerificationTest[
+  $order @ sortBibliographyCells[ $databaseBibliography, "FirstUse" ],
+  { "sturm", "lott", "bourbaki" }
+]
+
+(* And the source is untouched, since the .bib owns the order there. *)
+VerificationTest[
+  notebookToLaTeX @ sortBibliographyCells[ $databaseBibliography, "FirstUse" ],
+  notebookToLaTeX[ $databaseBibliography ]
+]
+
+(* Fewer than two entries is a no-op rather than an error. *)
+VerificationTest[
+  sortBibliographyCells[ Notebook[ { Cell[ "Only one.", "Reference", CellTags -> "one" ] } ], "Key" ],
+  Notebook[ { Cell[ "Only one.", "Reference", CellTags -> "one" ] } ]
+]
+
+(* The audit answers the question a sort cannot: bourbaki is an entry nothing cites, and a \ref to a
+   theorem is NOT a dangling citation, which is why "Dangling" is measured against every tag. *)
+VerificationTest[
+  bibliographyAudit[ $bibliography ],
+  <| "Uncited" -> { "bourbaki" }, "Dangling" -> { } |>
+]
+
+VerificationTest[
+  bibliographyAudit @ Notebook[ {
+    Cell[ TextData[ {
+      ButtonBox[ "Theorem 1", BaseStyle -> "Citation", ButtonData -> "Thm:main" ],
+      ButtonBox[ "[ghost]", BaseStyle -> "Citation", ButtonData -> "ghost" ] } ], "Text" ],
+    Cell[ "A theorem", "Theorem", CellTags -> "Thm:main" ],
+    Cell[ "Lott.", "Reference", CellTags -> "lott" ] } ],
+  <| "Uncited" -> { "lott" }, "Dangling" -> { "ghost" } |>
+]

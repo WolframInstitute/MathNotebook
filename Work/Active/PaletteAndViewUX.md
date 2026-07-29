@@ -113,15 +113,16 @@ scope: these act on selected cells where every group above acts on the document.
 
 ## Tasks
 
-- [ ] **T5 — `SortBibliography`** (R5). Four methods, delimiter re-attachment, carrier pinning. The
-  test reads the delimiters off the reordered cells: a wrong reorder still round-trips, it just
-  emits broken LaTeX.
 - [ ] **T6 — The palette reorganized** (R7). Six groups, the new and dropped buttons, tooltips
   throughout, palette and image regenerated, `Tests/Palette.wlt` rewritten.
 - [ ] **T7 — Documentation and release.** Two reference pages, `Usage.wl`, `PacletInfo.wl`, the
   `RegenerateUsage.wls` audit, version bump, publish, `DeployPreviews.wls`.
 
 ### Done
+
+- [x] **T5 — `SortBibliography`** (Session 6). Four orders. Three parts of the block are
+  **positional** — the `\begin`, the `\end` and each recorded separator — and only the `\bibitem`
+  marker travels with its cell.
 
 - [x] **T4 — `InsertCitation` becomes a chooser dialog** (Session 5). The tag list is a pure
   function of the `Notebook` expression, grouped Literature / Blocks; the filter field doubles as
@@ -265,3 +266,32 @@ scope: these act on selected cells where every group above acts on the document.
     palette button, whose code is stored verbatim in a `.nb` and re-read in a kernel that has none
     of them. So the filtering can live in the paclet instead of being written out inline.
 - **Next:** T5, `SortBibliography`.
+
+### Session 6 — 2026-07-29 — T5
+
+- **Prompt:** the same run.
+- **Did:** `SortBibliography` as the 25th public symbol, in four orders: `"FirstUse"` (BibTeX's
+  `unsrt`, and the default), `"Key"`, `"Entry"`, and `"Uncited"`, which sorts nothing and answers
+  the question a sort cannot. The reorder turns on one distinction — three parts of the block are
+  **positional** and only one **travels**. Positional: the `\begin{thebibliography}` prefix, which
+  belongs to whichever entry is first; the `\end`, which belongs to whichever is last; and each
+  recorded `"Separator"`, which describes a gap at a place in the source rather than anything about
+  the entry before it. Travelling: the cell's own `\bibitem` marker, text, tag and dingbat. A `.bib`
+  paper is pinned at both ends — its last cell carries the `\bibliography` commands verbatim, so it
+  stays last and the rest sort around it. Suite 314 → 323.
+- **Learned:** Three things.
+  - **The first entry's opening and its own `\bibitem` are one string**, because
+    `environmentOpened` composes them rather than keeping two keys, so the sort has to tell them
+    apart at the **last** `\bibitem` in it. That is the only place the two halves are separable.
+  - **Counting the delimiters cannot detect a wrong split, and neither can the round trip.** The
+    bite check left the opening travelling on its original cell: the exported source still holds
+    exactly **one** `\begin` and **one** `\end`, both simply at the end of the list, so every
+    count-based assertion passed and only the per-cell delimiter reading failed. A source-level
+    assertion of the *order* of the delimiters was added for that reason — it is the cheap check
+    that a later session will actually think to write.
+  - **`referenceKey`, then `cellTagging` before it, then `$inlineMathStyleName` before that.** Three
+    sessions running, a helper needed by a test was file-private and the assertion silently compared
+    against an unevaluated expression. This is now predictable enough to be a rule: **anything a
+    `.wlt` names must be `PackageScope`**, and the symptom is always a failure with the right shape
+    and impossible values rather than a message.
+- **Next:** T6, the palette itself.
