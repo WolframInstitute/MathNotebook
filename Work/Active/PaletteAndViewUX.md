@@ -113,10 +113,11 @@ scope: these act on selected cells where every group above acts on the document.
 
 ## Tasks
 
-- [ ] **T7 — Documentation and release.** Two reference pages, `Usage.wl`, `PacletInfo.wl`, the
-  `RegenerateUsage.wls` audit, version bump, publish, `DeployPreviews.wls`.
 
 ### Done
+
+- [x] **T7 — Documentation and release** (Session 8). Two reference pages, the tutorial brought
+  back into line with the palette, 0.1.18 published.
 
 - [x] **T6 — The palette reorganized** (Session 7). Six groups in Pavel's order, three buttons
   gone, three arrived, a tooltip on all 24 items, and `Tests/Palette.wlt` now asserting the group
@@ -325,3 +326,32 @@ scope: these act on selected cells where every group above acts on the document.
     stylesheet menu is the one place it is not available — the items set an option rather than call
     a paclet symbol.
 - **Next:** T7, documentation and release.
+
+### Session 8 — 2026-07-29 — T7
+
+- **Prompt:** the same run.
+- **Did:** Usage strings for the two new symbols, both declared in `PacletInfo.wl`, two reference
+  pages transformed from siblings (`InsertCitation` → `InsertReference`, `LabelReferences` →
+  `SortBibliography`), the tutorial rewritten in eleven passages, 0.1.18.
+- **Learned:** Four things, three of them costly.
+  - **A blanket `s_String :> StringReplace[s, …]` over a reference page inserts UNEVALUATED calls
+    into the examples section.** `ReplaceAll` puts its right-hand side in place unevaluated, and the
+    `PrimaryExamplesSection` cell is an `InterpretationBox`, which is `HoldAllComplete` — so every
+    string inside it came out as a literal `StringReplace["Basic", {"TagSelectedCell" -> …}]` in the
+    written page, nested twice where two passes ran. It is the mirror of the `HoldPattern` trap from
+    T4: there an argument evaluated when it should not have, here it did not when it should.
+    Symbol renaming on a page is safest as **text** surgery on the file.
+  - **A page's identifiers are line-wrapped, and a regex that misses that silently inherits them.**
+    `ExpressionUUID->` is followed by a newline in most of these pages, so
+    `ExpressionUUID->"[0-9a-f-]+"` matched only a minority and the new page shared **39** UUIDs with
+    its template — precisely the failure the "regenerate every one" rule exists to prevent, arrived
+    at while following that rule. The check that caught it counts UUIDs shared *across* pages.
+  - **The 22 shipped pages already share one UUID between 21 of them**, a boilerplate cell, and that
+    was the pre-existing duplicate count this measurement had to be read against. It is not a
+    regression and is not fixed here.
+  - **The tutorial is the thing that goes stale, because nothing tests it.** Eleven passages named
+    buttons and group headings that T6 had changed — the whole "three palette groups convert"
+    paragraph, both dropped conversion buttons in four places, `Tag cell`, and `Render`/`Restore`.
+    `Tests/Palette.wlt` reads the palette and no test reads the tutorial, so this is `.wlt`-invisible
+    exactly as `Scripts/RegenerateUsage.wls`'s audit found the reference pages to be.
+- **Next:** the item's remaining clause is Pavel's — reading the palette on a real paper.

@@ -7,7 +7,7 @@ PacletObject[
     "Creator" -> "Pavel Hajek",
     "License" -> "MIT",
     "PublisherID" -> "WolframInstitute",
-    "Version" -> "0.1.17",
+    "Version" -> "0.1.18",
     "WolframVersion" -> "14.3+",
     "PrimaryContext" -> "WolframInstitute`MathNotebook`",
     "Extensions" -> {
@@ -26,6 +26,8 @@ PacletObject[
           "WolframInstitute`MathNotebook`GoBack",
           "WolframInstitute`MathNotebook`InsertEnvironment",
           "WolframInstitute`MathNotebook`InsertCitation",
+          "WolframInstitute`MathNotebook`InsertReference",
+          "WolframInstitute`MathNotebook`SortBibliography",
           "WolframInstitute`MathNotebook`LabelReferences",
           "WolframInstitute`MathNotebook`ConvertLaTeXCells",
           "WolframInstitute`MathNotebook`ConvertMathCells",
