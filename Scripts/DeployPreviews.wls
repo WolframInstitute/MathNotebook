@@ -5,7 +5,11 @@ styleSheetDirectory = Replace[ Environment[ "MATHNOTEBOOK_STYLESHEETS" ],
 tutorialPath = Replace[ Environment[ "MATHNOTEBOOK_TUTORIAL" ],
   Except[ _String ] :> FileNameJoin[ { repoDirectory, "MathNotebook", "Assets", "MathNotebookTutorial.nb" } ] ];
 
-$styleSheets = { "AMSArticle", "ArXivArticle", "SpringerJournal", "RevTeXAPS", "ComplexSystems" };
+(* PlainArticle is deployed like the four journal templates although it imitates no journal: the
+   README's stylesheet table lists it as the default an imported paper lands on, so the row needs a
+   sample to point at. ComplexSystems has no .tex sample because there is no redistributable class to
+   compile against; this one has none because there is nothing for it to imitate. *)
+$styleSheets = { "PlainArticle", "AMSArticle", "ArXivArticle", "SpringerJournal", "RevTeXAPS", "ComplexSystems" };
 
 If[ $CloudBase === None, $CloudBase = "https://www.wolframcloud.com" ];
 If[ ! $CloudConnected, CloudConnect[] ];
