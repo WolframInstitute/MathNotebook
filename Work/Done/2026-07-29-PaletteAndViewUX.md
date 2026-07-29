@@ -113,6 +113,8 @@ scope: these act on selected cells where every group above acts on the document.
 
 ## Tasks
 
+All seven done, and 0.1.19 published. One clause outstanding, and it is Pavel's rather than a
+session's: reading the reorganized palette on a real paper.
 
 ### Done
 
