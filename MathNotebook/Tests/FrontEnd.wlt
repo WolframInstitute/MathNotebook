@@ -138,6 +138,16 @@ letterInk[ ] := <|
   "ImaginaryI" -> mathInk[ "\[ImaginaryI]" ]
 |>
 
+(* FirstReadingDefects T1: the box path used to answer \[Null] for \varnothing — a character drawn
+   as nothing, so a single-glyph island measured 0 ink — and inside a RowBox the character was
+   dropped outright, so the compound measured exactly the ink of the two glyphs it kept. *)
+glyphInk[ ] := <|
+  "Varnothing" -> mathInk @ texToBoxes[ "\\varnothing" ],
+  "EmptySet" -> mathInk[ "\[EmptySet]" ],
+  "Compound" -> mathInk @ texToBoxes[ "U \\neq \\varnothing" ],
+  "Relation" -> mathInk @ RowBox[ { StyleBox[ "U", "TI" ], "\[NotEqual]" } ]
+|>
+
 (* LaTeXPaperImport T3: an imported \ref has to render as the target's number. The front end
    resolves a CounterBox against the tagged cell with no kernel — and renders XXX when the tag is
    not there, which is the failure this measures. A whole document has to be rendered: a single
@@ -597,6 +607,7 @@ $measured = UsingFrontEnd @ <|
   "InlineInk" -> AssociationMap[ inlineInk, { "A pair $(V, E)$ here.", "A list $x_1, x_2$ here." } ],
   "DisplayInk" -> displayInk[ $displayParagraph ],
   "LetterInk" -> letterInk[ ],
+  "GlyphInk" -> glyphInk[ ],
   "Sheets" -> AssociationMap[ viewMeasurements @ Get @ FileNameJoin[ { $sheetDirectory, # } ] &, $templates ],
   "Default" -> viewMeasurements[ "Default.nb" ],
   "SheetLoaded" -> AssociationMap[
@@ -878,6 +889,16 @@ VerificationTest[
     { ink[ "E" ] === ink[ "ItalicE" ], ink[ "E" ] =!= ink[ "ExponentialE" ],
       ink[ "I" ] === ink[ "ItalicI" ], ink[ "I" ] =!= ink[ "ImaginaryI" ] } ],
   { True, True, True, True }
+]
+
+(* FirstReadingDefects T1: \varnothing draws the empty-set glyph — exactly the ink of \[EmptySet],
+   where it used to measure 0 — and in the compound the glyph really reaches the page: strictly
+   more ink than the U \[NotEqual] it extends, where the drop left the two measuring the same. *)
+VerificationTest[
+  With[ { ink = $measured[ "GlyphInk" ] },
+    { ink[ "Varnothing" ] > 0, ink[ "Varnothing" ] === ink[ "EmptySet" ],
+      ink[ "Compound" ] > ink[ "Relation" ] } ],
+  { True, True, True }
 ]
 
 (* LaTeXPaperImport T5: the captions number themselves on the page, straight through the document as

@@ -93,7 +93,7 @@ navigation and interaction defects, the classes the census and fidelity tests ca
 
 ## Tasks
 
-- [ ] **T1 — The unnamed glyphs.** Map `presentationBoxes`' private-use outputs to named characters
+- [x] **T1 — The unnamed glyphs.** Map `presentationBoxes`' private-use outputs to named characters
   (`\varnothing` → `\[EmptySet]`), sweeping the common-macro table for every other unnamed
   private-use character rather than patching one. Assert by rendered ink (a `\varnothing` island
   measures > 0 against the blank it is today) and by character code kernel-side; round trip stays
@@ -139,3 +139,36 @@ navigation and interaction defects, the classes the census and fidelity tests ca
   parses `\emptyset` to a *symbol named ∅* (right glyph, by luck), while the box path's
   `\varnothing` is an unnamed private-use character — so a sweep must test both pipeline halves.
 - **Next:** T1.
+
+### Session 1 — 2026-07-29 — T1, the glyphless macros
+
+- **Prompt:** `/next-session`.
+- **Did:** Measured the mechanism under the triage's finding: U+F3A0 is not unnamed — it is
+  `\[Null]`, the named character *drawn as nothing*, the importer's fallback for any `\@unicode`
+  codepoint the front end's own table lacks. The sweep source is the importer's macro table
+  (`$InstallationDirectory/SystemFiles/IncludeFiles/TeX/Import/*.tns`): **179 of its 207 `\@unicode`
+  macros** collapse to `\[Null]`, and inside a `RowBox` the character is dropped outright — so the
+  planned "map the outputs" fix is impossible in compounds and the repair moved to the TeX:
+  `glyphSentinelTeX` rewrites each offender to a braced digit sentinel before
+  `Convert`TeX`TeXToBoxes` (braces so a script position keeps one token), `namedGlyphBoxes` maps
+  the sentinels back to drawable characters after, and `texToBoxes` routes any fragment naming an
+  offender straight to the presentation path, because the expression path drops the glyph even when
+  it parses. `$glyphlessMacros` (PackageScope, 179 entries) pairs each macro with its glyph — the
+  table's own intended codepoint where the front end draws it, hand-chosen standard equivalents for
+  the 47 whose intended codepoint is a legacy unnamed private-use slot (`leqslant` → E2FA became
+  `\[LessSlantEqual]`). Validated all 179 standalone and in compounds before editing; four kernel
+  tests in `Conversion.wlt` (the pair the paper writes, the whole-table sweep, the script position,
+  the `\varnothingness` boundary) and a `GlyphInk` measurement in `FrontEnd.wlt` (`\varnothing` ink
+  equals `\[EmptySet]` ink exactly; the compound strictly outweighs the `U ≠` it extends). Suite
+  329 → 334, green; census and both specimen round trips untouched. Bite: sentinel rewrite patched
+  to `"$0"` identity fails exactly the four new glyph assertions and nothing else; restored
+  byte-identical from the copy.
+- **Learned:** `texToBoxes` is `PackageScope`, not file-private — probing
+  `Conversion`PackagePrivate`texToBoxes` created a junk symbol, and the confirmation probe was
+  itself a probe fault twice over: `DownValues` is `HoldAll`, so `Length @ DownValues @ Symbol[…]`
+  reads 1 for anything, and in a UTF-8 kernel `ToString[char, InputForm]` prints a named character
+  *raw*, so a named-character test needs `CharacterEncoding -> "PrintableASCII"` — without it the
+  first sweep flagged 684 "unnamed" characters of which two thirds were named. And the shared MCP
+  kernel's `Global`` shadows from old sessions survive every reload; fresh `wolframscript` per
+  probe was what made the measurements trustworthy.
+- **Next:** T2.

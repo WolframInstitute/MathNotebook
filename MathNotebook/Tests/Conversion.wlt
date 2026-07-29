@@ -98,6 +98,37 @@ VerificationTest[ (* a constant the kernel is right about still comes through th
   { "\[Pi]", "\[Infinity]" }
 ]
 
+(* FirstReadingDefects T1. The box path answers \[Null] — a named character drawn as nothing —
+   for 179 of the 207 \@unicode macros in its own import table, and inside a RowBox the character
+   is dropped outright: the causal paper's five \varnothing came back blank, and U \neq \varnothing
+   lost the glyph with no trace. Each such macro is now replaced by a braced digit sentinel before
+   conversion and mapped back to a drawable character after it, $glyphlessMacros pairing every
+   swept offender with its glyph. *)
+
+VerificationTest[ (* what the paper writes, alone and in the compound that used to drop it *)
+  { texToBoxes[ "\\varnothing" ],
+    Cases[ { texToBoxes[ "U \\neq \\varnothing" ] }, s_String /; StringContainsQ[ s, "\[EmptySet]" ], Infinity ] },
+  { "\[EmptySet]", { "\[EmptySet]" } }
+]
+
+VerificationTest[ (* every swept macro renders its character in a compound — no \[Null], no drop *)
+  Select[ Keys @ $glyphlessMacros,
+    With[ { boxes = texToBoxes[ "a \\" <> # <> " b" ] },
+      FreeQ[ boxes, string_String /; StringContainsQ[ string, $glyphlessMacros[ # ] ] ] ||
+        ! FreeQ[ boxes, string_String /; StringContainsQ[ string, "\[Null]" ] ] ] & ],
+  { }
+]
+
+VerificationTest[ (* the sentinel's braces keep it one token in a script position *)
+  texToBoxes[ "x_\\varnothing" ],
+  SubscriptBox[ StyleBox[ "x", "TI" ], "\[EmptySet]" ]
+]
+
+VerificationTest[ (* a longer macro that merely begins with a table key is not rewritten *)
+  texToBoxes[ "\\varnothingness" ],
+  "\[Null]"
+]
+
 VerificationTest[
   boxesToTeX[ SuperscriptBox[ "x", "2" ] ],
   "x^2"
