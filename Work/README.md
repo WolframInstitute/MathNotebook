@@ -34,14 +34,18 @@ the box face — one silent bug wearing two symptoms. **0.1.17 is installed and 
 through it.** All that remains is Pavel reading the paper, and answering the by-name stylesheet question
 by looking at whether a `Definition` label is bold.
 
-[Palette and View UX](Active/PaletteAndViewUX.md) — the three requests that were not import defects.
-T1 renamed the palette's `Environments` group to **`Blocks`** (his choice) and, in doing so, found that
-nothing in the suite watched the group headings at all. T2 made inline mathematics follow the math
-slider: the island is styled `"InlineFormula"`, which resolves through the chain as `1.05*Inherited`, and
-the control scales that **ratio** rather than writing a size — so inline mathematics follows the slider
-*and* keeps tracking the cell it sits in, which an absolute size destroys. Next: the Reference-entry
-button replacing `Tag Cell`, and `Insert Reference` becoming a picker over equations, theorems and
-literature. Neither is blocked.
+[Palette and View UX](Active/PaletteAndViewUX.md) — the author's own working surfaces, **re-scoped on
+2026-07-29** when Pavel reviewed the whole palette group by group. T1 renamed the `Environments` group to
+**`Blocks`** (his choice) and, in doing so, found that nothing in the suite watched the group headings at
+all. T2 made inline mathematics follow the math slider: the island is styled `"InlineFormula"`, which
+resolves through the chain as `1.05*Inherited`, and the control scales that **ratio** rather than writing
+a size — so inline mathematics follows the slider *and* keeps tracking the cell it sits in, which an
+absolute size destroys. The review then added five tasks: **T3** `InsertReference` plus a bibliography
+anchor cell (an unnumbered, export-suppressed `References` heading created on the first insert), **T4**
+`InsertCitation` as a chooser dialog over the document's own tags, **T5** `SortBibliography` in four
+orders, **T6** the palette rebuilt as six groups — `Blocks`, `Referencing`, `Selection`, `Document view`,
+`Import & Export`, `Setup` — losing `Tag cell` and the two per-selection LaTeX buttons, and **T7**
+documentation and release. Nothing is blocked.
 
 [Basic Functionality Shakedown](Done/2026-07-28-BasicFunctionality.md) closed on 2026-07-28
 with all seven tasks done and **one clause outstanding that is Pavel's, not a session's**: applying a

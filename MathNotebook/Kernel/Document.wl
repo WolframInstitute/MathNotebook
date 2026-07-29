@@ -16,6 +16,10 @@ PackageScope["bibliographyNames"]
 PackageScope["bibliographyFile"]
 PackageScope["documentClass"]
 PackageScope["citationBox"]
+PackageScope["cellTagging"]
+PackageScope["insertReferenceCells"]
+PackageScope["bibliographyDatabaseQ"]
+PackageScope["$bibliographyAnchorTag"]
 
 ImportLaTeXDocument[ file_String ] :=
   With[ { source = Import[ file, "Text" ] },
@@ -823,6 +827,68 @@ bibitemMarkerLength[ rest_String ] :=
 
 bibitemKey[ marker_String ] :=
   First[ StringCases[ marker, "{" ~~ key : Except[ "}" ] .. ~~ "}" ~~ EndOfString :> key, 1 ], "" ]
+
+(* Writing a bibliography the notebook did not import, which is the other direction of everything
+   above and needs the same two strings. An entry added by hand has to arrive inside a
+   thebibliography whether or not one exists yet, so there are three cases and they differ over
+   where the delimiters are: a notebook with no Reference cell at all gets the anchor heading and a
+   first entry carrying BOTH delimiters; a thebibliography paper gets the entry appended with the
+   \end MOVED onto it, since the closing delimiter rides on whichever cell is last and appending
+   without moving it emits the new entry after the \end; and a .bib paper's entry is suppressed and
+   goes BEFORE the last cell, which carries the \bibliography commands verbatim and must stay last.
+   Positions are taken with Position at any depth rather than over notebookCellList, so an inserted
+   entry does not cost the document its CellGroupData. *)
+insertReferenceCells[ Notebook[ cells_List, options___ ], tag_String ] :=
+  Notebook[
+    Replace[ Position[ cells, Cell[ _, "Reference", ___ ] ], {
+      { } :> Join[ cells,
+        { bibliographyAnchorCell[ ], openedBibliographyCell[ referenceEntryCell[ tag ], tag ] } ],
+      positions_ :> appendedReferenceCell[ cells, Last[ positions ], tag ] } ],
+    options ]
+
+appendedReferenceCell[ cells_List, position_List, tag_String ] :=
+  With[ { last = Extract[ cells, position ] },
+    If[ cellTagging[ last, "BibliographyTeX" ] =!= "",
+      Insert[ cells, retagged[ referenceEntryCell[ tag ], <| "Suppressed" -> "True" |> ], position ],
+      Insert[
+        ReplacePart[ cells, position -> retagged[ last, <| "EnvironmentClose" -> "" |> ] ],
+        retagged[ referenceEntryCell[ tag ],
+          <| "EnvironmentOpen" -> bibitemMarker[ tag ],
+            "EnvironmentClose" -> cellTagging[ last, "EnvironmentClose" ] |> ],
+        Append[ Most[ position ], Last[ position ] + 1 ] ] ] ]
+
+bibitemMarker[ tag_String ] :=
+  "\\bibitem{" <> tag <> "}\n"
+
+openedBibliographyCell[ cell_Cell, tag_String ] :=
+  retagged[ cell, <|
+    "Environment" -> "thebibliography",
+    "EnvironmentOpen" -> "\\begin{thebibliography}{99}\n\n" <> bibitemMarker[ tag ],
+    "EnvironmentClose" -> "\n\n\\end{thebibliography}" |> ]
+
+referenceEntryCell[ tag_String ] :=
+  Cell[ "", "Reference", CellTags -> tag, Sequence @@ referenceDingbat[ tag ] ]
+
+(* The heading a bibliography starts at, created once — by the first InsertReference into a notebook
+   that has none — and every one of its three options is load-bearing. CounterIncrements -> { }
+   because thebibliography prints an UNNUMBERED heading, and a plain Section would read "6
+   References" in the notebook where the compiled paper has no number there at all. "Suppressed"
+   because thebibliography prints that heading itself, so a cell emitting one too would put
+   References in the PDF twice. And the tag, which is how SortBibliography finds where the block
+   begins. Its CellTags is therefore a marker and not a \label — which costs nothing, since a
+   suppressed cell reaches no exporter to write one. *)
+bibliographyAnchorCell[ ] :=
+  Cell[ "References", "Section", CellTags -> $bibliographyAnchorTag, CounterIncrements -> { },
+    TaggingRules -> <| "MathNotebook" -> <| "Suppressed" -> "True" |> |> ]
+
+$bibliographyAnchorTag = "MathNotebookBibliography"
+
+(* Whether the entries belong to a .bib rather than to the notebook, which decides whether an entry
+   added here can ever reach the .tex. The tell is the block's last cell carrying the \bibliography
+   commands verbatim. *)
+bibliographyDatabaseQ[ notebook_Notebook ] :=
+  AnyTrue[ Cases[ notebook, Cell[ _, "Reference", ___ ], Infinity ],
+    cellTagging[ #, "BibliographyTeX" ] =!= "" & ]
 
 (* No bibliography style is emulated: the fields are riffled in a fixed order, and the entries come
    in the order of the .bib rather than in the order the style would sort them. What matters for

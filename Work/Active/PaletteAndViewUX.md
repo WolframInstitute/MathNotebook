@@ -7,75 +7,126 @@
 
 ## Spec
 
-Three things Pavel asked for during `ImportDisplayDefects` Session 3, none of which is an import
-defect, so they are not that item's.
-They are all about the surfaces an author touches while writing: the palette's referencing buttons,
-the name of one of its groups, and the math font-size control.
+Everything about the surfaces an author touches while writing: the palette's groups and buttons, the
+referencing entry points, and the math font-size control. It began as three requests made during
+`ImportDisplayDefects` Session 3 (T1 and T2, both closed) and was **re-scoped on 2026-07-29** when
+Pavel reviewed the whole palette group by group and named what should change.
 
-### The requests, verbatim in substance
+### The review, 2026-07-29
 
-1. **The `Environments` group must not be called that.**
-   He did not say what to call it instead, so the name is the one open decision here.
-2. **`Tag Cell` goes; a Reference-entry button arrives.**
-   His words: "We dont need Tag Cell. We need a button for adding reference cell ( like bibliographic
-   reference). This will be referenced by Copy reference."
-   So the palette should insert a `Reference` cell — a bibliography entry — and `Copy reference` is
-   what then points at it.
-3. **`Insert Reference` becomes a picker.**
-   "InsertReference should have some dropdown or some automcompletion or whatever that lists equaiton
-   reference, theorems, and literature reference."
-   The three kinds are exactly the three the document already distinguishes: a `DisplayFormula`'s
-   number, a theorem-like environment's number, and a literature key.
-4. **Inline math must scale with the math font size.**
-   `SetMathFontSize` moves the display and math styles and leaves inline math where it was.
+He read the palette back and asked for, verbatim in substance:
 
-### What is already known about each
+1. **A way to add a literature entry, in `Blocks`.** "In Blocks there should be something to add new
+   reference literature right. Tagged cell with content."
+2. **The bibliography orderable.** "It should automatically appear in the references the best sorted
+   by usage — or there could be some function for that in the palette (different sorts) of the
+   bibliography." Placed in `Referencing`, at his direction.
+3. **`Tag cell` off the palette.** "There is an internal mechanism to do that and we do not want to do
+   it from the palette."
+4. **`Insert citation` becomes a chooser.** "Should become a combobox with tags of the literature cells
+   or something like that." Settled as a **dialog** chooser, not a palette-level combobox.
+5. **The groups reordered**, and `Import & Export` above `Setup` holding what was `Whole paper (LaTeX)`.
+6. **The two conversion groups merged** into one `Selection`, with labels that stand without a heading.
+7. **The per-selection LaTeX buttons dropped.** "Do not put latex right. There is the entire export of
+   the document to latex right so why individual cells."
+8. **A marker where the bibliography starts.** "There should be a special tagged cell where the
+   references start. It is created after the first call of that reference add."
 
-- **Inline math has no style of its own.** An imported inline span is
-  `Cell[BoxData[FormBox[…]], TaggingRules -> <|"MathNotebook" -> <|"SourceTeX" -> …|>|>]` — measured in
-  Session 3's front-matter probe — with **no style name at all**, so it inherits the enclosing `Text`
-  cell and no override written on a math style can reach it. That is the whole defect. The fix is
-  either to give the island a style the control writes, or to have the control write the inline size
-  too; which of those is right has to be decided against the fact that a style on the island must
-  survive `Export`/`NotebookOpen`/`NotebookGet` (T2's measurement showed a `StyleBox` with list
-  content does not, while a `Cell` island does).
-- **`Citation` is not this item.** The face mismatch in Pavel's screenshot is
-  `ImportDisplayDefects` T5.
+### The palette as decided
+
+```
+▾ Blocks              Insert environment ▾ / Proof / Equation / Equation (n) / Reference
+▾ Referencing         Copy reference / Insert citation / ↑ Go back / Refresh labels /
+                        Sort bibliography ▾
+▾ Selection           math → MaTeX / MaTeX → math
+▾ Document view       Apply stylesheet ▾ / Text size / Math size / Reset view
+▾ Import & Export     Import .tex file… / Export to .tex… / Export submission…
+▾ Setup               Install LaTeX fonts / Install MaTeX / MaTeX preferences /
+                        Update from cloud / Tutorial
+```
+
+Six groups. `Tag cell`, `Typeset` and `Show source` come off; `TagSelectedCell`,
+`ConvertLaTeXCells` and `ConvertMathCells` stay exported, documented and tested, so each is one line
+in `BuildPalette.wls` to restore. `Stylesheet` merged into `Document view` on the LLM's call, taken
+because applying a sheet already clears `{TaggingRules, "MathNotebook"}` and so **resets both
+sliders** — the two are coupled in behaviour, not merely adjacent in theme. The heading `Selection`
+is kept over `MaTeX` because the buttons already name MaTeX and what a heading must supply is the
+scope: these act on selected cells where every group above acts on the document.
+
+### What is already known
+
 - **A palette button's code is stored verbatim**, so everything a new button does must be written out
-  literally in `System`` symbols plus fully qualified paclet ones — it cannot call a helper in
+  literally in `System`` symbols plus fully qualified public paclet ones — it cannot call a helper in
   `BuildPalette.wls`, and it cannot call a `PackageScope` symbol either.
 - **`Tests/Palette.wlt` asserts the palette as text**, deriving the stylesheet menu from the
-  stylesheet directory and pinning labels, group headings and tooltips. Renaming a group and adding or
-  removing a button both land there.
+  stylesheet directory and pinning labels, group headings and tooltips. Every line of the layout
+  above lands there.
 - **`InputNotebook[]` is `$Failed` with no document open**, so any new entry point takes the notebook
-  as an argument and goes through `withInputNotebook`, as the twelve existing ones now do.
+  as an argument and goes through `withInputNotebook`, as the twelve existing ones do.
+- **`Reference` is a real style in all seven sheets**, with a `[key]` dingbat driven off `CellTags`
+  and a 185 pt left margin reserved for it; `tagCell` sets that dingbat, and `LabelReferences`
+  rebuilds every one of them from tags. Nothing creates such a cell — that is R2.
+- **The two bibliography routes differ over who owns the entries.** A `thebibliography` paper: the
+  `\begin` rides on the **first** entry cell's `"EnvironmentOpen"`, each `\bibitem[label]{key}` in
+  that cell's own slot, the `\end` on the **last** cell's `"EnvironmentClose"`. A `.bib` paper: the
+  **last** `Reference` cell carries the `\bibliography{…}` commands verbatim and every earlier one
+  carries `"Suppressed"`, which `notebookToLaTeX` filters out — and the `.bib`, not the notebook, is
+  the source of truth.
+- **A citation is `ButtonBox[…, BaseStyle -> "Citation", ButtonData -> tag]`**, so usage order is a
+  scan of the cells in order for `ButtonData`.
 
 ### Requirements
 
-- **R1 (group name).** One name, applied in `Scripts/BuildPalette.wls`, the palette regenerated, and
-  `Tests/Palette.wlt` updated. Needs Pavel: he rejected `Environments` without naming a replacement.
-- **R2 (Reference-entry button).** A button that inserts a `Reference` cell carrying a key, which
-  `CopyCellReference`/`InsertCitation` can then target. `Tag Cell` is removed in the same change —
-  including its entry point, if nothing else calls it.
-- **R3 (Insert Reference picker).** `InsertCitation` gains a way to choose from what the document
-  actually contains, grouped as equations / theorem-like environments / literature. The list is
-  derived from the open notebook's cells, not typed.
-- **R4 (inline math size).** `SetMathFontSize` reaches inline math, `ResetDocumentView` puts it back,
-  and the claim is measured as rendered width or ink at two sizes — not as a resolved style option,
-  since the island has no style to resolve.
+- **R2 (Reference-entry button).** `InsertReference` writes a tagged `Reference` cell carrying the
+  `[key]` dingbat, which `CopyCellReference`/`InsertCitation` can then target. It appends **after the
+  last `Reference` cell**; with no bibliography in the notebook it writes at the **end of the
+  document**, preceded by an anchor cell created **once** (R6). `Tag cell` comes off the palette in
+  the same change.
+- **R3 (citation chooser).** `InsertCitation` opens a dialog listing the tags the document actually
+  carries, grouped **Literature** (tags on `Reference` cells) and **Blocks** (numbered environments,
+  display formulas, sections), with a filter field and free text for a key not yet present. A
+  palette-level combobox is **rejected**: the palette needs no kernel to display — the property the
+  view sliders were built around — and a live tag list can only come from a kernel query on the
+  focused notebook, so it would launch a kernel on every repaint and go stale between them.
+- **R5 (bibliography sort).** `SortBibliography[nb, method]` reorders the block: `"FirstUse"` (order
+  of first citation — BibTeX's `unsrt`, the default), `"Key"`, `"Entry"` (alphabetical on the printed
+  text), and `"Uncited"`, which sorts nothing and **reports** entries nothing cites together with
+  citations having no entry. It must re-attach the `thebibliography` delimiters to whatever ends up
+  first and last, and keep a `.bib` paper's command-carrying cell **last**.
+- **R6 (bibliography anchor).** A `Section`-styled cell reading `References`, created by the first
+  `InsertReference` into a notebook that has none, carrying: `CounterIncrements -> {}` so it is
+  **unnumbered**, matching the `\section*` that `thebibliography` prints — a plain `Section` would
+  read "6 References" in the notebook where the PDF has no number; a `"Suppressed"` tagging rule so
+  it emits **nothing** into the `.tex`, since `thebibliography` prints its own heading and without
+  suppression the compiled paper carries it twice; and a `CellTags` that `SortBibliography` reads to
+  find where the block starts. An imported paper already has `Reference` cells and gets no anchor.
+- **R7 (palette reorganization).** The six groups above, in that order, with a tooltip on every
+  button — `Blocks`, `Referencing` and `Setup` have none today.
 
 ### Out of scope
 
-- The `Citation`/`Hyperlink` face (`ImportDisplayDefects` T5).
+- The `Citation`/`Hyperlink` face (`ImportDisplayDefects` T5, closed).
 - Any change to what `SetDocumentFontSize` covers.
 - Re-adding a content-width control: withdrawn in 0.1.8 at Pavel's call and not to be revived.
+- Auto-sorting on insert. Reordering cells as a side effect of adding one is right once and alarming
+  every other time; insert appends, sorting is an explicit action.
 
 ## Tasks
 
-- [ ] **T3 — Reference-entry button, `Tag Cell` removed.**
-- [ ] **T4 — `Insert Reference` becomes a picker** over the three reference kinds in the document.
+- [ ] **T4 — `InsertCitation` becomes a chooser dialog** (R3), over literature and blocks.
+- [ ] **T5 — `SortBibliography`** (R5). Four methods, delimiter re-attachment, carrier pinning. The
+  test reads the delimiters off the reordered cells: a wrong reorder still round-trips, it just
+  emits broken LaTeX.
+- [ ] **T6 — The palette reorganized** (R7). Six groups, the new and dropped buttons, tooltips
+  throughout, palette and image regenerated, `Tests/Palette.wlt` rewritten.
+- [ ] **T7 — Documentation and release.** Two reference pages, `Usage.wl`, `PacletInfo.wl`, the
+  `RegenerateUsage.wls` audit, version bump, publish, `DeployPreviews.wls`.
 
 ### Done
+
+- [x] **T3 — `InsertReference` and the bibliography anchor** (Session 4). Three cases, told apart by
+  what the block's last cell carries. A pure core over the `Notebook` expression, because moving a
+  `\end{thebibliography}` between cells is not something a selection can express.
 
 - [x] **T1 — Rename the group** (Session 2). `Environments` → **`Blocks`**, Pavel's choice. Heading and
   fold-state key both, the palette regenerated. The rename was invisible to the whole suite, so
@@ -139,3 +190,50 @@ the name of one of its groups, and the math font-size control.
   fails too. Suite 291 → 292.
 - **Next:** T3 and T4 — the Reference-entry button and the `Insert Reference` picker. Nothing here is
   blocked on Pavel any more.
+
+### Session 3 — 2026-07-29 — re-scoping
+
+- **Prompt:** "Before we start working and finishing, can we go through what is on the palette? I want
+  to review and modify" — then the eight decisions above, ending "make the work items and auto run
+  them all".
+- **Did:** Re-scoped this item from four requirements to seven and from two open tasks to five. Two
+  new public symbols (`InsertReference`, `SortBibliography`) where the old T3/T4 implied one, an
+  anchor cell nobody had thought of, and a whole-palette reorganization that was not in the item at
+  all. No new item: this one is already `Palette and View UX`, and its T3/T4 were the same two
+  buttons under narrower terms.
+- **Learned:** Two decisions were taken against Pavel's first instinct and are recorded as decisions,
+  not omissions — the citation chooser is a **dialog** rather than a palette combobox (the palette's
+  no-kernel display property), and `Stylesheet` was **merged** into `Document view` (applying a sheet
+  already resets both sliders). He dropped the two per-selection LaTeX buttons over the LLM's
+  recommendation to keep `LaTeX → math` for the paste case; the functions stay exported, so it is one
+  line to reverse.
+- **Next:** T3, then T4, T5, T6, T7 in order — he asked for them run without stopping between.
+
+### Session 4 — 2026-07-29 — T3
+
+- **Prompt:** "Make the work items and auto run them all", continuing the re-scoping above.
+- **Did:** `InsertReference` as the 24th public symbol, with the surgery as a pure core
+  (`insertReferenceCells` in `Document.wl`) over the `Notebook` expression rather than
+  `SelectionMove`/`NotebookWrite` — partly because moving a `\end{thebibliography}` from one cell to
+  another is not a thing a selection can express, and partly because that is what makes any of it
+  testable with no front end. Three cases: a notebook with **no** `Reference` cell gets the anchor
+  heading plus a first entry carrying **both** delimiters; a `thebibliography` paper gets the entry
+  appended with the `\end` **moved** onto it; a `.bib` paper's entry is suppressed, goes **before**
+  the command-carrying last cell, and raises `InsertReference::bibfile` saying it will not reach the
+  `.tex`. Positions are taken with `Position` at any depth, so an insert does not cost the document
+  its `CellGroupData`. Suite 292 → 306.
+- **Learned:** Two things worth keeping.
+  - **`Position` at any depth is the right tool for cell surgery on a live document**, and the
+    obvious alternative is worse than it looks: `notebookCellList` flattens, so editing a flattened
+    list and putting it back would silently discard every `CellGroupData` the front end had built —
+    a reopened notebook is *all* groups, so this would un-collapse the whole paper on every insert.
+  - **The `cellTagging` trap fired again, in a test rather than in code.** It was file-private to
+    `Document.wl`, so in `Referencing.wlt` — which puts only `PackageScope` on the `$ContextPath` —
+    it resolved to a definition-less symbol and every `cellTagging[cell, key] =!= ""` was silently
+    True. Three tests failed with the *right* shape and wrong values, which reads exactly like a
+    converter bug. It is `PackageScope` now. The lesson is the one this repo already records from
+    the other side: the same trap that makes a helper silently do nothing makes an assertion
+    silently mean nothing.
+  - The bite check was the delimiter move: not clearing `"EnvironmentClose"` off the old last cell
+    fails two tests, one of them counting **two** `\end{thebibliography}` in the exported source.
+- **Next:** T4, the citation chooser dialog.

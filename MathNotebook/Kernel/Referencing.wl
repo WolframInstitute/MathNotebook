@@ -5,6 +5,7 @@ PackageExport[TagSelectedCell]
 PackageExport[GoBack]
 PackageExport[InsertEnvironment]
 PackageExport[InsertCitation]
+PackageExport[InsertReference]
 PackageExport[LabelReferences]
 PackageExport[$LastHyperlinkCell]
 
@@ -86,6 +87,34 @@ citationInsertionPoint[ notebook_NotebookObject ] :=
 InsertCitation[ notebook_NotebookObject, tag_String ] :=
   ( citationInsertionPoint[ notebook ];
     NotebookWrite[ notebook, citationButton[ tag, citationTargetStyle[ notebook, tag ] ] ] )
+
+(* A bibliography entry the notebook owns. It is deliberately NOT written at the selection, the way
+   every other Blocks button writes: an entry belongs in the bibliography, so it appends after the
+   last one there is and, in a notebook with none, at the end of the document under an anchor
+   heading created for it. The surgery is a pure core over the Notebook expression rather than
+   SelectionMove and NotebookWrite, both because moving a \end{thebibliography} between cells is not
+   a thing a selection can express and because that is what makes it testable with no front end.
+   Pavel's call: no re-sort on insert — reordering the block as a side effect of adding one entry is
+   right once and alarming every other time, so SortBibliography is a separate action. *)
+InsertReference[ ] :=
+  withInputNotebook[ InsertReference ]
+
+InsertReference[ notebook_NotebookObject ] :=
+  With[ { tag = InputString[ "Citation key:" ] },
+    If[ StringQ[ tag ] && tag =!= "", InsertReference[ notebook, tag ] ] ]
+
+InsertReference[ notebook_NotebookObject, tag_String ] :=
+  With[ { document = NotebookGet[ notebook ] },
+    If[ bibliographyDatabaseQ[ document ], Message[ InsertReference::bibfile ] ];
+    NotebookPut[ insertReferenceCells[ document, tag ], notebook ] ]
+
+(* Reported rather than refused. The .bib is the source of truth for such a paper — every entry cell
+   is suppressed and the block's last cell carries the \bibliography commands verbatim — so an entry
+   added here shows in the notebook and cannot reach the .tex. Silence would make it look exported. *)
+InsertReference::bibfile =
+  "The bibliography of this notebook comes from a .bib file, which stays the source of truth. The \
+new entry will be shown in the notebook but will not be written into the exported .tex; add it to \
+the .bib as well."
 
 LabelReferences[ notebook_NotebookObject ] :=
   NotebookPut[ labelReferenceCells @ NotebookGet[ notebook ], notebook ]

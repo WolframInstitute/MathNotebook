@@ -452,6 +452,15 @@ referencingDrive[ parent_ ] :=
     InsertCitation[ notebook, "Thm:key" ];
     measurements[ "Citation" ] = FirstCase[ NotebookGet[ notebook ],
       ButtonBox[ boxes_, ___, ButtonData -> "Thm:key", ___ ] :> boxes, None, Infinity ];
+    (* T3. The kernel tests cover the surgery; what only a real notebook can show is that the whole
+       NotebookGet / rewrite / NotebookPut wrapper lands it — an entry appended to the bibliography
+       this notebook already has rather than at the selection, which is sitting on the citation. *)
+    InsertReference[ notebook, "Ol09" ];
+    measurements[ "Entries" ] = Cases[ NotebookGet[ notebook ],
+      Cell[ _, "Reference", options___ ] :> Lookup[ { options }, CellTags ], Infinity ];
+    measurements[ "EntryDingbat" ] = FirstCase[ NotebookGet[ notebook ],
+      Cell[ _, "Reference", options___ ] /; Lookup[ { options }, CellTags ] === "Ol09" :>
+        Lookup[ { options }, CellDingbat ], None, Infinity ];
     NotebookClose[ notebook ];
     measurements
   ]
@@ -746,6 +755,14 @@ VerificationTest[
 VerificationTest[
   Cases[ $measured[ "Referencing", "Citation" ], _CounterBox, Infinity ],
   { CounterBox[ "Section", "Thm:key" ], CounterBox[ "Theorem", "Thm:key" ] }
+]
+
+(* T3, in a live notebook. The entry joins the bibliography at its end rather than landing at the
+   selection — which is on the citation cell three cells earlier — and it comes back through
+   NotebookPut carrying the dingbat that makes it read as the citation pointing at it. *)
+VerificationTest[
+  { $measured[ "Referencing", "Entries" ], $measured[ "Referencing", "EntryDingbat" ] },
+  { { "Sm09", "Ol09" }, Cell[ TextData[ "[Ol09]" ] ] }
 ]
 
 (* PaletteAndViewUX T2: turning the math control up really does enlarge inline mathematics on the page,

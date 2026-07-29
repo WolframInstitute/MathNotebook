@@ -114,3 +114,114 @@ VerificationTest[
   labelReferenceCells @ Notebook[ { Cell[ "Prose, tagged but not a reference", "Text", CellTags -> "prose" ] } ],
   Notebook[ { Cell[ "Prose, tagged but not a reference", "Text", CellTags -> "prose" ] } ]
 ]
+
+(* ---------------------------------------------------------------------------------------------
+   InsertReference: the pure core. Three cases, told apart by what the block's last cell carries.
+   --------------------------------------------------------------------------------------------- *)
+
+$paper = Notebook[ { Cell[ "A Paper", "Title" ], Cell[ "Prose.", "Text" ] } ]
+
+$firstEntry = insertReferenceCells[ $paper, "ollivier" ]
+
+(* A notebook with no bibliography gains two cells: the anchor heading and the entry. *)
+VerificationTest[
+  Cases[ $firstEntry, Cell[ _, style_String, ___ ] :> style, Infinity ],
+  { "Title", "Text", "Section", "Reference" }
+]
+
+(* The anchor is unnumbered, suppressed, and tagged — all three, since each is load-bearing. *)
+VerificationTest[
+  FirstCase[ $firstEntry, Cell[ "References", "Section", options___ ] :>
+    { Lookup[ { options }, CounterIncrements ], Lookup[ { options }, CellTags ],
+      cellTagging[ Cell[ "References", "Section", options ], "Suppressed" ] }, None, Infinity ],
+  { { }, $bibliographyAnchorTag, "True" }
+]
+
+(* The entry reads as the citation pointing at it. *)
+VerificationTest[
+  FirstCase[ $firstEntry, Cell[ _, "Reference", options___ ] :>
+    { Lookup[ { options }, CellTags ], Lookup[ { options }, CellDingbat ] }, None, Infinity ],
+  { "ollivier", Cell[ TextData[ "[ollivier]" ] ] }
+]
+
+(* The first entry carries BOTH delimiters, so a hand-written bibliography exports as a real
+   thebibliography rather than as loose prose. *)
+VerificationTest[
+  StringCases[ notebookToLaTeX[ $firstEntry ],
+    "\\begin{thebibliography}" | "\\bibitem{ollivier}" | "\\end{thebibliography}" ],
+  { "\\begin{thebibliography}", "\\bibitem{ollivier}", "\\end{thebibliography}" }
+]
+
+(* The anchor prints nothing: thebibliography heads itself, and a cell emitting "References" too
+   would put the heading in the compiled paper twice. This is the whole reason it is suppressed. *)
+VerificationTest[
+  StringContainsQ[ notebookToLaTeX[ $firstEntry ], "References" ],
+  False
+]
+
+$secondEntry = insertReferenceCells[ $firstEntry, "lott" ]
+
+(* A second insert makes no second anchor, and no second thebibliography. *)
+VerificationTest[
+  { Count[ $secondEntry, Cell[ "References", "Section", ___ ], Infinity ],
+    StringCount[ notebookToLaTeX[ $secondEntry ], "\\begin{thebibliography}" ],
+    StringCount[ notebookToLaTeX[ $secondEntry ], "\\end{thebibliography}" ] },
+  { 1, 1, 1 }
+]
+
+(* The entries come out in insertion order, each under its own \bibitem. *)
+VerificationTest[
+  StringCases[ notebookToLaTeX[ $secondEntry ], "\\bibitem{" ~~ key : Except[ "}" ] .. ~~ "}" :> key ],
+  { "ollivier", "lott" }
+]
+
+(* The closing delimiter MOVED. It rides on whichever cell is last, so appending without moving it
+   would emit the new entry after the \end — which round-trips fine and compiles to nothing. *)
+VerificationTest[
+  Map[ cell |-> { Lookup[ Cases[ cell, _Rule, { 1 } ], CellTags ],
+      cellTagging[ cell, "EnvironmentClose" ] =!= "" },
+    Cases[ $secondEntry, Cell[ _, "Reference", ___ ], Infinity ] ],
+  { { "ollivier", False }, { "lott", True } }
+]
+
+(* --- The .bib case: the entries are not the notebook's, so the new one is suppressed and the cell
+   carrying the \bibliography commands stays last. --- *)
+
+$database = Notebook[ {
+  Cell[ "Prose.", "Text" ],
+  Cell[ "Ollivier, Ricci curvature.", "Reference", CellTags -> "ollivier",
+    TaggingRules -> <| "MathNotebook" -> <| "Suppressed" -> "True" |> |> ],
+  Cell[ "Lott and Villani.", "Reference", CellTags -> "lott",
+    TaggingRules -> <| "MathNotebook" -> <| "Suppressed" -> "",
+      "BibliographyTeX" -> "\\bibliography{refs}" |> |> ] } ]
+
+VerificationTest[
+  bibliographyDatabaseQ[ $database ],
+  True
+]
+
+VerificationTest[
+  bibliographyDatabaseQ[ $secondEntry ],
+  False
+]
+
+$databaseInserted = insertReferenceCells[ $database, "sturm" ]
+
+(* The new entry goes BEFORE the carrier, and is suppressed like every other .bib entry. *)
+VerificationTest[
+  Map[ cell |-> { Lookup[ Cases[ cell, _Rule, { 1 } ], CellTags ], cellTagging[ cell, "Suppressed" ] },
+    Cases[ $databaseInserted, Cell[ _, "Reference", ___ ], Infinity ] ],
+  { { "ollivier", "True" }, { "sturm", "True" }, { "lott", "" } }
+]
+
+(* So the exported source is unchanged — which is what InsertReference::bibfile says out loud. *)
+VerificationTest[
+  notebookToLaTeX[ $databaseInserted ],
+  notebookToLaTeX[ $database ]
+]
+
+(* An imported thebibliography paper gets no anchor: its existing block is the anchor. *)
+VerificationTest[
+  Count[ insertReferenceCells[ $database, "sturm" ], Cell[ "References", "Section", ___ ], Infinity ],
+  0
+]
