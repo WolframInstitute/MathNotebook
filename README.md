@@ -2,7 +2,14 @@
 
 # MathNotebook
 
-Write mathematics papers in Wolfram notebooks — referencing palette, LaTeX journal stylesheets, and conversion between LaTeX source and typeset math.
+Write mathematics papers in Wolfram notebooks: a palette for reference management and block environments, journal stylesheets, conversion between the front end's own typesetting and MaTeX cells, installation of LaTeX fonts with math support, import and export of LaTeX documents for journal submission, and a tutorial for typesetting mathematics in Wolfram.
+
+Goals:
+
+* Comfortable writing of structured mathematical text in the Wolfram ecosystem
+* A knowledge base of tips and best practices
+* Automatic generation of research notebooks by LLM agents
+* Giving LaTeX's capabilities to a natively computational system (cf. Typst)
 
 ## ✨ Usage
 
@@ -17,9 +24,7 @@ Restart the front end, then open **Palettes ▸ MathNotebook**.
 
 Start with the **[Tutorial](https://www.wolframcloud.com/obj/hajek_pavel/MathNotebook/Tutorial.nb)**, or `OpenTutorial[]`.
 
-Every exported symbol has a reference page. They ship inside the paclet, so once it is installed they are in the Documentation Center (F1) and `?ExportLaTeXBundle` shows the same usage in a kernel.
-
-After that, **Setup ▸ Update from cloud** in the palette — or `UpdateMathNotebook[]` — checks the published version and installs it only when it is newer, then rebuilds the menus and reopens the palette so the new palette and stylesheets are live without a restart.
+Update to the latest development version from **Setup ▸ Update from cloud** in the palette — or `UpdateMathNotebook[]`.
 
 ## 🎨 Stylesheets
 
@@ -39,7 +44,9 @@ The same sample document in each template — as a notebook, and as the LaTeX it
 
 ## 🖱 Palette
 
-<img src="Images/Palette.png" alt="MathNotebook palette" width="215">
+<p align="center">
+  <img src="Images/Palette.png" alt="MathNotebook palette" width="215">
+</p>
 
 What the buttons do is in the [Tutorial](https://www.wolframcloud.com/obj/hajek_pavel/MathNotebook/Tutorial.nb).
 
