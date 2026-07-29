@@ -253,6 +253,29 @@ savedFontRuns[ source_String ] :=
 
 $fontSavedSource = "\\documentclass{article}\n\\begin{document}\n\nThe \\textbf{light cone}, \\emph{here and now}, an \\textit{upright} word, a \\emph{pairing of degree $n$}.\n\n\\end{document}\n";
 
+(* FirstReadingDefects T3: a compound \cite is one button per key, and each key has to NAVIGATE —
+   the old single button's compound ButtonData resolved to no cell, so the click silently did
+   nothing. NotebookFind resolves a key against the CellTags exactly as the Citation style's
+   NotebookLocate does at click time, and the tag read back off the selection is the proof the right
+   entry was reached. Through a real save, so the reopen-split fragments were merged and their
+   ButtonNotes — the compound's bytes — survived to export the one command byte for byte. *)
+splitCitationFinds[ source_String, bib_String ] :=
+  Module[ { file, notebook, found, exported },
+    file = FileNameJoin[ { $TemporaryDirectory, "MathNotebookSplitCitation.nb" } ];
+    Export[ file, latexToNotebook[ source, bibliographyDatabase[ bib ] ], "NB" ];
+    notebook = NotebookOpen[ file, Visible -> False ];
+    found = Map[
+      Replace[ NotebookFind[ notebook, #, All, CellTags ], {
+          $Failed -> None,
+          _ :> First @ Flatten @ { CurrentValue[ First @ SelectedCells[ notebook ], CellTags ] } } ] &,
+      { "ehlers", "andreka" } ];
+    exported = notebookToLaTeX[ NotebookGet[ notebook ] ] === source;
+    NotebookClose[ notebook ];
+    <| "Found" -> found, "Exported" -> exported |>
+  ]
+
+$splitCitationSource = "\\documentclass{article}\n\\begin{document}\n\nProse citing \\cite{ehlers, andreka}.\n\n\\bibliography{refs}\n\n\\end{document}\n";
+
 (* LaTeXPaperImport T7: an environment body that spans cells has to number itself once. The name,
    the number and the QED square come from the style, so every cell of a three-cell theorem would
    carry all three and the next theorem would be 1.4 — and none of that is visible in the kernel or
@@ -600,6 +623,7 @@ $measured = UsingFrontEnd @ <|
   "Numbering" -> numberingMeasurements[ $numberingPaper ],
   "Figures" -> figureMeasurements[ $figurePaper ],
   "Saved" -> savedRoundTrip[ $savedSource ],
+  "SplitCitations" -> splitCitationFinds[ $splitCitationSource, $bibliographyBib ],
   "FontRuns" -> savedFontRuns[ $fontSavedSource ],
   "Body" -> importedText @ latexToNotebook[ $bodyPaper ],
   "Bibliography" -> importedText @ latexToNotebook[ $bibliographySource, bibliographyDatabase[ $bibliographyBib ] ],
@@ -923,6 +947,14 @@ VerificationTest[
 VerificationTest[
   { $measured[ "Saved", "Buttons" ] > 3, $measured[ "Saved", "Exported" ] },
   { True, True }
+]
+
+(* FirstReadingDefects T3: each key of the compound citation navigates to its own entry, through a
+   real save, and the reopened paper still exports the one \cite{ehlers, andreka} byte for byte —
+   the recomposition read off the fragments' merged ButtonNotes, not off the display separators. *)
+VerificationTest[
+  $measured[ "SplitCitations" ],
+  <| "Found" -> { "ehlers", "andreka" }, "Exported" -> True |>
 ]
 
 (* ImportDisplayDefects T2: the styled runs the font commands became survive that same save. The

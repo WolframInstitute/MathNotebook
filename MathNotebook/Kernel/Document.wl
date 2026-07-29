@@ -1314,16 +1314,39 @@ citationSplit[ text_String ] :=
 (* \cite becomes a Citation button labelled with the key in brackets — referenceLabel's rendering, so
    a citation reads exactly as the dingbat of the entry it points at. Unlike \ref this is
    unconditional: the label is literal text and is right even in a paper with no bibliography, where
-   a CounterBox would render the front end's XXX. The verbatim brace content rides along as the
-   ButtonData, which is both what NotebookLocate navigates by and what the exporter writes back, so
-   \cite{a, b} returns with its own spacing; the optional argument is the item before the closing
-   bracket, and how many keys there are is what tells the two apart. *)
+   a CounterBox would render the front end's XXX. A single key rides verbatim as the ButtonData,
+   which is both what NotebookLocate navigates by and what the exporter writes back; the optional
+   argument is the item before the closing bracket.
+   A compound \cite{a, b} is one button PER key — a compound ButtonData resolves to no cell, so the
+   click silently did nothing (FirstReadingDefects T3) — with the display separators as literal ", "
+   text between the buttons. Each member's ButtonData is its own trimmed key, and the command's bytes
+   ride in ButtonNote: the opener carries "\cite[opt]{" up through its raw key, each continuation its
+   "," plus raw key, so recomposedCitations can put the one command back byte for byte however the
+   source spaced its keys — and a member whose neighbours are deleted still exports alone. ButtonNote
+   is measured to survive a save exactly as ButtonData does: the reopen-split copies it onto every
+   fragment, and mergedButtons keeps the first fragment's. The one compound that cannot recompose
+   from splits — a key list StringSplit does not reconstruct, such as a trailing comma's empty key —
+   keeps the old single-button shape rather than trading the round trip for the click. *)
 citationBox[ optional_String, keys_String ] :=
-  ButtonBox[
-    RowBox @ Flatten @ { "[", Riffle[ StringTrim /@ StringSplit[ keys, "," ], ", " ],
-      If[ optional === "", { }, { ", ", StringTake[ optional, { 2, -2 } ] } ], "]" },
-    BaseStyle -> "Citation", ButtonData -> keys ]
+  With[ { raws = StringSplit[ keys, "," ] },
+    If[ Length[ raws ] > 1 && StringRiffle[ raws, "," ] === keys,
+      Riffle[ MapIndexed[ citationKeyButton[ #1, First[ #2 ], Length[ raws ], optional ] &, raws ], ", " ],
+      ButtonBox[
+        RowBox @ Flatten @ { "[", Riffle[ StringTrim /@ raws, ", " ],
+          If[ optional === "", { }, { ", ", StringTake[ optional, { 2, -2 } ] } ], "]" },
+        BaseStyle -> "Citation", ButtonData -> keys ] ] ]
 
+citationKeyButton[ raw_String, index_Integer, count_Integer, optional_String ] :=
+  ButtonBox[
+    RowBox @ Flatten @ { "[", StringTrim[ raw ],
+      If[ index === count && optional =!= "", { ", ", StringTake[ optional, { 2, -2 } ] }, { } ], "]" },
+    BaseStyle -> "Citation", ButtonData -> StringTrim[ raw ],
+    ButtonNote -> If[ index === 1, "\\cite" <> optional <> "{" <> raw, "," <> raw ] ]
+
+(* What referenceTeX writes back for a citation button carrying no recomposition run: the ButtonData
+   verbatim, with the optional argument read off the label — how many keys there are is what tells
+   \cite{a, b} from \cite[note]{a}. A pre-split compound button — a notebook saved before the keys
+   were split — still exports through this clause byte-exact, its click as dead as it always was. *)
 citationTeX[ RowBox[ parts_List ], keys_String ] :=
   "\\cite" <>
     If[ Length[ parts ] > 2 Length[ StringSplit[ keys, "," ] ] + 1, "[" <> parts[[ -2 ]] <> "]", "" ] <>
@@ -1588,9 +1611,52 @@ cellTeXText[ cell : Cell[ content_, ___ ] ] :=
   Replace[ convertMathCell @ referencesToTeX @ escapedTextCell @ Cell[ content, "Text" ],
     { Cell[ text_String, ___ ] :> text, _ :> "" } ]
 
+(* The TextData pass is a levelled Replace rather than a ReplaceAll: ReplaceAll never descends into
+   what it has replaced, so an inline island's own TextData — a citation inside \emph{...} — was
+   reached by neither the merge nor the recomposition. Bottom-up, the island is processed before the
+   run that holds it. *)
 referencesToTeX[ Cell[ content_, rest___ ] ] :=
-  Cell[ Replace[ content /. TextData[ parts_List ] :> TextData @ mergedButtons[ parts ],
+  Cell[ Replace[
+      Replace[ content, TextData[ parts_List ] :> TextData @ recomposedCitations @ mergedButtons[ parts ],
+        { 0, Infinity } ],
       box_ButtonBox :> referenceTeX[ box ], { 0, Infinity } ], rest ]
+
+(* A compound's members go back to being the one command. The run is keyed on the ButtonNotes and
+   never on the separators — the literal ", " between two members is indistinguishable from prose
+   between two SEPARATE \cite commands, which must stay two commands — and the separators are
+   dropped: they are display mirrors of the bytes the notes already carry. Folding is pairwise and
+   leftmost-first, one continuation into its opener per pass, so however many keys the command had
+   the fixed point is one opener holding the whole command's bytes; closedCitations then writes each
+   opener out with its closing brace. An opener alone still closes over its own key, and an orphaned
+   continuation falls through to referenceTeX's per-button \cite. *)
+recomposedCitations[ parts_List ] :=
+  closedCitations @ FixedPoint[ citationPairFold, parts ]
+
+citationPairFold[ { before___, opener_ButtonBox ? citationOpenerQ, _String, cont_ButtonBox ? citationContinuationQ, after___ } ] :=
+  { before, appendedCitation[ opener, cont ], after }
+
+citationPairFold[ parts_List ] :=
+  parts
+
+appendedCitation[ ButtonBox[ label_, options___ ], cont_ButtonBox ] :=
+  ButtonBox[ label,
+    Sequence @@ Replace[ { options },
+      ( ButtonNote -> note_String ) :> ( ButtonNote -> note <> citationNote[ cont ] ), { 1 } ] ]
+
+closedCitations[ parts_List ] :=
+  Replace[ parts, opener_ButtonBox ? citationOpenerQ :> citationNote[ opener ] <> "}", { 1 } ]
+
+citationOpenerQ[ box_ ] :=
+  StringStartsQ[ citationNote[ box ], "\\cite" ]
+
+citationContinuationQ[ box_ ] :=
+  StringStartsQ[ citationNote[ box ], "," ]
+
+citationNote[ ButtonBox[ ___, ButtonNote -> note_String, ___ ] ] :=
+  note
+
+citationNote[ _ ] :=
+  ""
 
 (* Writing a notebook to disk and opening it again splits a ButtonBox[RowBox[...]] inside a TextData
    into one button per run — the same front-end behaviour NotebookWrite has — and it reaches every
@@ -1600,11 +1666,14 @@ referencesToTeX[ Cell[ content_, rest___ ] ] :=
    their own so that the counter no longer looked parenthesised and the brackets no longer looked
    like references at all — \cite{eq:a}\ref{eq:a}\cite{eq:a}. Consecutive buttons on one key are put
    back together before anything reads them; two adjacent citations to the same key, which no real
-   paper writes, would merge into one. *)
+   paper writes, would merge into one. The merged button keeps the FIRST fragment's whole option
+   sequence rather than restating BaseStyle and ButtonData: the split copies every option onto every
+   fragment — ButtonNote among them, which is what recomposedCitations reads — so dropping the rest
+   here would lose a compound's bytes on its first save. *)
 mergedButtons[ parts_List ] :=
   Flatten @ Replace[ SplitBy[ parts, buttonKey ],
-    run : { ButtonBox[ _, ___, ButtonData -> key_, ___ ], __ } :>
-      { ButtonBox[ RowBox @ Flatten @ Map[ buttonBoxes, run ], BaseStyle -> "Citation", ButtonData -> key ] },
+    run : { ButtonBox[ _, options___, ButtonData -> key_, rest___ ], __ } :>
+      { ButtonBox[ RowBox @ Flatten @ Map[ buttonBoxes, run ], options, ButtonData -> key, rest ] },
     { 1 } ]
 
 buttonKey[ ButtonBox[ ___, ButtonData -> key_, ___ ] ] :=

@@ -25,14 +25,16 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 and reported six defects, all triaged with measured causes on 2026-07-29. Done: `\varnothing` and the
 178 other glyphless macros draw their characters (T1, S1, suite 329 → 334); the character escapes
 unescape into displayed text and re-escape on export through one shared segmentation that carries
-every raw-TeX span verbatim (T2, S2, suite 334 → 341, both specimens byte-exact). **Next: T3** — a
-composed `\cite{a, b}` is one button whose compound `ButtonData` navigates nowhere (split it per key,
-recompose on export). Then: `CopyCellReference` reads the *style's* label spec so the specimen's
-`Axiom 3.1.3` pastes as `Theorem 0.0` (T4 applies the existing "read the chain off the target cell"
-fix to the copy path); the two font sliders disagree about mathematics — inline math tracks the
-document slider, display math the math slider, and with both set inline math double-scales (T5, model
-to confirm with Pavel); and `LabelReferences` rewrites the whole notebook to relabel 14 cells, the
-prime suspect for the reported freezes (T6 ends with a measured number).
+every raw-TeX span verbatim (T2, S2, suite 334 → 341, both specimens byte-exact); a compound
+`\cite{a, b}` is one navigating button per key with the command's bytes riding in `ButtonNote` and the
+export recomposing them byte-exact — the causal paper's dangling citations went to zero and its
+Buttons census 14 → 21 (T3, S3, suite 341 → 345). **Next: T4** — `CopyCellReference` reads the
+*style's* label spec so the specimen's `Axiom 3.1.3` pastes as `Theorem 0.0` (apply the existing
+"read the chain off the target cell" fix to the copy path). Then: the two font sliders disagree about
+mathematics — inline math tracks the document slider, display math the math slider, and with both set
+inline math double-scales (T5, model to confirm with Pavel); and `LabelReferences` rewrites the whole
+notebook to relabel 14 cells, the prime suspect for the reported freezes (T6 ends with a measured
+number).
 
 [Import Display Defects](Done/2026-07-29-ImportDisplayDefects.md) closed on 2026-07-29 — all five
 display defects fixed, 0.1.17 installed, `main.nb` re-imported through it, and the reading half of T4

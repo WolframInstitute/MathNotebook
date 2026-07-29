@@ -102,7 +102,7 @@ navigation and interaction defects, the classes the census and fidelity tests ca
   import — prose, section titles, environment titles, captions, wherever `inlineContent` reaches —
   and re-escape on export so both specimens stay byte-exact. Watch the specimen census: cell counts
   must not move.
-- [ ] **T3 — Split the composed citations.** One button per key with the separators as literal text,
+- [x] **T3 — Split the composed citations.** One button per key with the separators as literal text,
   export recomposing adjacent citation buttons to the source's own `\cite{…}` bytes;
   `citationTeX`, `mergedButtons` and `citedTags` move together. Assert a compound citation's every
   key resolves through `NotebookLocate` on the imported specimen, and the reopen-split
@@ -204,3 +204,36 @@ navigation and interaction defects, the classes the census and fidelity tests ca
   `\ref` whose target is absent now merges into its neighbouring prose run (the old test asserted
   it as a standalone `TextData` part; amended to assert the content, plus that no button exists).
 - **Next:** T3.
+
+### Session 3 — 2026-07-29 — T3, the composed citations
+
+- **Prompt:** `/next-session`.
+- **Did:** Measured the design's one unknown first — `ButtonNote` survives a save exactly as
+  `ButtonData` does, the reopen-split copying every option onto every fragment — and that measurement
+  is what the whole shape stands on: a compound `\cite{a, b}` is now one button per key (`ButtonData`
+  the trimmed key, label `[key]`, literal `", "` between) with the command's bytes riding in the
+  notes, the opener's `\cite[opt]{` through its raw key and each continuation's comma plus raw key,
+  and `recomposedCitations` folds a run back into the one command byte for byte — keyed on the notes,
+  never the separators, since the `", "` between members is indistinguishable from prose between two
+  separate `\cite` commands. `mergedButtons` keeps the first fragment's whole option sequence (else
+  the first save loses the bytes); the `TextData` pass in `referencesToTeX` became a levelled
+  `Replace` so an island's citation (`\emph{…\cite{a, b}…}`) merges and recomposes too; a key list
+  `StringSplit` cannot reconstruct keeps the old single-button shape; a pre-split notebook's compound
+  button still exports byte-exact through `citationTeX`'s key count. Degradations pinned: an opener
+  alone closes over its own key, an orphaned continuation exports its own `\cite`. Tests: per-key
+  shapes and notes, the dangling audit now empty on the `.bib` fixture (kernel-side "every key
+  navigates"), legacy and degraded shapes, the reopen simulation re-cut to the new fragments;
+  `FrontEnd.wlt` gained `SplitCitations` — through a real save, `NotebookFind` reaches each key's own
+  entry and the reopened paper still exports the one `\cite{ehlers, andreka}`. Census re-measured,
+  never guessed: the causal paper's Buttons 14 → 21 with **Dangling 0** — the compound `ButtonData`
+  was the only dangling citation in a paper that ships its `.bib` — and hodgepaper moves nowhere,
+  writing no compound `\cite`; `Dangling` is a census key now, hodge's 15 being T10's missing `.bib`.
+  Suite 341 → 345 green, both specimens and all four samples byte-exact. Three bites, each restored
+  from a copy: import split off fails exactly the 3 import assertions + the census; recomposition
+  off exactly the 3 export assertions; option-dropping `mergedButtons` exactly the reopen simulation.
+- **Learned:** `specimenProse` read every string in a cell's *content*, and a `ButtonBox`'s options
+  live inside the content — so the notes' carried bytes counted as "literal `\cite{` in the prose"
+  until the census stripped buttons to their labels, the same mirror rule the figure markup already
+  had. And the level matters more than it reads: `content /. TextData[…] :> …` never reaches a
+  TextData *inside* the replacement, so island citations had been outside the merge since T5.
+- **Next:** T4.

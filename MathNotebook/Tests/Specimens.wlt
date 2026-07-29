@@ -70,11 +70,14 @@ If[ Length[ $specimens ] < Length[ $candidates ],
 (* $evaluationStyles is file-private in Document.wl, and an undeclared symbol read from here would be
    a distinct symbol with no value, so the two styles the importer actually emits are written out.
    Only the cell content is read, never the options, so the source a figure carries verbatim in its
-   tagging rules does not count as literal LaTeX left in the prose. *)
+   tagging rules does not count as literal LaTeX left in the prose. A ButtonBox is stripped to its
+   label for the same reason: its ButtonNote carries a compound citation's own "\cite{" bytes
+   (FirstReadingDefects T3), which are carried source exactly as a figure's markup is — counting
+   them would read every recomposable citation as literal LaTeX the reader sees. *)
 specimenProse[ cells_List ] :=
   StringJoin @ Cases[ cells,
     Cell[ content_, Except[ "Input" | "Output" ], ___ ] :>
-      StringJoin @ Cases[ content, _String, Infinity ] ]
+      StringJoin @ Cases[ content /. ButtonBox[ label_, ___ ] :> label, _String, Infinity ] ]
 
 (* cellTagging is file-private for the same reason, so the rules are read out here. T7 replaced
    "one environment is one cell" with "one cell of the group carries the \begin", and the invariant
@@ -127,6 +130,11 @@ specimenCensus[ file_String ] :=
        "Styles" -> KeySort @ Counts @ Cases[ cells, Cell[ _, style_String, ___ ] :> style ],
        "Tagged" -> Count[ cells, Cell[ __, CellTags -> _, ___ ] ],
        "Buttons" -> Count[ cells, _ButtonBox, Infinity ],
+       (* FirstReadingDefects T3: a citation whose ButtonData names no tag is a click that does
+          nothing. The causal paper ships its .bib, so nothing may dangle there -- the compound
+          \cite used to, its two keys riding one unresolvable ButtonData -- where every one of
+          hodgepaper's keys dangles by design, its .bib being the file it ships without. *)
+       "Dangling" -> Length @ bibliographyAudit[ notebook ][ "Dangling" ],
        "Counters" -> Count[ cells, _CounterBox, Infinity ],
        "Environments" -> Count[ opens,
          opening_ /; StringContainsQ[ opening, "\\begin{" ] &&
@@ -199,7 +207,13 @@ $measured = Map[ specimenCensus, $specimens ]
    hodgepaper shares one per-section counter across six environment names -- which is exactly what the
    sheets do -- so none of its 71 carry anything and what moves there is its four starred environments,
    its 33 equations numbered within the section as amsart numbers them, and the five items of its two
-   enumerates opened with a label= format. *)
+   enumerates opened with a label= format.
+
+   FirstReadingDefects T3 takes the causal paper's Buttons from 14 to 21 and its Dangling to 0: its
+   compound \cite commands are one button per key now, each key resolving, where the compound
+   ButtonData was the one thing dangling in a paper that ships its .bib. hodgepaper moves nowhere --
+   measured, it writes no compound \cite -- and its 15 dangling keys are T10's missing .bib, not a
+   defect of the citations. *)
 $expected = <|
   "Causal graphs" -> <|
     "Bytes" -> 36656,
@@ -209,7 +223,8 @@ $expected = <|
       "Reference" -> 14, "Section" -> 8, "Subsection" -> 11, "Text" -> 41, "Theorem" -> 10,
       "Title" -> 1 |>,
     "Tagged" -> 39,
-    "Buttons" -> 14,
+    "Buttons" -> 21,
+    "Dangling" -> 0,
     "Counters" -> 101,
     "Environments" -> 33,
     "Lists" -> 12,
@@ -229,6 +244,7 @@ $expected = <|
       "Theorem" -> 11, "Title" -> 1 |>,
     "Tagged" -> 84,
     "Buttons" -> 233,
+    "Dangling" -> 15,
     "Counters" -> 389,
     "Environments" -> 71,
     "Lists" -> 11,
@@ -252,7 +268,7 @@ Do[
       written = $measured[ name, "Written" ],
       structure = KeyTake[ $measured[ name ], { "Bytes", "Cells", "Styles" } ],
       references = KeyTake[ $measured[ name ],
-        { "Tagged", "Buttons", "Counters", "Environments", "Lists", "Headed", "Items", "ItemsHeaded" } ],
+        { "Tagged", "Buttons", "Dangling", "Counters", "Environments", "Lists", "Headed", "Items", "ItemsHeaded" } ],
       literal = $measured[ name, "Literal" ],
       numbering = $measured[ name, "Numbering" ],
       expected = $expected[ name ] },
@@ -264,7 +280,7 @@ Do[
       TestID -> id <> ": cells and styles" ];
     VerificationTest[ references,
       KeyTake[ expected,
-        { "Tagged", "Buttons", "Counters", "Environments", "Lists", "Headed", "Items", "ItemsHeaded" } ],
+        { "Tagged", "Buttons", "Dangling", "Counters", "Environments", "Lists", "Headed", "Items", "ItemsHeaded" } ],
       TestID -> id <> ": tags, citations and counters" ];
     VerificationTest[ numbering, expected[ "Numbering" ],
       TestID -> id <> ": how it is numbered" ];

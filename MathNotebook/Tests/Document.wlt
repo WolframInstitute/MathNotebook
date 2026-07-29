@@ -207,18 +207,33 @@ VerificationTest[
       CellTags -> "second", CellDingbat -> Cell[ TextData[ "[second]" ] ], ParagraphIndent -> 0 ] }
 ]
 
-(* The label is the key in brackets, the verbatim brace content rides along as the ButtonData — both
-   the navigation target and what the exporter writes back — and an optional argument follows the
-   keys, which is why the exporter counts them to tell \cite{a, b} from \cite[note]{a}. *)
+(* The label is the key in brackets and a single key rides verbatim as the ButtonData — both the
+   navigation target and what the exporter writes back, with an optional argument following the key.
+   A compound \cite is one button PER key (FirstReadingDefects T3: a compound ButtonData resolves to
+   no cell, so the click silently did nothing), each ButtonData its own trimmed key, the command's
+   bytes riding in the ButtonNotes — the opener up through its raw key, each continuation behind its
+   comma — and the two spellings of a two-key citation kept apart there and nowhere else. *)
 VerificationTest[
   Cases[ First @ $citeNotebook, _ButtonBox, Infinity ],
   { ButtonBox[ RowBox @ { "[", "first", "]" }, BaseStyle -> "Citation", ButtonData -> "first" ],
-    ButtonBox[ RowBox @ { "[", "first", ", ", "second", "]" }, BaseStyle -> "Citation",
-      ButtonData -> "first, second" ],
-    ButtonBox[ RowBox @ { "[", "first", ", ", "second", "]" }, BaseStyle -> "Citation",
-      ButtonData -> "first,second" ],
+    ButtonBox[ RowBox @ { "[", "first", "]" }, BaseStyle -> "Citation", ButtonData -> "first",
+      ButtonNote -> "\\cite{first" ],
+    ButtonBox[ RowBox @ { "[", "second", "]" }, BaseStyle -> "Citation", ButtonData -> "second",
+      ButtonNote -> ", second" ],
+    ButtonBox[ RowBox @ { "[", "first", "]" }, BaseStyle -> "Citation", ButtonData -> "first",
+      ButtonNote -> "\\cite{first" ],
+    ButtonBox[ RowBox @ { "[", "second", "]" }, BaseStyle -> "Citation", ButtonData -> "second",
+      ButtonNote -> ",second" ],
     ButtonBox[ RowBox @ { "[", "second", ", ", "Theorem~1.1" , "]" }, BaseStyle -> "Citation",
       ButtonData -> "second" ] }
+]
+
+(* Every key of a compound navigates: NotebookLocate resolves a ButtonData against the CellTags, so
+   "no citation dangles" is exactly "every click finds its entry" measured kernel-side — and the
+   compound ButtonData of the old shape is what used to dangle here. *)
+VerificationTest[
+  bibliographyAudit[ $citeNotebook ],
+  <| "Uncited" -> { }, "Dangling" -> { } |>
 ]
 
 (* Out and back, with the two spellings of a two-key citation kept apart, and the bibliography
@@ -237,7 +252,7 @@ VerificationTest[
   { Map[ #[[ 2 ]] &, First @ latexToNotebook[ $citeSource ] ],
     Length @ Cases[ First @ latexToNotebook[ $citeSource ], _ButtonBox, Infinity ],
     notebookToLaTeX @ latexToNotebook[ $citeSource ] === $citeSource },
-  { { "Text", "Text" }, 4, True }
+  { { "Text", "Text" }, 6, True }
 ]
 
 (* LaTeXPaperImport T5. A figure becomes the code that draws it plus a Caption cell: one Input cell
@@ -377,17 +392,21 @@ VerificationTest[
 
 (* Writing a notebook to disk and opening it again splits a ButtonBox[RowBox[...]] in a TextData into
    one button per run, so the round trip held only for a notebook that had never been saved. This is
-   the shape the front end really hands back, measured: a two-key citation as five buttons and an
-   \eqref as three, the parentheses carried off into buttons of their own so the counter no longer
-   looked parenthesised and the brackets no longer looked like references at all. The runs are put
-   back together before anything reads them. Tests/FrontEnd.wlt asserts the same through a real save. *)
+   the shape the front end really hands back, measured: a per-key citation button as three fragments
+   each carrying every option of the whole — the ButtonNote holding the compound's bytes included —
+   and an \eqref as three, the parentheses carried off into buttons of their own so the counter no
+   longer looked parenthesised and the brackets no longer looked like references at all. The runs are
+   put back together, the notes recompose the one \cite, and the display separator between the two
+   members is dropped as the mirror it is. Tests/FrontEnd.wlt asserts the same through a real save. *)
 $splitCell = Cell[ TextData[ {
   "See ",
-  ButtonBox[ "[", BaseStyle -> "Citation", ButtonData -> "first, second" ],
-  ButtonBox[ "first", BaseStyle -> "Citation", ButtonData -> "first, second" ],
-  ButtonBox[ ", ", BaseStyle -> "Citation", ButtonData -> "first, second" ],
-  ButtonBox[ "second", BaseStyle -> "Citation", ButtonData -> "first, second" ],
-  ButtonBox[ "]", BaseStyle -> "Citation", ButtonData -> "first, second" ],
+  ButtonBox[ "[", BaseStyle -> "Citation", ButtonData -> "first", ButtonNote -> "\\cite{first" ],
+  ButtonBox[ "first", BaseStyle -> "Citation", ButtonData -> "first", ButtonNote -> "\\cite{first" ],
+  ButtonBox[ "]", BaseStyle -> "Citation", ButtonData -> "first", ButtonNote -> "\\cite{first" ],
+  ", ",
+  ButtonBox[ "[", BaseStyle -> "Citation", ButtonData -> "second", ButtonNote -> ", second" ],
+  ButtonBox[ "second", BaseStyle -> "Citation", ButtonData -> "second", ButtonNote -> ", second" ],
+  ButtonBox[ "]", BaseStyle -> "Citation", ButtonData -> "second", ButtonNote -> ", second" ],
   " and ",
   ButtonBox[ "(", BaseStyle -> "Citation", ButtonData -> "eq:a" ],
   ButtonBox[ CounterBox[ "DisplayFormulaNumbered", "eq:a" ], BaseStyle -> "Citation", ButtonData -> "eq:a" ],
@@ -397,6 +416,38 @@ $splitCell = Cell[ TextData[ {
 VerificationTest[
   notebookToLaTeX @ Notebook[ { $splitCell } ],
   "See \\cite{first, second} and \\eqref{eq:a}.\n\n"
+]
+
+(* A notebook saved before the keys were split carries the old one-button compound, whose fragments
+   merge on the compound ButtonData; it exports byte-exact through citationTeX's key count, its click
+   as dead as it always was, and a re-import is what revives it. *)
+VerificationTest[
+  notebookToLaTeX @ Notebook[ { Cell[ TextData[ {
+    "See ",
+    ButtonBox[ "[", BaseStyle -> "Citation", ButtonData -> "first, second" ],
+    ButtonBox[ "first", BaseStyle -> "Citation", ButtonData -> "first, second" ],
+    ButtonBox[ ", ", BaseStyle -> "Citation", ButtonData -> "first, second" ],
+    ButtonBox[ "second", BaseStyle -> "Citation", ButtonData -> "first, second" ],
+    ButtonBox[ "]", BaseStyle -> "Citation", ButtonData -> "first, second" ],
+    "." } ], "Text" ] } ],
+  "See \\cite{first, second}.\n\n"
+]
+
+(* The recomposition degrades member by member rather than breaking whole: an opener whose
+   continuation was deleted closes over its own key — the display separator beside it is prose now
+   and stays — and an orphaned continuation falls through to the per-button \cite. Neither is a
+   round-trip case; both are what an author's edit leaves behind. *)
+VerificationTest[
+  { notebookToLaTeX @ Notebook[ { Cell[ TextData[ { "See ",
+        ButtonBox[ RowBox[ { "[", "first", "]" } ], BaseStyle -> "Citation",
+          ButtonData -> "first", ButtonNote -> "\\cite{first" ],
+        ", ", "and prose." } ], "Text" ] } ],
+    notebookToLaTeX @ Notebook[ { Cell[ TextData[ { "See ",
+        ButtonBox[ RowBox[ { "[", "second", "]" } ], BaseStyle -> "Citation",
+          ButtonData -> "second", ButtonNote -> ", second" ],
+        "." } ], "Text" ] } ] },
+  { "See \\cite{first}, and prose.\n\n",
+    "See \\cite{second}.\n\n" }
 ]
 
 (* LaTeXPaperImport T7. An environment body is split exactly as the document body is: its display
