@@ -21,8 +21,26 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 
 ## Active
 
-[Front End Test Isolation](Active/FrontEndTestIsolation.md) — next task **T3**, the last one, and it is
-now bitable: T4 produced a sequence that kills a front end on demand. **T4 closed on 2026-07-30 in both
+*Nothing active.* `Front End Test Isolation` closed on 2026-07-30 with T3; the two open items are in
+`Backlog/`, and [Reset View Render](Backlog/ResetViewRender.md) is the one with a measured mechanism
+and a repair left to write.
+
+## Recently closed
+
+[Front End Test Isolation](Done/2026-07-30-FrontEndTestIsolation.md) — **closed 2026-07-30 with T3**: a
+front end that does not survive a measurement group now aborts `Tests/FrontEnd.wlt` with
+`frontEndGroup::died`, naming the group and the measurements carrying `$Failed`, so a dead front end can
+never again be read as a content mismatch about the paclet. `ownFrontEnd` reads the link id either side
+of its group *and* scans for `$Failed`, because the id catches a transparent relaunch while reading
+**equal** when the front end answered and the measurement did not — which is the shape
+`BibliographyHeading` had. Bitten by injecting one `$Failed`: `TestReport` answers `$Aborted` and emits
+**no tests**. Two silent faults fixed on the way, both now in `CLAUDE.md`: a message string is a
+`StringForm` template, so the markdown backticks around a shell command became **slots** and printed
+`StringForm::sfr` twice ahead of the real text; and `run_tests.wls` would have exited **0** on a
+non-reporting file, since `$Aborted["TestsFailedCount"]` is not a number and `Boole` never evaluates —
+loud in the log, green at the shell. Suite **384/0**.
+
+**T4 closed on 2026-07-30 in both
 directions.** The shape is the product's — `SetDocumentFontSize` + `ResetDocumentView` + `NotebookClose`
 on a document whose stylesheet is a **name** kills the next whole-notebook render **4/5**, and **5/5** on
 the paclet's own sheet name, against 0/5 for the sheet embedded with `Get`, 0/5 for either call alone, 0/5
@@ -216,16 +234,28 @@ paper whose stylesheet is a *name*, once that paper is **closed**, leaves the fr
 page: measured 2026-07-30 at 4/5 for `"Default.nb"` and 5/5 for the paclet's own sheet name, with the PDF
 simply never written, against 0/5 for the same sheet embedded with `Get`, for either call alone, and with
 the document left open. Backlog rather than Active because the author's common path is clean — printing the
-paper you just reset is 0/5 — so this is reached by closing a paper and printing a second one. Its T1 is a
-bisection question (the parent's removal, or its by-name re-resolution) and not yet a repair.
+paper you just reset is 0/5 — so this is reached by closing a paper and printing a second one. **T1 closed
+2026-07-30 and it is the *name*, not the removal**: `SetOptions[ nb, StyleDefinitions -> "Default.nb" ]`
+alone, tagging rules left in place, kills the next render **5/5**, while deleting the tagging rules and
+leaving the private sheet installed is 0/5 and the same assignment embedded with `Get` is 0/5. Two things
+that follow — the lethal clause is reachable **without** `ResetDocumentView` and is lethal more often
+without it (5/5 against the whole reset's 2/5, on a sequence that contains it), so the defect is wider
+than the exported function; and the obvious repair is ruled out on other grounds, an embedded parent
+letting every unoverridden style fall through to `Default.nb` and leaving the Format menu. T2 is the
+repair, and it has to keep the name and change *when* it is re-resolved.
 
 [Hand-Written Preamble](Backlog/HandWrittenPreamble.md) — a notebook that was never imported exports a
 body and nothing else, so it compiles nowhere: measured 2026-07-30, a typed six-cell paper comes out as
 229 bytes with `\documentclass` 0, `\begin{document}` 0 and `\newtheorem` 0, its three blocks all
 correct LaTeX with nothing to resolve them against. `EnvironmentBlocks` T2 is what makes it worth an
-item — before it the blocks were bare prose and a missing `\newtheorem` was moot. Its T1 is a four-part
-**decision** (which class, which `\newtheorem` lines, which packages, where a bibliography goes) and is
-Pavel's to take, not a session's; T2 must leave an imported paper's stored preamble byte for byte.
+item — before it the blocks were bare prose and a missing `\newtheorem` was moot. **T1 closed 2026-07-30
+with Pavel's four calls**: `\documentclass{article}` always, with the sheet named in a `%` comment;
+`\newtheorem` only for the styles the notebook uses, numbered as the sheet draws them (`[section]` on one
+shared counter for six sheets, one counter per environment for `ComplexSystems`);
+`amsmath`/`amssymb`/`amsthm` unconditionally with `graphicx`, `hyperref` and `enumitem` on a scan; and
+`thebibliography` in place with no `\bibliographystyle`. Three of the four are "look at the notebook"
+rather than a constant, so T2 is now a writing task — and it must leave an imported paper's stored
+preamble byte for byte.
 
 Before that: reduced from eight items to three on 2026-07-27 — the four in `Dropped/` each carry a note
 saying why and what would reopen them — the one item left was activated and closed on 2026-07-28, and

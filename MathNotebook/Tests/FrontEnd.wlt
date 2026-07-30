@@ -880,24 +880,54 @@ $continueImportedSource = "\\documentclass{article}\n\\usepackage{amsthm}\n\\new
    made the death look like a mystery: the only reading that detects one is the LinkObject's own id
    changing, and MathLink`LinkConnectedQ answers False even on a healthy link. Which entry does the
    killing is named at "Default" below. *)
-SetAttributes[ ownFrontEnd, HoldFirst ]
-ownFrontEnd[ measurements_ ] :=
-  Module[ { values = UsingFrontEnd @ measurements },
+(* T3. A front end that dies takes its measurement's value down with it, and what that value then
+   reaches is an assertion expecting a string — so the failure is reported as a CONTENT MISMATCH about
+   the paclet, which is exactly what happened to BibliographyHeading and what got it written off twice
+   as an environment artifact. The two readings that detect a death are the LinkObject's own id
+   changing (T2: Length @ Notebooks[] answers 1 straight across one, and MathLink`LinkConnectedQ
+   answers False on a HEALTHY link, so neither detects anything) and a $Failed surfacing in a stored
+   value — no measurement in this file records a $Failed legitimately, the one place that could
+   (splitCitationFinds) mapping it to None at the source. Either one aborts the whole file with a
+   named message, because a corpse is not worth testing and a green-but-for-one run here is not a
+   baseline. *)
+(* A message string is a StringForm template, so a BACKTICK in it is a slot: quoting the recovery
+   shell commands in markdown backticks — as the rest of this repo's prose does — made the message
+   demand items 0 and 5 and print StringForm::sfr twice before the real text. No backticks here. *)
+frontEndGroup::died = "The service front end did not survive the \"`1`\" measurement group. Link id before/after: `2` -> `3` (a CHANGE is a death; equal ids with a $Failed below means the front end answered but the measurement did not). Measurements carrying $Failed: `4`. Every assertion downstream of this is about a dead front end and NOT about the paclet -- do not read a content mismatch in Tests/FrontEnd.wlt as one, and do not attribute it to machine load without naming the TestID first. Recover with: defaults write com.wolfram.WolframApp ApplePersistenceIgnoreState -bool true ; pkill -9 -f MathematicaServer ; then a trivial UsingFrontEnd[ 1 + 1 ]. See CLAUDE.md, Build & test. Aborting the file rather than testing a corpse.";
+
+frontEndLinkId[ ] :=
+  Replace[ Quiet @ First @ $FrontEnd, {
+      link_LinkObject :> link[[ 2 ]],
+      _ :> Missing[ "NoLink" ] } ]
+
+SetAttributes[ ownFrontEnd, HoldRest ]
+ownFrontEnd[ name_String, measurements_ ] :=
+  Module[ { before, values, after, damaged },
+    (* Both reads have to happen INSIDE the UsingFrontEnd: after the uninstall there is no $FrontEnd
+       to read an id off, and the id differing between two GROUPS is the teardown working, not a
+       death. *)
+    { before, values, after } =
+      UsingFrontEnd @ { frontEndLinkId[ ], measurements, frontEndLinkId[ ] };
     Quiet @ Developer`UninstallFrontEnd[ ];
+    damaged = Keys @ Select[ values, ! FreeQ[ #, $Failed ] & ];
+    If[ before =!= after || damaged =!= { },
+      Message[ frontEndGroup::died, name, before, after, damaged ];
+      Abort[ ]
+    ];
     values
   ]
 
 (* "NoDocument" gets a front end to itself, and the ordering rule that used to carry it dissolves:
    the state it measures is "no document is open", which a fresh front end simply IS. It no longer
    has to be first in anything, and no later measurement can take the state away from it. *)
-$measuredDialogs = ownFrontEnd @ <|
+$measuredDialogs = ownFrontEnd[ "Dialogs", <|
   "NoDocument" -> noDocumentDialogs[ ]
-|>;
+|> ];
 
 (* Live notebooks: everything that drives real cells and reads the resolved style chain without
    rendering a page. A Rasterize of a cell belongs here — it is InlineInk's and ReferenceGutter's
    measurement — because it draws one box and not a document. *)
-$measuredLive = ownFrontEnd @ <|
+$measuredLive = ownFrontEnd[ "Live", <|
   "ContinueBlock" -> continueBlockDrive @ Get @ FileNameJoin[ { $sheetDirectory, "PlainArticle.nb" } ],
   "ContinueProof" -> continueProofDrive @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
   "ContinueImported" -> continueImportedDrive[ $continueImportedSource ],
@@ -940,14 +970,14 @@ $measuredLive = ownFrontEnd @ <|
     Join[ $templates, { "ComplexSystems.nb", "PlainArticle.nb" } ] ],
   "Citations" -> citationMeasurements @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
   "MaTeX" -> If[ $maTeXAvailable, maTeXMeasurements @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ] ]
-|>;
+|> ];
 
 (* The page renderers, and the membership rule is exactly that: a measurement here writes the WHOLE
    notebook to a file — a PDF for anything that has to read the page as text, a raster for anything
    that has to weigh its ink — which is the work the shared front end did not survive.
    BibliographyHeading sits here as an ordinary member: it used to be pinned last, and being last
    only ever decided which measurement discovered the corpse. *)
-$measuredRendered = ownFrontEnd @ <|
+$measuredRendered = ownFrontEnd[ "Rendered", <|
   "Copied" -> copiedReferenceDrive[ $axiomPaper, "AMSArticle.nb" ],
   "InlineScaling" -> inlineMathScaling @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
   "MathScale" -> mathScaleWidths @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
@@ -959,7 +989,7 @@ $measuredRendered = ownFrontEnd @ <|
   "Entries" -> importedText[ $entrySource ],
   "DisplayInk" -> displayInk[ $displayParagraph ],
   "BibliographyHeading" -> bibliographyHeading @ Get @ FileNameJoin[ { $sheetDirectory, "PlainArticle.nb" } ]
-|>;
+|> ];
 
 $measured = Join[ $measuredDialogs, $measuredLive, $measuredRendered ];
 

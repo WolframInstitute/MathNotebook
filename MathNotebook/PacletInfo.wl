@@ -7,7 +7,7 @@ PacletObject[
     "Creator" -> "Pavel Hajek",
     "License" -> "MIT",
     "PublisherID" -> "WolframInstitute",
-    "Version" -> "0.1.20",
+    "Version" -> "0.1.21",
     "WolframVersion" -> "14.3+",
     "PrimaryContext" -> "WolframInstitute`MathNotebook`",
     "Extensions" -> {

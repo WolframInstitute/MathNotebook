@@ -42,11 +42,14 @@ what produced the current state.
 
 ## Tasks
 
-- [ ] T3 — make a dead front end fail loudly rather than as a content mismatch: a measurement that
-      returns `$Failed` where a string was expected should abort the file with a named message, so this
-      cannot be mistaken for an assertion about the paclet again.
+*All tasks complete.*
 
 ### Done
+
+- [x] T3 (S5) — `ownFrontEnd[ name, measurements ]` reads the front-end link id either side of its
+      group and scans the returned values for `$Failed`; either detector fires
+      `frontEndGroup::died`, naming the group and the damaged keys, and aborts the file.
+      `run_tests.wls` counts a non-reporting file as a failure, which it did not.
 
 - [x] T4 (S4) — the shape is the product's and the feared symptom is not: `ResetDocumentView` after
       `SetDocumentFontSize` on a *named*-sheet document, once closed, kills the next page render 4/5
@@ -59,6 +62,20 @@ what produced the current state.
       render, and it is named in the test file and in `CLAUDE.md`.
 
 ## Hand-off
+
+**Closed. T3 was the last task, and the two things it left behind are the message and a hole in the
+runner that nothing had ever needed before.** `ownFrontEnd` now takes a group name, reads
+`frontEndLinkId[]` either side of the group *inside* the same `UsingFrontEnd` — the id differing
+between two groups is the teardown working, not a death — and scans the returned association for
+`$Failed`. Either detector fires `frontEndGroup::died` naming the group and the damaged keys and then
+`Abort[]`s. Bitten by replacing one live measurement with `<| "Broken" -> $Failed |>`:
+`TestReport` answers `$Aborted`, the message names `"Live"` and `{GoBack}`, and **no test is emitted at
+all** where before the corpse was tested. Two faults found in the doing, both recorded below and in
+`CLAUDE.md`: a message string is a `StringForm` template, so the markdown backticks this repo's prose
+uses around a shell command became **slots** and printed `StringForm::sfr` twice ahead of the real
+text; and `run_tests.wls` would have exited **0** on an aborted file, because `$Aborted["TestsFailedCount"]`
+is not a number, `Total` stays symbolic and `Exit[ Boole[ … ] ]` never evaluates — the loud failure
+would have been loud in the log and green at the shell.
 
 **T2 is answered and the Spec's own question was the wrong one, which is the fact worth carrying: the
 27 notebooks are neither a leak nor a ceiling.** One entry poisons the front end for the next page
@@ -122,6 +139,9 @@ the first of them is why this took three sessions to reach.
 | The finding is recorded as a warning at the entry rather than as a test. | What a future session can get wrong is *adding a renderer to the live group*, which no assertion over the current file would catch; the comment sits where that edit is made. | `Tests/FrontEnd.wlt`, the `Default` entry and the `ownFrontEnd` block. |
 | A front-end death is measured as a **rate** over repetitions with a fresh front end each, never as one run. | S3's twenty single-shot controls named an entry that measures 0/6, and the real 4/5 sequence would have looked like a certainty from one observation either way; the whole T4 answer turns on the counts. | `Default` 0/6 against the hand-rolled three calls 4/5; the author sequence 0/5 with the PDF written 5/5. |
 | The product defect gets its own Backlog item rather than a task here. | This item is about the suite's isolation, and the suite is already fixed; a repair to `ResetDocumentView` is a different deliverable with a different bite. | `Work/Backlog/ResetViewRender.md`. |
+| A death aborts the whole file rather than failing one test. | A front end that has died damages every measurement after it in its group, so a per-test failure is a menu of wrong diagnoses; and a green-but-for-one run here was read as a tolerable baseline twice. Nothing in the file is worth asserting once the front end is gone. | The bite: `TestReport` answers `$Aborted` and emits no tests, where the same injected `$Failed` previously produced a content mismatch naming a paclet symbol. |
+| Both detectors, not just the link id. | The id is the only reading that catches a *transparent relaunch* (T2), but it reads equal when the front end answered and the measurement did not — which is the shape `BibliographyHeading` actually had. No measurement in the file records a `$Failed` legitimately, the one place that could (`splitCitationFinds`) mapping it to `None` at the source, so the scan has no false positives to trade against. | `$Failed` scan fires with the id unchanged (165 → 165) on the bite. |
+| `run_tests.wls` counts a non-reporting file as one failure. | An abort that exits 0 is worse than the failure it replaced: loud in the log, green at the shell, and CI reads the shell. | `$Aborted[ "TestsFailedCount" ]` is not numeric, so `Total` stays symbolic and `Boole` never evaluates. |
 
 ## Progress
 
@@ -150,3 +170,9 @@ the first of them is why this took three sessions to reach.
   the wedge: it is AppKit's crash-restore modal on a headless front end, cleared by one `defaults
   write`, which retires the reboot, the RSS heuristic and the `-code`/`-file` axis — all in
   [`CLAUDE.md` § *Build & test*](../../CLAUDE.md), whose two front-end bullets it corrects.
+- **S5** 2026-07-30 T3 — a dead front end now aborts `Tests/FrontEnd.wlt` with
+  `frontEndGroup::died`, naming the group and the measurements carrying `$Failed`; bitten by
+  injecting one, which yields `$Aborted` and **no tests** where it used to yield a content mismatch
+  about a paclet symbol. Two silent faults fixed on the way: the message's markdown backticks were
+  read as `StringForm` slots, and `run_tests.wls` exited **0** on a non-reporting file. Suite
+  **384/0**. Item complete.

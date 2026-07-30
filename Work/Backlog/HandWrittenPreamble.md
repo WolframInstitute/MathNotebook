@@ -64,19 +64,55 @@ not touch it — so a generated preamble is written **only** when the stored one
 
 ## Tasks
 
-- [ ] T1 — decide the four questions above with Pavel, and record them as `## Decisions` rows.
 - [ ] T2 — generate the preamble and postamble when the stored ones are empty, leaving an imported
       paper's bytes untouched.
 - [ ] T3 — a test that a typed notebook's export compiles, and that both specimens are still byte-exact.
 
+### Done
+
+- [x] T1 (S1) — all four decided with Pavel, 2026-07-30. `article` always; `\newtheorem` only for the
+      styles the notebook uses, numbered as the sheet draws them; `amsmath`/`amssymb`/`amsthm`
+      unconditionally with `graphicx`, `hyperref` and `enumitem` conditional; `thebibliography` in
+      place with no `\bibliographystyle`.
+
 ## Hand-off
 
-Nothing started. The measurement above is the whole of what is known; `EnvironmentBlocks` T3 is where
-it was found.
+**T1 is closed and T2 is now a writing task rather than a design one.** The four rows below are
+Pavel's calls of 2026-07-30, and three of them are decisions to *look at the notebook* rather than to
+emit a constant — the scan is the work.
+
+**What T2 has to build, in the order the `.tex` needs it.** `\documentclass{article}` unconditionally,
+with a `%` comment naming the MathNotebook sheet the notebook was on so the author knows what to
+switch to; `\usepackage{amsmath,amssymb,amsthm}` unconditionally, then `graphicx` if any `Caption`
+cell or stored `\includegraphics` exists, `hyperref` if any reference or citation button exists, and
+`enumitem` if any item carries a bracketed label; one `\newtheorem` per environment **style actually
+present**, its name taken from `environmentSourceName`'s fallback (the style lowercased) so the body
+resolves, and its numbering matching what the sheet draws — `[section]` on one shared `Theorem`
+counter for six of the seven sheets, one counter per environment with no reset for `ComplexSystems`;
+then `\begin{document}` and `\end{document}` as the postamble.
+
+**Three traps this inherits from what is already written down, none of them new.** The generated
+preamble may be written **only** when the stored one is `""`, or the round trip — the repo's tightest
+invariant — stops being byte-exact on both specimens. The `\newtheorem` names must agree with the
+export's own fallback rather than with the twelve defaults, which is the `theoremDeclarations` versus
+`theoremEnvironments` distinction that already bit `EnvironmentBlocks` T2. And `ComplexSystems` is the
+sheet that breaks the shared-counter clause deliberately, so a scan that emits `[section]` for every
+sheet is wrong for exactly one of them and wrong invisibly — the notebook and the PDF disagree about
+the numbers and nothing structural notices.
+
+`EnvironmentBlocks` T3 is where the measurement in the Spec was made.
 
 ## Decisions
 
 | decision | rationale | evidence |
 |---|---|---|
+| `\documentclass{article}` always, with the sheet named in a `%` comment. | Every one of the twelve environments is definable under `article`, so the emitted body always resolves; the stylesheet is the paclet's *typography* and not a declared submission target, and reading `amsart` off `AMSArticle.nb` would be a guess that also changes equation numbering silently (`amsart` numbers within the section and never says so). The comment costs a line and tells the author what to switch to. | Pavel, 2026-07-30. The `amsart` numbering clause is `CLAUDE.md` § *Conventions*. |
+| One `\newtheorem` per environment style the notebook actually uses, numbered as the sheet draws it. | Twelve always is one packet and nine dead lines for a paper using three; letting `amsthm` number its own way is fewer lines and lets the compiled paper print numbers the notebook does not show, which is the one disagreement an author cannot see coming. | Pavel, 2026-07-30. |
+| `amsmath`, `amssymb`, `amsthm` unconditionally; `graphicx`, `hyperref`, `enumitem` on a scan. | The first three are what the environments and the display math need in every case. The other three are each implied by a feature the notebook either has or does not, and an absent package is a compile error where a spurious one is only noise — so the scan is cheap insurance in the direction that matters. | Pavel, 2026-07-30. |
+| `thebibliography` written in place, no `\bibliographystyle`. | For a notebook that was never imported the notebook owns the entries, so they belong in the `.tex` where the `Reference` cells sit — the `thebibliography` route's own asymmetry, already implemented for an imported paper. `\bibliographystyle` is inert for `thebibliography` and BibTeX never runs, which is also why `ExportLaTeXBundle` needs no `.bbl` step for such a paper. | Pavel, 2026-07-30. The bundle clause is `CLAUDE.md` § *Conventions*. |
 
 ## Progress
+
+- **S1** 2026-07-30 T1 — the four questions decided with Pavel and recorded as `## Decisions` rows;
+  three of the four are "scan the notebook" rather than a constant, which is what T2's work now is.
+  No code written, deliberately — the Spec's own framing is that the deliverable was a decision first.
