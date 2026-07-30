@@ -856,34 +856,54 @@ continueImportedDrive[ source_String ] :=
 
 $continueImportedSource = "\\documentclass{article}\n\\usepackage{amsthm}\n\\newtheorem{defn}{Definition}\n\\begin{document}\n\n\\begin{defn}\nA body.\n\\end{defn}\n\n\\end{document}\n"
 
-(* "NoDocument" is first in this association on purpose: a notebook left open by any measurement
-   above it would become the input notebook, and the state under test would be gone. *)
-$measured = UsingFrontEnd @ <|
-  "NoDocument" -> noDocumentDialogs[ ],
+(* Every group below is measured in a front end of ITS OWN, and two facts make that possible that
+   are not what this file assumed (FrontEndTestIsolation T1, both measured):
+
+   - UsingFrontEnd does NOT give a new front end. Two sequential blocks in one kernel report the
+     IDENTICAL LinkObject, so a second UsingFrontEnd — the obvious fix, and the one this item was
+     written to make — isolates exactly nothing.
+   - Developer`UninstallFrontEnd[] is the teardown that does. Measured over four rounds the link
+     goes 106 -> 109 -> 112 -> 115, each one fresh and each one answering. LinkClose on $FrontEnd is
+     NOT that teardown: it leaves the kernel unable to launch another, and the next UsingFrontEnd
+     then HANGS forever, with no message, uninterruptible by TimeConstrained because a blocked
+     MathLink read does not take an abort. That is the wedge that stopped S1, and the two calls are
+     one line apart.
+
+   What the split buys is that a front end killed by one group cannot take the rest of the file with
+   it, which is what a single association did: with all 34 entries in one, the service front end died
+   somewhere among them and every measurement after that point answered $Failed. *)
+SetAttributes[ ownFrontEnd, HoldFirst ]
+ownFrontEnd[ measurements_ ] :=
+  Module[ { values = UsingFrontEnd @ measurements },
+    Quiet @ Developer`UninstallFrontEnd[ ];
+    values
+  ]
+
+(* "NoDocument" gets a front end to itself, and the ordering rule that used to carry it dissolves:
+   the state it measures is "no document is open", which a fresh front end simply IS. It no longer
+   has to be first in anything, and no later measurement can take the state away from it. *)
+$measuredDialogs = ownFrontEnd @ <|
+  "NoDocument" -> noDocumentDialogs[ ]
+|>;
+
+(* Live notebooks: everything that drives real cells and reads the resolved style chain without
+   rendering a page. A Rasterize of a cell belongs here — it is InlineInk's and ReferenceGutter's
+   measurement — because it draws one box and not a document. *)
+$measuredLive = ownFrontEnd @ <|
   "ContinueBlock" -> continueBlockDrive @ Get @ FileNameJoin[ { $sheetDirectory, "PlainArticle.nb" } ],
   "ContinueProof" -> continueProofDrive @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
   "ContinueImported" -> continueImportedDrive[ $continueImportedSource ],
   "GoBack" -> goBackDrive[ ],
   "Referencing" -> referencingDrive @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
   "Relabel" -> labelReferencesDrive @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
-  "Copied" -> copiedReferenceDrive[ $axiomPaper, "AMSArticle.nb" ],
   "AutoTag" -> autoTagDrive @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
   "Placement" -> citationPlacement @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
-  "InlineScaling" -> inlineMathScaling @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
-  "MathScale" -> mathScaleWidths @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
-  "Imported" -> importedText[ $importedSource ],
-  "PlainSheet" -> AssociationMap[ sheetText[ $plainPaper, # ] &, { "PlainArticle.nb", "Default.nb" } ],
   "Lists" -> listMeasurements[ $listPaper ],
   "Numbering" -> numberingMeasurements[ $numberingPaper ],
-  "Figures" -> figureMeasurements[ $figurePaper ],
   "Saved" -> savedRoundTrip[ $savedSource ],
   "SplitCitations" -> splitCitationFinds[ $splitCitationSource, $bibliographyBib ],
   "FontRuns" -> savedFontRuns[ $fontSavedSource ],
-  "Body" -> importedText @ latexToNotebook[ $bodyPaper ],
-  "Bibliography" -> importedText @ latexToNotebook[ $bibliographySource, bibliographyDatabase[ $bibliographyBib ] ],
-  "Entries" -> importedText[ $entrySource ],
   "InlineInk" -> AssociationMap[ inlineInk, { "A pair $(V, E)$ here.", "A list $x_1, x_2$ here." } ],
-  "DisplayInk" -> displayInk[ $displayParagraph ],
   "LetterInk" -> letterInk[ ],
   "GlyphInk" -> glyphInk[ ],
   "Sheets" -> AssociationMap[ viewMeasurements @ Get @ FileNameJoin[ { $sheetDirectory, # } ] &, $templates ],
@@ -899,13 +919,29 @@ $measured = UsingFrontEnd @ <|
     referenceGutter @ Get @ FileNameJoin[ { $sheetDirectory, # } ] &,
     Join[ $templates, { "ComplexSystems.nb", "PlainArticle.nb" } ] ],
   "Citations" -> citationMeasurements @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
-  "MaTeX" -> If[ $maTeXAvailable, maTeXMeasurements @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ] ],
-  (* LAST, deliberately, and it is the mirror of NoDocument having to be FIRST: this one inserts a
-     bibliography into a paper and exports the page as a PDF, and placed mid-association it left the
-     service front end answering $Failed for every measurement after it — four tests failing on a
-     front end that had died rather than on anything they assert. Nothing follows it now. *)
+  "MaTeX" -> If[ $maTeXAvailable, maTeXMeasurements @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ] ]
+|>;
+
+(* The page renderers, and the membership rule is exactly that: a measurement here writes the WHOLE
+   notebook to a file — a PDF for anything that has to read the page as text, a raster for anything
+   that has to weigh its ink — which is the work the shared front end did not survive.
+   BibliographyHeading sits here as an ordinary member: it used to be pinned last, and being last
+   only ever decided which measurement discovered the corpse. *)
+$measuredRendered = ownFrontEnd @ <|
+  "Copied" -> copiedReferenceDrive[ $axiomPaper, "AMSArticle.nb" ],
+  "InlineScaling" -> inlineMathScaling @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
+  "MathScale" -> mathScaleWidths @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
+  "Imported" -> importedText[ $importedSource ],
+  "PlainSheet" -> AssociationMap[ sheetText[ $plainPaper, # ] &, { "PlainArticle.nb", "Default.nb" } ],
+  "Figures" -> figureMeasurements[ $figurePaper ],
+  "Body" -> importedText @ latexToNotebook[ $bodyPaper ],
+  "Bibliography" -> importedText @ latexToNotebook[ $bibliographySource, bibliographyDatabase[ $bibliographyBib ] ],
+  "Entries" -> importedText[ $entrySource ],
+  "DisplayInk" -> displayInk[ $displayParagraph ],
   "BibliographyHeading" -> bibliographyHeading @ Get @ FileNameJoin[ { $sheetDirectory, "PlainArticle.nb" } ]
 |>;
+
+$measured = Join[ $measuredDialogs, $measuredLive, $measuredRendered ];
 
 (* Nothing below is meaningful unless the template sheets actually loaded: Default.nb sizes Title
    at 45, every MathNotebook template at 26. *)

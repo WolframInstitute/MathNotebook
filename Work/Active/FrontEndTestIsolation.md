@@ -42,7 +42,7 @@ what produced the current state.
 
 ## Tasks
 
-- [ ] T1 — give the PDF-exporting measurements a front end of their own (a second `UsingFrontEnd`, or
+- [x] T1 — give the PDF-exporting measurements a front end of their own (a second `UsingFrontEnd`, or
       one `$measured` per front end), and prove it by the TestID going green on an idle machine.
 - [ ] T2 — decide whether the 27 notebooks are a leak or a ceiling: close what is opened, and find
       whether the association survives to 34 entries once it does. `NotebookClose` appears 27 times
@@ -53,52 +53,44 @@ what produced the current state.
 
 ## Hand-off
 
-**T1 is not started, and it is blocked on the machine rather than on the test file.** S1 reproduced the
-Spec exactly on its first command — `FrontEnd.wlt` alone gave **57 passed, 1 failed**, the failure being
-`BibliographyHeading` with `Import::nffil` on `/tmp/MathNotebookBibliographyHeading.pdf` followed by
-`FrontEndObject::notavail`, which is the Spec's reading confirmed on a machine whose only other Wolfram
-process was the Wolfram MCP server's own front end. **Every front-end run after that one hung instead of
-failing**, eight attempts, and the machine never recovered — so T1's acceptance criterion (the TestID
-going green on an idle machine) was unreachable and nothing was changed in `Tests/FrontEnd.wlt`.
+**T1 is done and the wedge is no longer a mystery — S1's `needs-human:` is discharged and both halves of
+it turned out to be the same fact.** The reboot cleared the machine, and the cause is now a twenty-line
+reproduction rather than a mood: `LinkClose` on `$FrontEnd` leaves the kernel unable to launch another
+front end, and the next `UsingFrontEnd` hangs forever. See `CLAUDE.md` § *Build & test* for the durable
+form. Nothing here needs a human before T2.
 
-`needs-human:` the wedge needs clearing before T1 can be attempted, and the two candidates left both
-touch machine state that is not a session's to change — a reboot, or clearing
-`~/Library/Wolfram/FrontEnd/15.0 Caches`. Confirm which, or confirm the suite runs again, and T1 is then
-a normal session.
+**What T2 inherits.** The suite is 384/0, so the file no longer has a failure to hide behind, but the
+Spec's leak question is untouched: the rendering group still holds eleven measurements and every one of
+them writes a whole notebook to disk. What T1 changed is only that a front end killed there cannot take
+the other two groups with it. The measurement worth making first is per-entry — evaluating the 34
+entries one at a time inside a single front end and reading `Length @ Notebooks[]` after each answered a
+constant **1** throughout, which says the notebooks *are* being closed and that the accumulation, if
+there is one, is inside the front end rather than in open documents.
 
-What the wedge **is**, measured, so the next session recognises it in one command rather than eight:
+**What T3 inherits, and its scope is still wrong as written but for a smaller reason now.** It asks that
+a measurement returning `$Failed` where a string was expected abort the file with a named message. That
+covers the *dead* front end. A *wedged* one returns nothing at all, and `TimeConstrained` cannot convert
+it — a blocked MathLink read does not take an abort, measured at 120 s in S1. So the file still needs an
+**external** wall-clock guard for that state; `perl -e 'alarm N; exec @ARGV'` is what this session used
+throughout and it works (`timeout` is not installed on this machine, `gtimeout` and `perl` are the
+options). The new fact that narrows it: the wedge now has a known trigger, so T3 can *assert* against it
+rather than only report it.
 
-- It hangs at `UsingFrontEnd[ 1 + 1 ]` — the minimal case, no paclet loaded, nothing exported.
-- **`TimeConstrained` does not break it.** A blocked MathLink read is not interruptible by an abort, so
-  a 120 s constraint around the call never returned. This is the fact that bears on **T3**: see below.
-- **Neither process is crashed; they are waiting on each other.** `sample` puts the front end's main
-  thread in `NSApplicationMain` with every MathLink thread alive, while the driving kernel sits at
-  ~0.2 s CPU indefinitely. A healthy-looking front end is not evidence of a working one.
-- Ruled out, each by measurement: a second service front end on the machine (killed all, still hangs);
-  stdin (`< /dev/null`, still hangs — this was the best hypothesis, since `noDocumentDialogs` reaches
-  `InputString`); the script's directory (ran from `/tmp`, still hangs); a lock file or a stylesheet
-  staged in `$UserBaseDirectory` (neither present, and the `StyleSheets/Wolfram` directory there is
-  empty); leaked shared-memory segments (`ipcs -m` is empty); and `~/Library/Wolfram/Kernel/init.m`,
-  which does `Needs["MaTeX`"]` at every kernel start but loads identically under both drivers.
-- **One probe fault cost most of the session and is worth naming.** `wolframscript -code` answered a
-  trivial `UsingFrontEnd[ 1 + 1 ]` several times *interleaved* with `-file` hangs, which made
-  `-code` vs `-file` look like the axis for six measurements. It is not: the same `-code` driver hung on
-  the real suite, and the trivial case hangs under `-file` too. The confound was trivial-vs-real
-  payload, not the driver. Do not re-derive that split.
-- `timeout` is **not installed** on this machine, so an external wall-clock guard needs `gtimeout`,
-  `perl`, or a `sleep`-then-`kill` pattern.
-
-**T3's scope is wrong as written, and this is the session's one substantive finding.** It asks that a
-measurement returning `$Failed` where a string was expected abort the file with a named message — which
-covers the *dead* front end that produces the current red test, and does not cover a *wedged* one, which
-returns nothing at all and cannot be converted into a failure from inside the kernel. Whatever T1 does
-about isolation, the file needs an **external** wall-clock timeout to make this state reportable; a
-`TimeConstrained` wrapper would have looked like a fix and silently kept hanging.
+**Two probe faults, both of which cost time here and neither of which is about the paclet.**
+`TestReport[…]["TestsFailed"]` is not a property — it answers `Missing["KeyAbsent", …]` per test and
+prints phantom failures even on a fully green run, which reads exactly like a broken reporter; the
+working read is `Select[ Values @ report["TestResults"], #["Outcome"] =!= "Success" & ]`. And a killed
+`wolframscript` leaves its `MathematicaServer` and `WolframKernel` children alive, contending for the
+next run — `pkill -9 -f MathematicaServer` between attempts is what made this session's runs
+reproducible where S1's were not.
 
 ## Decisions
 
 | decision | rationale | evidence |
 |---|---|---|
+| Isolate with `Developer`UninstallFrontEnd[]` between groups, not with a second `UsingFrontEnd`. | A second `UsingFrontEnd` is a no-op — the task's own suggested fix. | Two sequential blocks report the identical `LinkObject[…, 106, 3]`; after the uninstall the link goes 109, 112, 115, each fresh and each answering. |
+| Three groups — dialogs, live notebooks, page renderers — rather than one front end per entry. | The membership rule is checkable by reading one line of a helper ("does it `Export` the whole notebook"), where a per-entry split is 34 front-end launches for a file that measures in ~17 s. | Suite 384/0 with the split; the rendering group's eleven entries survive one front end. |
+| `BibliographyHeading` is an ordinary member of its group, not pinned last. | Being last only decided which measurement discovered the corpse; a group of its own is what the ordering was standing in for. | The TestID is green with it mid-group, and red for the *right* reason under the bite. |
 
 ## Progress
 
@@ -107,3 +99,9 @@ about isolation, the file needs an **external** wall-clock timeout to make this 
   was unreachable and `Tests/FrontEnd.wlt` is untouched. Diagnosis and the `needs-human:` clearing
   question are in `## Hand-off`; the durable half — a wedged front end hangs where a dead one fails, and
   `TimeConstrained` cannot convert it — went to `CLAUDE.md` § *Build & test*, and it narrows T3.
+- **S2** 2026-07-30 T1 — `$measured` is three associations, each measured in a front end of its own and
+  torn down with `Developer`UninstallFrontEnd[]`; the permanently red `BibliographyHeading` (TestID
+  `t0v83dcroxjjzb`) is green and the suite is **384/0**, up from 383/1. The task's own suggested fix was
+  measured to be a no-op and the wedge S1 could not clear turned out to be one call away from it — both
+  in [`CLAUDE.md` § *Build & test*](../../CLAUDE.md), which the two front-end bullets there now correct
+  rather than repeat.

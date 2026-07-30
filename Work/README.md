@@ -21,15 +21,20 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 
 ## Active
 
-[Front End Test Isolation](Active/FrontEndTestIsolation.md) — next task **T1**, and it is **blocked on
-the machine, not on the code**. S1 reproduced the Spec on its first command (`FrontEnd.wlt` alone, 57/1,
-`BibliographyHeading`, `Import::nffil`) and then every front-end run after that one **hung instead of
-failing** — eight attempts, never recovering — so T1's acceptance criterion was unreachable and
-`Tests/FrontEnd.wlt` is untouched. The item carries a `needs-human:` line: the wedge wants a reboot or a
-cleared `~/Library/Wolfram/FrontEnd/15.0 Caches`, neither being a session's to do. The durable half is in
-`CLAUDE.md` § *Build & test* — a wedged front end **hangs** where a dead one fails, `TimeConstrained`
-cannot convert it, and `sample` shows both processes healthy and waiting on each other — and it narrows
-T3, which as written covers only the dead case.
+[Front End Test Isolation](Active/FrontEndTestIsolation.md) — next task **T2**. T1 closed on 2026-07-30
+and the suite is **384/0**: the permanently red `BibliographyHeading` (TestID `t0v83dcroxjjzb`) is green,
+and 0.1.20 had shipped with it red. Two measurements did it, and the first says the task's own suggested
+fix was a no-op — **`UsingFrontEnd` does not give you a second front end**, two sequential blocks in one
+kernel reporting the identical `LinkObject`, while `Developer`UninstallFrontEnd[]` does (link 106 → 109
+→ 112 → 115, each fresh). The second answers S1's `needs-human:` outright: **`LinkClose` on `$FrontEnd`
+is what wedges the machine**, leaving the kernel unable to launch another front end so the next
+`UsingFrontEnd` hangs forever — a twenty-line reproduction with no paclet loaded, which retires the
+ruled-out list S1 spent a session building. `$measured` is now three associations in three front ends
+(dialogs, live notebooks, page renderers), so a front end killed by one group cannot take the others with
+it, and both orderings that used to be load-bearing dissolve. Bitten by restoring the anchor's missing
+`CellDingbat -> None`: `{True, False}` → `{False, True}`, "Numbered" flipping true with no front-end
+death in the log, which is the Spec's central point — the heading claim is asserted now rather than
+resting on a test that had never once run.
 
 `EnvironmentBlocks` closed on 2026-07-30 with all three tasks done, and its two remaining clauses
 are Pavel's — see its Hand-off.
