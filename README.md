@@ -36,8 +36,6 @@ Referencing, stylesheets, and conversion need nothing installed. The MaTeX and f
 
 ## 🎨 Stylesheets
 
-`PlainArticle` is the default: the front end's own typography with a paper's structure added — the twelve theorem-like environments, `Proof`, `Abstract`, captions and bibliography entries — and it is what an imported paper lands on when its `\documentclass` names no journal below. The others retarget the same document at a journal, changing only the typography.
-
 The same sample document in each template — as a notebook, and as the LaTeX it imitates:
 
 | Stylesheet | LaTeX class | Type | Notebook | LaTeX |
