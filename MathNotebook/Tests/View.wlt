@@ -58,9 +58,32 @@ VerificationTest[ (* the whole hierarchy scales proportionally, not just Text *)
   { Round[ 2 baseFontSizes[ "StubSheet.nb" ][ "Screen", "Title" ] ] }
 ]
 
-VerificationTest[ (* prose and mathematics are independent *)
-  Intersection[ styleNames @ viewStyleCells[ "StubSheet.nb", <| "DocumentFontSize" -> 20 |> ], $mathStyleNames ],
-  { }
+(* FirstReadingDefects T5, the model Pavel confirmed on 2026-07-29. The two controls used to be fully
+   independent, and that is the reported defect: an author who enlarged the prose watched the equations
+   stand still, which reads as mathematics having been left behind rather than as a second control
+   waiting to be found. An untouched math slider now means "scale with the page". *)
+VerificationTest[ (* the text control carries mathematics with it while the math slider is untouched *)
+  Cases[ viewStyleCells[ "StubSheet.nb", <| "DocumentFontSize" -> 2 documentFontSizeAnchor[ "StubSheet.nb" ] |> ],
+    Cell[ StyleData[ style : "Text" | "DisplayFormula" ], FontSize -> size_ ] :> style -> size ],
+  { "Text" -> 26, "DisplayFormula" -> 26 }
+]
+
+VerificationTest[ (* ... and an explicit math size overrides it, measured against its own anchor *)
+  Cases[ viewStyleCells[ "StubSheet.nb",
+      <| "DocumentFontSize" -> 2 documentFontSizeAnchor[ "StubSheet.nb" ],
+         "MathFontSize" -> mathFontSizeAnchor[ "StubSheet.nb" ] |> ],
+    Cell[ StyleData[ style : "Text" | "DisplayFormula" ], FontSize -> size_ ] :> style -> size ],
+  { "Text" -> 26, "DisplayFormula" -> 13 }
+]
+
+VerificationTest[ (* the two ratios themselves: Automatic is "untouched", and math falls back to text *)
+  With[ { anchor = documentFontSizeAnchor[ "StubSheet.nb" ], math = mathFontSizeAnchor[ "StubSheet.nb" ] },
+    { documentViewScale[ "StubSheet.nb", <| |> ],
+      mathViewScale[ "StubSheet.nb", <| |> ],
+      mathViewScale[ "StubSheet.nb", <| "DocumentFontSize" -> 2 anchor |> ],
+      mathViewScale[ "StubSheet.nb", <| "DocumentFontSize" -> 2 anchor, "MathFontSize" -> 3 math |> ],
+      relativeMathScale[ 2, 2 ], relativeMathScale[ 3, 2 ], relativeMathScale[ Automatic, Automatic ] } ],
+  { Automatic, Automatic, 2, 3, 1, 3/2, 1 }
 ]
 
 VerificationTest[ (* the math control reaches the equation number, which would otherwise drift *)
@@ -73,17 +96,40 @@ VerificationTest[ (* the math control reaches the equation number, which would o
    1.05*Inherited and so renders at 1.05 x the size of the cell it sits in; the control scales that
    ratio rather than writing a size, because an absolute size reaches the island but stops the tracking
    (measured: a Title's inline mathematics shrinks from 1649 ink to 1577). So this is the one override
-   asserted as an expression and not a number, and it is Inherited-bearing on purpose. *)
+   asserted as an expression and not a number, and it is Inherited-bearing on purpose.
+
+   FirstReadingDefects T5 corrects the arithmetic twice over. The ratio is scaled by the RELATIVE
+   scale — mathematics over text — so an island stops double-scaling with a host cell the text control
+   has already moved; and the ratio written is the square ROOT of it, because a relative FontSize on
+   this style renders at the SQUARE of the ratio. That second one is measured, not reasoned: swept r
+   over { 0.5, 1, 1.05, 1.5, 2 } against hosts 13, 26 and 52 and read the WIDTH of "x + y" (a display
+   formula's width is exactly linear in its size — 26/51/77/103 px at 13/26/39/52 — so width is a size
+   measurement, where the line-height floor of the host cell hides an island below about 14 pt). The
+   style is resolved once for the inline cell and again for its contents, and Inherited picks the ratio
+   up both times: r = 2 on a host of 26 draws 104 pt. So the shipped control was worse than reported —
+   at twice the anchor it wrote 2.1 and drew 4.41 x the host. *)
 VerificationTest[
   Cases[ viewStyleCells[ "StubSheet.nb", <| "MathFontSize" -> 2 mathFontSizeAnchor[ "StubSheet.nb" ] |> ],
     Cell[ StyleData[ $inlineMathStyleName, ___ ], ___, FontSize -> size_, ___ ] :> size ],
-  { 2.1 Inherited, 2.1 Inherited }
+  { 1.05 Sqrt[ 2. ] Inherited, 1.05 Sqrt[ 2. ] Inherited }
 ]
 
-VerificationTest[ (* untouched, the control writes nothing at all and the sheet's own 1.05 stands *)
-  Cases[ viewStyleCells[ "StubSheet.nb", <| "DocumentFontSize" -> 20 |> ],
-    Cell[ StyleData[ $inlineMathStyleName, ___ ], ___ ] ],
-  { }
+VerificationTest[ (* with both controls set the ratio is the quotient, so the island keeps the sheet's
+                     own proportion to the DISPLAY size rather than multiplying the two *)
+  Cases[ viewStyleCells[ "StubSheet.nb",
+      <| "DocumentFontSize" -> 2 documentFontSizeAnchor[ "StubSheet.nb" ],
+         "MathFontSize" -> 3 mathFontSizeAnchor[ "StubSheet.nb" ] |> ],
+    Cell[ StyleData[ $inlineMathStyleName ], FontSize -> size_ ] :> size ],
+  { 1.05 Sqrt[ 3. / 2 ] Inherited }
+]
+
+VerificationTest[ (* where the two controls agree there is nothing RELATIVE to write, so the sheet's own
+                     ratio stands: the untouched document, the text-only one, and both set alike *)
+  Map[ Cases[ viewStyleCells[ "StubSheet.nb", # ], Cell[ StyleData[ $inlineMathStyleName, ___ ], ___ ] ] &,
+    { <| |>, <| "DocumentFontSize" -> 20 |>,
+      <| "DocumentFontSize" -> 2 documentFontSizeAnchor[ "StubSheet.nb" ],
+         "MathFontSize" -> 2 mathFontSizeAnchor[ "StubSheet.nb" ] |> } ],
+  { { }, { }, { } }
 ]
 
 VerificationTest[ (* every size override is written in the "Printout" variant too, or it never prints *)
@@ -117,8 +163,19 @@ VerificationTest[ (* ... and a scaled one at the ratio the math styles themselve
   2 $maTeXBaseFontSize
 ]
 
-VerificationTest[ (* the prose control must not reach it: MaTeX renders mathematics *)
-  maTeXFontSize[ "StubSheet.nb", <| "DocumentFontSize" -> 26 |> ],
+(* FirstReadingDefects T5 inverts what used to be asserted here. The text control DOES reach MaTeX
+   now — a MaTeX cell is mathematics, and while the math slider is untouched mathematics follows the
+   page — so SetDocumentFontSize re-renders these cells exactly as SetMathFontSize does. An explicit
+   math size still wins, which is the third case below. *)
+VerificationTest[ (* the text control carries MaTeX with it while the math slider is untouched *)
+  maTeXFontSize[ "StubSheet.nb", <| "DocumentFontSize" -> 2 documentFontSizeAnchor[ "StubSheet.nb" ] |> ],
+  2 $maTeXBaseFontSize
+]
+
+VerificationTest[ (* ... and an explicit math size overrides the text ratio rather than compounding it *)
+  maTeXFontSize[ "StubSheet.nb",
+    <| "DocumentFontSize" -> 2 documentFontSizeAnchor[ "StubSheet.nb" ],
+       "MathFontSize" -> mathFontSizeAnchor[ "StubSheet.nb" ] |> ],
   $maTeXBaseFontSize
 ]
 

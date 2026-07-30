@@ -16,6 +16,9 @@ PackageScope["viewStyleSheet"]
 PackageScope["parentStyleSheet"]
 PackageScope["viewStyleCells"]
 PackageScope["mergedStyleCells"]
+PackageScope["documentViewScale"]
+PackageScope["mathViewScale"]
+PackageScope["relativeMathScale"]
 PackageScope["maTeXFontSize"]
 PackageScope["rescaleMaTeXCells"]
 PackageScope["resizedMaTeXCell"]
@@ -26,8 +29,12 @@ PackageScope["resizedMaTeXCell"]
 SetDocumentFontSize[ size : _?NumericQ | Automatic ] :=
   withInputNotebook[ { notebook } |-> SetDocumentFontSize[ notebook, size ] ]
 
+(* FirstReadingDefects T5: the document control now moves mathematics too when the math control is
+   untouched, so it has to re-render the MaTeX cells exactly as the math control does — a MaTeX cell
+   is an image and inherits nothing. Before the model changed this call could not affect them. *)
 SetDocumentFontSize[ notebook_NotebookObject, size : _?NumericQ | Automatic ] :=
-  applyViewSettings[ notebook, <| "DocumentFontSize" -> size |> ]
+  ( applyViewSettings[ notebook, <| "DocumentFontSize" -> size |> ];
+    rescaleMaTeXCells[ notebook ] )
 
 SetMathFontSize[ size : _?NumericQ | Automatic ] :=
   withInputNotebook[ { notebook } |-> SetMathFontSize[ notebook, size ] ]
@@ -66,13 +73,59 @@ $inlineMathStyleName = "InlineFormula"
 
 $inlineMathRatio = 1.05
 
-inlineMathCells[ Automatic, _ ] :=
+(* FirstReadingDefects T5, defect 3's second half, and the two things it turns on.
+
+   FIRST, the ratio is applied to a host cell the DOCUMENT control has already scaled, so scaling it
+   by the mathematics ratio alone multiplied the two — the double-scaling Pavel reported. The argument
+   here is therefore the RELATIVE scale, mathScale/docScale: the document ratio the host carries is
+   divided back out, so an island lands where mathematics is being shown whatever the text slider is
+   doing, while still tracking the size of the cell it sits in (an island in a Title is still larger).
+   A relative scale of exactly 1 — every state in which the two controls agree, the untouched document
+   and the text-only one among them — writes nothing, so the sheet's own ratio stands untouched.
+
+   SECOND, and this is measured rather than reasoned: a RELATIVE FontSize on this style renders at
+   the SQUARE of the ratio. Swept r over { 0.5, 1, 1.05, 1.5, 2 } against hosts 13, 26 and 52 and read
+   the width of "x + y" (a DisplayFormula's width is exactly linear in its size, 26/51/77/103 px at
+   13/26/39/52, so width is a size measurement), an island whose style says r*Inherited comes out at
+   r^2 x host every time: r = 2 on a host of 26 renders 104 pt, not 52. The style is resolved once for
+   the inline Cell and again for its own contents, and Inherited picks the ratio up both times. So the
+   ratio to write is the square ROOT of the wanted relative scale, times the sheet's own ratio — which
+   is also why the shipped control was worse than reported: SetMathFontSize at twice the anchor wrote
+   2.1 and drew 4.41 x the host. The line-height floor of the enclosing text cell hides this at
+   r < 1 (r = 0.5 on a host of 26 is a 6.5 pt island in a 14 px line), so the sweep must read WIDTH. *)
+inlineMathCells[ scale_ ] /; scale == 1 :=
   { }
 
-inlineMathCells[ size_, anchor_ ] :=
-  With[ { ratio = $inlineMathRatio size / anchor },
+inlineMathCells[ scale_ ] :=
+  With[ { ratio = $inlineMathRatio Sqrt[ scale ] },
     { Cell[ StyleData[ $inlineMathStyleName ], FontSize -> ratio Inherited ],
       Cell[ StyleData[ $inlineMathStyleName, "Printout" ], FontSize -> ratio Inherited ] } ]
+
+(* The two ratios the whole control is built from, and the model Pavel confirmed on 2026-07-29.
+   documentViewScale is Automatic exactly when the author has not touched the text slider.
+   mathViewScale FALLS BACK TO IT rather than to 1: an untouched math slider means "scale with the
+   page", so one slider moves prose, display mathematics, inline mathematics and MaTeX coherently;
+   an explicit math size overrides that and is measured against the mathematics anchor instead. The
+   fallback is the whole of defect 3's first half — display mathematics used to stand still while the
+   prose around it grew, which reads as the equations having been left behind. *)
+documentViewScale[ parent_, settings_Association ] :=
+  viewScale[ Lookup[ settings, "DocumentFontSize", Automatic ], documentFontSizeAnchor[ parent ] ]
+
+mathViewScale[ parent_, settings_Association ] :=
+  Replace[ viewScale[ Lookup[ settings, "MathFontSize", Automatic ], mathFontSizeAnchor[ parent ] ],
+    Automatic :> documentViewScale[ parent, settings ] ]
+
+relativeMathScale[ math_, document_ ] :=
+  Replace[ math, Automatic -> 1 ] / Replace[ document, Automatic -> 1 ]
+
+(* Anything that is not a size is an absent override: the setting is stored as Inherited to delete
+   the tagging rule, so a key that survives is numeric, but a document written by an older release
+   is not this function's problem to distinguish. *)
+viewScale[ size_?NumericQ, anchor_ ] :=
+  size / anchor
+
+viewScale[ _, _ ] :=
+  Automatic
 
 applyViewSettings[ notebook_NotebookObject, changes_Association ] :=
   With[ { parent = parentStyleSheet[ notebook ] },
@@ -114,13 +167,13 @@ viewStyleSheet[ parent_, settings_Association ] :=
     StyleDefinitions -> "PrivateStylesheetFormatting.nb" ]
 
 viewStyleCells[ parent_, settings_Association ] :=
-  With[ { sizes = baseFontSizes[ parent ] },
+  With[ { sizes = baseFontSizes[ parent ],
+          document = documentViewScale[ parent, settings ],
+          math = mathViewScale[ parent, settings ] },
     mergedStyleCells @ Join[
-      fontSizeCells[ sizes, Complement[ styleFontSizeNames[], $mathStyleNames ],
-        Lookup[ settings, "DocumentFontSize", Automatic ], documentFontSizeAnchor[ parent ] ],
-      fontSizeCells[ sizes, $mathStyleNames,
-        Lookup[ settings, "MathFontSize", Automatic ], mathFontSizeAnchor[ parent ] ],
-      inlineMathCells[ Lookup[ settings, "MathFontSize", Automatic ], mathFontSizeAnchor[ parent ] ] ] ]
+      fontSizeCells[ sizes, Complement[ styleFontSizeNames[], $mathStyleNames ], document ],
+      fontSizeCells[ sizes, $mathStyleNames, math ],
+      inlineMathCells[ relativeMathScale[ math, document ] ] ] ]
 
 (* Of two cells carrying the same StyleData head the front end keeps the first and discards the
    second outright — it does not merge their options. The prose and mathematics controls overlap on
@@ -129,17 +182,21 @@ mergedStyleCells[ cells_List ] :=
   KeyValueMap[ { style, options } |-> Cell[ style, Sequence @@ options ],
     Merge[ Map[ First[ # ] -> Rest[ List @@ # ] &, cells ], Catenate ] ]
 
-fontSizeCells[ _, _, Automatic, _ ] :=
+fontSizeCells[ _, _, Automatic ] :=
   { }
 
 (* Both the bare style and its "Printout" variant must be written: LaTeXBase gives every prose
    and math style an explicit printout size, and the environment-specific definition wins across
-   the whole chain, so a bare override alone never reaches the PDF. *)
-fontSizeCells[ sizes_Association, styles_List, size_, anchor_ ] :=
+   the whole chain, so a bare override alone never reaches the PDF.
+
+   A scale of exactly 1 still writes its cells — the styles come back at their own base sizes, which
+   is what an author who has dragged a slider to the sheet's own size asked for and is not the same
+   state as an untouched document (Automatic, above), where nothing is written at all. *)
+fontSizeCells[ sizes_Association, styles_List, scale_ ] :=
   Join[
-    KeyValueMap[ { style, base } |-> Cell[ StyleData[ style ], FontSize -> Round[ base size / anchor ] ],
+    KeyValueMap[ { style, base } |-> Cell[ StyleData[ style ], FontSize -> Round[ base scale ] ],
       KeyTake[ sizes[ "Screen" ], styles ] ],
-    KeyValueMap[ { style, base } |-> Cell[ StyleData[ style, "Printout" ], FontSize -> Round[ base size / anchor ] ],
+    KeyValueMap[ { style, base } |-> Cell[ StyleData[ style, "Printout" ], FontSize -> Round[ base scale ] ],
       KeyTake[ sizes[ "Printout" ], styles ] ] ]
 
 baseStyleCells[] := baseStyleCells[] =
@@ -186,16 +243,16 @@ mathFontSizeAnchor[ parent_ ] :=
 
 (* MaTeX cells are images rendered at a fixed size, so they cannot inherit a style change.
    The TeX survives in TaggingRules, so they are re-rendered at the scaled size instead. The size
-   is scaled from the base one by the ratio the math control is holding, so an untouched document
-   gives back $maTeXBaseFontSize exactly. ConvertToMaTeX reads it too, which is what makes a newly
-   converted cell the same size as one the slider has already been over; the pure two-argument form
-   is what lets that be asserted without a front end. *)
+   is scaled from the base one by the ratio mathematics is being shown at — mathViewScale, which is
+   the document ratio while the math slider is untouched (T5) — so an untouched document gives back
+   $maTeXBaseFontSize exactly. ConvertToMaTeX reads it too, which is what makes a newly converted
+   cell the same size as one the slider has already been over; the pure two-argument form is what
+   lets that be asserted without a front end. *)
 maTeXFontSize[ notebook_NotebookObject ] :=
   maTeXFontSize[ parentStyleSheet[ notebook ], viewSettings[ notebook ] ]
 
 maTeXFontSize[ parent_, settings_Association ] :=
-  With[ { anchor = mathFontSizeAnchor[ parent ] },
-    Round[ $maTeXBaseFontSize Lookup[ settings, "MathFontSize", anchor ] / anchor ] ]
+  Round[ $maTeXBaseFontSize Replace[ mathViewScale[ parent, settings ], Automatic -> 1 ] ]
 
 rescaleMaTeXCells[ notebook_NotebookObject ] :=
   With[ { cells = Select[ Cells[ notebook ], maTeXCellQ @ NotebookRead[ # ] & ] },

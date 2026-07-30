@@ -24,43 +24,48 @@ Cell["SetDocumentFontSize", "ObjectName",
  CellID->9623138,ExpressionUUID->"13d3949c-c763-4806-9735-1945e70eaa6a"],
 
 Cell[TextData[{
- Cell["   ", "ModInfo",ExpressionUUID->"e0bcf6b7-4001-4ba4-8c83-204cf4eb4f45"],
+ Cell["   ", "ModInfo",ExpressionUUID->"14abead8-57e2-d3f8-79a1-5d59ce1d44ce"],
  Cell[BoxData[
   RowBox[{
    ButtonBox["SetDocumentFontSize",
     BaseStyle->"Link",
-    ButtonData->
-     "paclet:WolframInstitute/MathNotebook/ref/SetDocumentFontSize"], 
+    ButtonData->"paclet:WolframInstitute/MathNotebook/ref/SetDocumentFontSize"], 
    RowBox[{"[", "size", "]"}]}]], "InlineFormula",ExpressionUUID->
-  "4832f6b1-6444-42af-87d8-8199a4adde25"],
+  "1b4010c9-b3b3-7956-e632-7f4705c36bfd"],
  " \[LineSeparator]",
- "scales the prose of the input notebook so that Text is the font size ",
+ "scales the input notebook so that Text is the given font ",
  Cell[BoxData[
   StyleBox["size", "TI"]], "InlineFormula",ExpressionUUID->
-  "b5466263-023d-4eeb-8e4f-f9c7504a2db3"],
- ", on screen and in print.",
+  "986eb78e-d6a3-56c8-0e4e-82323dd500b5"],
+ ", on screen and in print, carrying its mathematics with it unless SetMathFontSize has been given a ",
+ Cell[BoxData[
+  StyleBox["size", "TI"]], "InlineFormula",ExpressionUUID->
+  "10381d81-38b3-7045-6408-6c08cbbb3d75"],
+ " of its own.",
  "\n",
  Cell[BoxData[
   RowBox[{
    ButtonBox["SetDocumentFontSize",
     BaseStyle->"Link",
-    ButtonData->
-     "paclet:WolframInstitute/MathNotebook/ref/SetDocumentFontSize"], 
+    ButtonData->"paclet:WolframInstitute/MathNotebook/ref/SetDocumentFontSize"], 
    RowBox[{"[", 
-    RowBox[{"notebook", ",", " ", "size"}], "]"}]}]], "InlineFormula",
-  ExpressionUUID->"4033cc4e-7bc6-45a8-8beb-637edf942c5d"],
+    RowBox[{"notebook", ", ", " ", "size"}], "]"}]}]], "InlineFormula",ExpressionUUID->
+  "6b277c01-09f2-9a9b-c34e-30526cc5ae3b"],
  " \[LineSeparator]",
- "scales the given notebook.",
- Cell["   ", "ModInfo",ExpressionUUID->"ccfdee18-5543-4d52-a301-be41150d0559"],
+ "scales the given ",
+ Cell[BoxData[
+  StyleBox["notebook", "TI"]], "InlineFormula",ExpressionUUID->
+  "1d633ff6-9354-80f3-2e53-3d3ed558de21"],
+ ".",
+ "\n",
  Cell[BoxData[
   RowBox[{
    ButtonBox["SetDocumentFontSize",
     BaseStyle->"Link",
-    ButtonData->
-     "paclet:WolframInstitute/MathNotebook/ref/SetDocumentFontSize"], 
+    ButtonData->"paclet:WolframInstitute/MathNotebook/ref/SetDocumentFontSize"], 
    RowBox[{"[", 
-    RowBox[{"notebook", ",", " ", "Automatic"}], "]"}]}]], "InlineFormula",
-  ExpressionUUID->"faaf2d65-b61a-48ff-942a-44436fa2e59c"],
+    RowBox[{"notebook", ", ", " ", "Automatic"}], "]"}]}]], "InlineFormula",ExpressionUUID->
+  "a4f8c529-e295-c604-4102-7f3f1c6ba03f"],
  " \[LineSeparator]",
  "removes the override."
 }], "Usage",

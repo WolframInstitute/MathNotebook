@@ -24,21 +24,20 @@ Cell["SetMathFontSize", "ObjectName",
  CellID->544657443,ExpressionUUID->"7f24dcc4-056e-4451-824c-59683f216a0d"],
 
 Cell[TextData[{
- Cell["   ", "ModInfo",ExpressionUUID->"3af85723-dbec-46b7-80b3-b9f348ad97e8"],
+ Cell["   ", "ModInfo",ExpressionUUID->"44968b71-1688-1154-552b-d3cf5439c8da"],
  Cell[BoxData[
   RowBox[{
    ButtonBox["SetMathFontSize",
     BaseStyle->"Link",
     ButtonData->"paclet:WolframInstitute/MathNotebook/ref/SetMathFontSize"], 
    RowBox[{"[", "size", "]"}]}]], "InlineFormula",ExpressionUUID->
-  "a058cb94-8893-47b4-bd82-ea42fa9eeb92"],
+  "65aca1ed-3074-cfed-1748-67219d0f0bb9"],
  " \[LineSeparator]",
- "scales displayed mathematics and equation numbers of the input notebook to \
-the font size ",
+ "sizes the displayed, inline and MaTeX mathematics of the input notebook on its own, overriding the ",
  Cell[BoxData[
   StyleBox["size", "TI"]], "InlineFormula",ExpressionUUID->
-  "30e03b5f-8704-4550-b18a-eba969369df0"],
- ", re-rendering MaTeX cells.",
+  "2f95e815-ef35-16f4-5ebe-584958cd9f5f"],
+ " the document scale would give it.",
  "\n",
  Cell[BoxData[
   RowBox[{
@@ -46,21 +45,25 @@ the font size ",
     BaseStyle->"Link",
     ButtonData->"paclet:WolframInstitute/MathNotebook/ref/SetMathFontSize"], 
    RowBox[{"[", 
-    RowBox[{"notebook", ",", " ", "size"}], "]"}]}]], "InlineFormula",
-  ExpressionUUID->"94f2468b-24b3-40d0-9220-da45239d3453"],
+    RowBox[{"notebook", ", ", " ", "size"}], "]"}]}]], "InlineFormula",ExpressionUUID->
+  "8495145e-865e-b08e-6f5a-40b00c43e405"],
  " \[LineSeparator]",
- "scales the given notebook.",
- Cell["   ", "ModInfo",ExpressionUUID->"4478f84d-9b22-4027-9a6d-2d59726e166a"],
+ "scales the given ",
+ Cell[BoxData[
+  StyleBox["notebook", "TI"]], "InlineFormula",ExpressionUUID->
+  "fee5f76e-63c9-3ec1-4c29-994f8bf5355e"],
+ ".",
+ "\n",
  Cell[BoxData[
   RowBox[{
    ButtonBox["SetMathFontSize",
     BaseStyle->"Link",
     ButtonData->"paclet:WolframInstitute/MathNotebook/ref/SetMathFontSize"], 
    RowBox[{"[", 
-    RowBox[{"notebook", ",", " ", "Automatic"}], "]"}]}]], "InlineFormula",
-  ExpressionUUID->"6c5b622e-da28-489e-a158-4a9ab93c79a8"],
+    RowBox[{"notebook", ", ", " ", "Automatic"}], "]"}]}]], "InlineFormula",ExpressionUUID->
+  "01e6339b-bab5-5b28-3bfe-31e49d4adc14"],
  " \[LineSeparator]",
- "removes the override."
+ "returns mathematics to the document scale."
 }], "Usage",
  CellID->66003414,ExpressionUUID->"07e24c4a-f674-4962-847c-6ee872145c5e"],
 

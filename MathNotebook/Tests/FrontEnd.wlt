@@ -599,6 +599,52 @@ inlineMathScaling[ parent_ ] :=
        "ProseBase" -> render[ prose, Null & ],
        "ProseScaled" -> render[ prose, SetMathFontSize[ #, 2 mathFontSizeAnchor[ parent ] ] & ] |> ]
 
+(* FirstReadingDefects T5: the confirmed model, measured on the page in all four slider states.
+
+   The measurement is the exported image's WIDTH, and that is not a stylistic choice. A display
+   formula's width is exactly linear in its size — "x + y" exports 26, 51, 77 and 103 px at 13, 26, 39
+   and 52 pt — so width IS a size reading, where ink is not (it grows about as size^1.5, so an ink
+   comparison across two sizes needs a tolerance nobody can justify) and height is not (the enclosing
+   text cell's line-height floor holds an island of 6.5 pt to a 14 px line, which is exactly how the
+   squared-ratio defect stayed hidden).
+
+   Every state drags the TEXT slider, the base state to the sheet's own size. That is what makes the
+   four comparable: with no override at all the export does not crop horizontally, and — the reason
+   that matters more — a private sheet's parent here is an embedded notebook, so any style the sheet
+   does not itself write falls through to Default.nb. An island's size is its host cell's size times a
+   ratio, so a state that leaves Text unwritten cannot be measured at all. Dragging the text slider to
+   13 writes every style at its own base size, which is a real state (scale 1, not Automatic) and not a
+   contrivance.
+
+   Three claims. Inline mathematics must sit at the sheet's own ratio to DISPLAY mathematics in every
+   state — that is the whole of the fix, and it fails in three of the four states under the shipped
+   arithmetic (2.19, 6.7 and 2.19 against 1.10). The text slider must carry display mathematics with
+   it, which it did not. And an explicit math size must override that rather than compound with it. *)
+mathScaleWidths[ parent_ ] :=
+  Module[ { width, inline, display, document, math },
+    document = documentFontSizeAnchor[ parent ];
+    math = mathFontSizeAnchor[ parent ];
+    inline = Cell[ TextData[ {
+      Cell[ BoxData[ FormBox[ RowBox[ { "x", "+", "y" } ], TraditionalForm ] ], "InlineFormula" ] } ], "Text" ];
+    display = Cell[ BoxData[ FormBox[ RowBox[ { "x", "+", "y" } ], TraditionalForm ] ], "DisplayFormula" ];
+    width = { cell, text, mathematics } |->
+      Module[ { notebook, file, value },
+        notebook = NotebookPut[ Notebook[ { cell }, StyleDefinitions -> parent ],
+          Visible -> False, Background -> White, LightDark -> "Light" ];
+        SetDocumentFontSize[ notebook, text ];
+        If[ mathematics =!= Automatic, SetMathFontSize[ notebook, mathematics ] ];
+        file = Export[ FileNameJoin[ { $TemporaryDirectory, "MathNotebookScale.png" } ],
+          notebook, ImageResolution -> 72 ];
+        value = First @ ImageDimensions @ Import[ file ];
+        NotebookClose[ notebook ];
+        value ];
+    Map[
+      state |-> <| "Display" -> width[ display, First @ state, Last @ state ],
+        "Inline" -> width[ inline, First @ state, Last @ state ] |>,
+      <| "Base" -> { document, Automatic }, "Text" -> { 2 document, Automatic },
+        "Math" -> { 2 document, 3 math }, "Override" -> { 2 document, math } |> ]
+  ]
+
 (* ImportDisplayDefects T5: WHERE the reference goes, in the four selection states an author can be in.
    Pavel reported a cross-reference rendering in a different face from the label it points at, and the
    cause is not the stylesheets — measured, the same reference in the same Text cell under the same
@@ -687,6 +733,7 @@ $measured = UsingFrontEnd @ <|
   "AutoTag" -> autoTagDrive @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
   "Placement" -> citationPlacement @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
   "InlineScaling" -> inlineMathScaling @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
+  "MathScale" -> mathScaleWidths @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
   "Imported" -> importedText[ $importedSource ],
   "PlainSheet" -> AssociationMap[ sheetText[ $plainPaper, # ] &, { "PlainArticle.nb", "Default.nb" } ],
   "Lists" -> listMeasurements[ $listPaper ],
@@ -933,6 +980,28 @@ VerificationTest[
     $measured[ "InlineScaling", "InlineBase" ] > 0,
     $measured[ "InlineScaling", "ProseScaled" ] > $measured[ "InlineScaling", "ProseBase" ] },
   { True, True, True, True }
+]
+
+(* FirstReadingDefects T5. The sheet's own ratio is 1.05 and a relative FontSize renders at its square,
+   so the wanted proportion of inline to display mathematics is 1.05^2 = 1.1025 — measured 1.077, 1.118,
+   1.104 and 1.077 across the four states, the spread being one pixel of quantization at these sizes.
+   The tolerance is 10%, which admits every one of those and excludes all three failures of the shipped
+   arithmetic by a wide margin. Asserting the ratio rather than the sizes is the point: it is a claim
+   about the two kinds of mathematics agreeing, and it holds whatever the sliders are set to. *)
+VerificationTest[
+  Map[ Abs[ #[ "Inline" ] / #[ "Display" ] / 1.1025 - 1 ] < 0.1 &, $measured[ "MathScale" ] ],
+  <| "Base" -> True, "Text" -> True, "Math" -> True, "Override" -> True |>
+]
+
+(* The two halves of defect 3's first report, as display facts. Doubling the text slider doubles the
+   display formula — it used to leave it exactly where it was, which is what reads as the equations
+   having been left behind — and an explicit math size at the anchor puts it back to its base width
+   whatever the text slider is doing, so the override is an override and not a second factor. The
+   widths are exact rather than compared: "x + y" is 26 px at 13 pt and 51 at 26, the odd pixel being
+   the glyph advance and not slack in the claim. *)
+VerificationTest[
+  Map[ #[ "Display" ] &, $measured[ "MathScale" ] ],
+  <| "Base" -> 26, "Text" -> 51, "Math" -> 77, "Override" -> 26 |>
 ]
 
 (* ImportDisplayDefects T5: the reference lands INSIDE a cell in every state, as inline TextData and

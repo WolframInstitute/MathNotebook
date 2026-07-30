@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       154,          7]
-NotebookDataLength[     51484,       1146]
-NotebookOptionsPosition[     50825,       1122]
-NotebookOutlinePosition[     51514,       1148]
-CellTagsIndexPosition[     51471,       1145]
+NotebookDataLength[     51719,       1149]
+NotebookOptionsPosition[     51060,       1125]
+NotebookOutlinePosition[     51749,       1151]
+CellTagsIndexPosition[     51706,       1148]
 WindowTitle->MathNotebook
 WindowFrame->Palette*)
 
@@ -684,13 +684,15 @@ overrides below.", "Tooltip"]& ]},
                    ImageSize -> {34, 20}, ScrollPosition -> {0., 0.}]},
                  "RowDefault"],
                 
-                "\"Scales the prose of the focused document, on screen and in \
-print alike.\"",
+                "\"Scales the whole focused document, on screen and in print \
+alike \[LongDash] prose and mathematics together, unless Math size below has \
+been set.\"",
                 TooltipStyle->"TextStyling"],
                
                Annotation[#, 
-                "Scales the prose of the focused document, on screen and in \
-print alike.", "Tooltip"]& ]},
+                "Scales the whole focused document, on screen and in print \
+alike \[LongDash] prose and mathematics together, unless Math size below has \
+been set.", "Tooltip"]& ]},
              {
               TagBox[
                TooltipBox[
@@ -718,15 +720,16 @@ print alike.", "Tooltip"]& ]},
                    ImageSize -> {34, 20}, ScrollPosition -> {0., 0.}]},
                  "RowDefault"],
                 
-                "\"Scales the display and inline mathematics of the focused \
-document. Inline mathematics is scaled relative to the prose it sits in, so \
-it keeps tracking its own cell.\"",
+                "\"Sizes the mathematics of the focused document on its own, \
+overriding Text size for display equations, inline mathematics and MaTeX \
+cells. Leave it alone and mathematics scales with the page instead.\"",
                 TooltipStyle->"TextStyling"],
                
                Annotation[#, 
-                "Scales the display and inline mathematics of the focused \
-document. Inline mathematics is scaled relative to the prose it sits in, so \
-it keeps tracking its own cell.", "Tooltip"]& ]},
+                "Sizes the mathematics of the focused document on its own, \
+overriding Text size for display equations, inline mathematics and MaTeX \
+cells. Leave it alone and mathematics scales with the page instead.", 
+                "Tooltip"]& ]},
              {
               TagBox[
                TooltipBox[
@@ -1118,7 +1121,7 @@ palette on a real paper.", "Tooltip"]& ]}
    GridBoxAlignment->{"Columns" -> {{Left}}},
    GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
    GridBoxSpacings->{"Columns" -> {{Automatic}}, "Rows" -> {{0.4}}}],
-  "Column"]],ExpressionUUID->"84dd3811-2c94-4988-ad3e-4d8a3c50dcc6"]
+  "Column"]],ExpressionUUID->"2e5e3813-407f-4be0-8590-8ad55b08e283"]
 },
 Editable->False,
 Saveable->False,
@@ -1134,7 +1137,7 @@ TaggingRules-><|
   "ViewOpen" -> True, "DocumentOpen" -> True, "SetupOpen" -> True|>,
 FrontEndVersion->"15.0 for Mac OS X ARM (64-bit) (May 19, 2026)",
 StyleDefinitions->"Palette.nb",
-ExpressionUUID->"3dd278ad-4341-4c36-8e54-dd00a467c5f0"
+ExpressionUUID->"d1c62eaf-c122-4c13-b941-8fba3e4b95ab"
 ]
 (* End of Notebook Content *)
 
@@ -1147,7 +1150,7 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[581, 21, 50240, 1099, 778, InheritFromParent,ExpressionUUID->"84dd3811-2c94-4988-ad3e-4d8a3c50dcc6"]
+Cell[581, 21, 50475, 1102, 778, InheritFromParent,ExpressionUUID->"2e5e3813-407f-4be0-8590-8ad55b08e283"]
 }
 ]
 *)

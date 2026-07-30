@@ -117,12 +117,13 @@ navigation and interaction defects, the classes the census and fidelity tests ca
   defect inside the one reported string. An untagged cell is tagged automatically (Pavel's call).
   The specimen's axiom pastes as `Axiom 1.3.3` on the rendered page and each fragment resolves to
   the copied cell.
-- [ ] **T5 — One coherent scale for mathematics.** The model is **confirmed** (Pavel, 2026-07-29 —
-  see Requirements), so this task implements it and does not ask: math follows the document slider
-  when `MathFontSize` is `Automatic`; an explicit math size overrides; the inline ratio is scaled by
-  mathScale/docScale so inline tracks display instead of double-scaling. Implement in
-  `viewStyleCells`/`inlineMathCells`/`maTeXFontSize` and measure rendered sizes under all four
-  slider states.
+- [x] **T5 — One coherent scale for mathematics.** (S5) The confirmed model implemented:
+  `mathViewScale` falls back to `documentViewScale`, so one slider scales prose, display and inline
+  mathematics and MaTeX together; an explicit math size overrides it. Two arithmetic corrections
+  under it — the inline ratio takes the *relative* scale (mathScale/docScale), and it is written as
+  the square **root**, because a relative `FontSize` on `InlineFormula` renders at the square of the
+  ratio (measured). Rendered widths across all four slider states, plus the tooltips, the tutorial
+  and the two usage strings, which all described independence.
 - [ ] **T6 — The freeze.** Rewrite `LabelReferences` to touch only the `Reference` cells, time it on
   the real `main.nb` before and after, then chase the click-after-refresh freeze on the installed
   paclet with the rewrite in place. This task ends with a measured number, not "feels fast".
@@ -285,3 +286,50 @@ navigation and interaction defects, the classes the census and fidelity tests ca
   cell, the one to reach for when replacing an imported figure's `Import` with generating code
   (`Scripts/BuildTutorial.wls`, regenerated; the diff is that item and nothing else).
 - **Next:** T5 — and it needs Pavel's nod on the scaling model before it is implemented.
+
+### Session 5 — 2026-07-30 — T5, one coherent scale for mathematics
+
+- **Prompt:** `/next-session`.
+- **Did:** Implemented the model Pavel confirmed, and found the reported defect was two arithmetic
+  faults deep rather than one. The model itself is three lines: `mathViewScale` falls back to
+  `documentViewScale` instead of to 1, so an untouched math slider means "scale with the page" and one
+  slider carries prose, display and inline mathematics and MaTeX together, while an explicit math size
+  overrides it against its own anchor; `SetDocumentFontSize` therefore has to call `rescaleMaTeXCells`
+  too, a MaTeX cell being an image that inherits nothing. `fontSizeCells` and `inlineMathCells` now
+  take a *scale* rather than a size and an anchor, which is what let the two controls share one
+  arithmetic. Then the measurements. The double-scaling is fixed by handing `inlineMathCells` the
+  **relative** scale, mathScale/docScale, since the host cell already carries the document ratio — but
+  that alone still rendered wrong, and the reason is a front-end fact nothing here knew: a **relative**
+  `FontSize` on `InlineFormula` renders at the **square** of the ratio. Swept r over 0.5 … 2 against
+  hosts 13, 26 and 52 reading the *width* of `x + y`, an island whose style says `r*Inherited` is
+  `r² × host` every time (r = 2 on a host of 26 draws 104 pt), while an *absolute* size on the same
+  style is exactly linear — so the style is resolved for the inline cell and again for its contents and
+  `Inherited` takes the ratio up twice. The ratio written is therefore
+  `$inlineMathRatio Sqrt[relative]`, and the shipped control was worse than reported: at twice the
+  anchor it wrote 2.1 and drew 4.41 × the host, not 2.1 ×. Four new kernel tests in `View.wlt` (the two
+  ratios, the fallback, the override, the relative ratio, the agreeing states writing nothing) and two
+  rendered ones in `FrontEnd.wlt` measuring **widths** across all four slider states: inline sits at
+  the sheet's own proportion to display mathematics in every state (1.077/1.118/1.104/1.077 against
+  1.1025), and the display formula itself is 26/51/77/26 px — doubling with the text slider, back to
+  base under an explicit math size. Suite 358 → 364, green; both specimens and all four samples
+  byte-exact, census untouched. Also corrected the three surfaces that all promised independence: the
+  two palette tooltips, three tutorial items, and both usage strings (pages regenerated through
+  `Scripts/RegenerateUsage.wls`). Three bites, each restored from a copy and verified byte-identical —
+  dropping `Sqrt` fails exactly the 2 `View.wlt` ratio tests and the 1 rendered ratio test with the
+  widths still green; removing the fallback fails exactly 4 kernel tests and the widths test, reporting
+  `Text -> 27` where 51 is asserted; and taking the absolute math scale instead of the relative one
+  fails the inline ratio tests.
+- **Learned:** The two rendered tests detect different halves and neither subsumes the other, which
+  the bites proved rather than the design: with the fallback removed the *ratio* test still passed —
+  inline and display agreed, both at the wrong size — and only the widths caught it. And **width is a
+  size measurement where ink and height are not**: a display formula's exported width is exactly
+  linear in its size (26/51/77/103 px at 13/26/39/52), ink grows about as `size^1.5` and needs a
+  tolerance nobody can justify, and height is floored by the enclosing text cell's line height — which
+  is exactly how the squared ratio hid, an r = 0.5 island of 6.5 pt sitting in a 14 px line and reading
+  as linear. Two environment facts fell out: a state that leaves `Text` unwritten cannot be measured
+  headless at all (the embedded-parent fall-through sends the host to Default's 15, and an island's
+  size is host × ratio), and with no override installed the export does not crop horizontally — so
+  every state in the new measurement drags the text slider, the base state to the sheet's own size,
+  which writes every style at its base size and is a real state rather than a contrivance. All in
+  CLAUDE.md.
+- **Next:** T6, the last task — the `LabelReferences` freeze.

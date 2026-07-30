@@ -31,12 +31,14 @@ export recomposing them byte-exact — the causal paper's dangling citations wen
 Buttons census 14 → 21 (T3, S3, suite 341 → 345); and a copied reference reads its word and counter
 chain off the target cell and keys on the cell's tag rather than on a `CellID` an imported cell does
 not have — the reported `Theorem 0.0` was two defects in one string, and the specimen's axiom now
-pastes as `Axiom 1.3.3` on the rendered page and navigates (T4, S4, suite 345 → 358). **Next: T5** —
-the two font sliders disagree about mathematics: inline math tracks the document slider, display math
-the math slider, and with both set inline math double-scales. The model is **confirmed** (Pavel,
-2026-07-29), so T5 implements it rather than asking. Then
-`LabelReferences` rewrites the whole notebook to relabel 14 cells, the prime suspect for the reported
-freezes (T6 ends with a measured number).
+pastes as `Axiom 1.3.3` on the rendered page and navigates (T4, S4, suite 345 → 358); and the two font
+sliders now agree about mathematics — an untouched math slider means "scale with the page", so one
+slider carries prose, display and inline mathematics and MaTeX together while an explicit math size
+overrides it, and the reported double-scaling turned out to sit on top of a front-end fact nothing here
+knew, that a *relative* `FontSize` on `InlineFormula` renders at the **square** of its ratio, so the
+shipped control drew 4.41 × the host where it meant 2.1 (T5, S5, suite 358 → 364). **Next: T6**, the
+last task — `LabelReferences` rewrites the whole notebook to relabel 14 cells, the prime suspect for the
+reported freezes, and the task ends with a measured number.
 
 [Import Display Defects](Done/2026-07-29-ImportDisplayDefects.md) closed on 2026-07-29 — all five
 display defects fixed, 0.1.17 installed, `main.nb` re-imported through it, and the reading half of T4
