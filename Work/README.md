@@ -21,8 +21,26 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 
 ## Active
 
-[Environment Blocks](Active/EnvironmentBlocks.md) — a second session's item, worked alongside
-Bibliography Display below and interleaved with it in `Document.wl`, `Document.wlt` and `FrontEnd.wlt`.
+Empty. `EnvironmentBlocks` closed on 2026-07-30 with all three tasks done, and its two remaining clauses
+are Pavel's — see its Hand-off.
+
+[Environment Blocks](Done/2026-07-30-EnvironmentBlocks.md) closed on 2026-07-30. A theorem-like
+environment is one block that may span several cells, and until T1 nothing but the importer could make
+one: prose typed after a display equation inside a definition landed at the sheet's `Text` margin **64 pt**
+to the left of the block's own, and grouping cannot fix it — measured, a `CellGroupData` leaves every
+resolved `CellMargins` identical, so what holds a block together is the **style**. `Continue block`
+repeats it with the label and the counter suppressed, carrying the QED square and the `\end{…}` onto
+whichever cell is now last. T2 was the bigger of the two: `cellToLaTeX` is keyed on the importer's own
+two tagging rules and on nothing else, so a block the author typed exported as **bare prose** — no
+`\begin{definition}` anywhere — which had made all twelve palette environment buttons **screen-only**;
+the repair writes those same two rules onto a hand-written run, so one path serves an imported block and
+a typed one and separators, labels and nesting all apply unchanged. T3 filed the durable half into
+`CLAUDE.md` (two bullets) and found the tutorial stale in **five** passages where one was predicted, two
+of them predating `ComplexSystems` by two days rather than belonging to this item at all — which is why
+that bullet now prescribes a two-directional audit of both build scripts instead of a grep. Suite 383/1,
+the one failure a front-end availability artifact under another agent's concurrent kernels and owed a
+re-run. The preamble-less export it exposed became [Hand-Written
+Preamble](Backlog/HandWrittenPreamble.md).
 
 [Bibliography Display](Done/2026-07-30-BibliographyDisplay.md) closed on 2026-07-30, three defects found
 in the tail of `FirstReadingDefects` S6 while answering Pavel's report that the entry labels were
@@ -145,6 +163,14 @@ holds five files beside `Images/`, `LaTeX/`, `MathNotebook/`, `Notebooks/`, `Res
 
 ## Backlog
 
-Empty. Reduced from eight items to three on 2026-07-27 — the four in `Dropped/` each carry a note
+[Hand-Written Preamble](Backlog/HandWrittenPreamble.md) — a notebook that was never imported exports a
+body and nothing else, so it compiles nowhere: measured 2026-07-30, a typed six-cell paper comes out as
+229 bytes with `\documentclass` 0, `\begin{document}` 0 and `\newtheorem` 0, its three blocks all
+correct LaTeX with nothing to resolve them against. `EnvironmentBlocks` T2 is what makes it worth an
+item — before it the blocks were bare prose and a missing `\newtheorem` was moot. Its T1 is a four-part
+**decision** (which class, which `\newtheorem` lines, which packages, where a bibliography goes) and is
+Pavel's to take, not a session's; T2 must leave an imported paper's stored preamble byte for byte.
+
+Before that: reduced from eight items to three on 2026-07-27 — the four in `Dropped/` each carry a note
 saying why and what would reopen them — the one item left was activated and closed on 2026-07-28, and
 the item its scoping task proposed was written, worked and closed the same day.

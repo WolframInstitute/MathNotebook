@@ -32,7 +32,25 @@ because "this cell continues the one above" is true under every stylesheet.
 
 - [x] T1 — `InsertEnvironment[Automatic]` plus a "Continue block" palette button.
 - [x] T2 — export a hand-written block as a real environment.
-- [ ] T3 — the two loose ends below, once the tree is quiet.
+- [x] T3 — the loose ends, once the tree is quiet.
+
+## Hand-off
+
+**One re-run owed.** `Tests/FrontEnd.wlt` sits at 57/1 on the bibliography-anchor measurement, whose
+read came back `$Failed` under another agent's concurrent kernels; the whole suite is otherwise 383/1.
+Re-run that one file on a quiet machine before 0.1.21 — if it stays red the assertion is real and is
+`BibliographyDisplay`'s, not this item's.
+
+Two further clauses, and neither is a session's:
+
+- **`PlainArticle`'s `DisplayFormula` is left-flush**, so an equation inside a body sits 64 pt left of
+  the block's own prose on the very sheet an imported paper lands on. The four journal templates centre
+  theirs and read correctly. Changing it is a typography change to the one sheet that deliberately
+  holds none — **Pavel's call**.
+- **A hand-written notebook exports a body with no preamble.** Measured this session: a typed six-cell
+  paper comes out as 229 bytes with `\documentclass` 0, `\begin{document}` 0 and `\newtheorem` 0, its
+  three blocks all correct. Scoped out as [Hand-Written Preamble](../Backlog/HandWrittenPreamble.md),
+  whose T1 is the four-part decision it needs.
 
 ## Progress
 
@@ -100,17 +118,26 @@ this item — they are the in-flight `BibliographyDisplay` work's `headedBibliog
 `Section` anchor the census and three `Document.wlt` expectations have not been updated for, and a
 `PlainArticle.nb` whose `Reference` gutter no longer clears the widest key.
 
-## T3 — left open
+- **S3** 2026-07-30 T3 — the four parked notes filed to their real destinations and `## T3 — left open`
+  deleted, a sixth section being a destination violation. Durable knowledge → `CLAUDE.md`: two new
+  bullets beside the T7 environment one (the screen mechanism, and the export), and the
+  tutorial-staleness bullet rewritten around what this pass actually found. Tutorial → five passages of
+  `Scripts/BuildTutorial.wls`, regenerated. Out of scope → [Hand-Written
+  Preamble](../Backlog/HandWrittenPreamble.md). Pavel's → `## Hand-off`.
 
-- **`CLAUDE.md` has no paragraph for any of this yet.** Deliberately not written while another agent
-  was editing the tree; the material is this file's Spec and Progress.
-- **`Scripts/BuildTutorial.wls` does not mention "Continue block".** The tutorial is `.wlt`-invisible,
-  which is exactly why it goes stale.
-- **A hand-written notebook still exports a body with no preamble**, so a `\begin{definition}` in it
-  has no `\newtheorem` to resolve against. Pre-existing and out of this item's scope, but it caps how
-  useful T2 is on a notebook that was never imported: the block is now *correct*, and the file is
-  still a fragment. Deciding what preamble such an export should carry is its own item.
-- **`PlainArticle`'s `DisplayFormula` is left-flush**, so an equation inside a body is 64 pt left of
-  the block's prose on the very sheet an imported paper lands on. The four journal templates centre
-  theirs and read correctly. Changing it is a typography change to the one sheet that deliberately
-  holds none — Pavel's call.
+  Two things worth keeping that fit nowhere else. **The tutorial needed five passages where the note
+  predicted one, and only three were about this item** — the other two predated `ComplexSystems` by two
+  days ("Four templates"; the shared-counter claim it breaks), which is why the `CLAUDE.md` bullet now
+  prescribes a two-directional audit rather than a grep. The regeneration diffed at **74** non-`ExpressionUUID`
+  lines: those five passages, the four header offsets, the cell-tags index, nothing else.
+
+  **Suite: 383 passed, 1 failed** — and the recorded baseline of 7 is down to that one, `BibliographyDisplay`
+  having closed (`Document` 4 → 0 at 101/0, `Specimens` 2 → 0 at 32/0). The one left is `FrontEnd.wlt`'s
+  bibliography-anchor measurement and it is an **environment artifact, not an assertion**: its rendered-page
+  read answers `$Failed` with `FrontEndObject::notavail`, so the `StringContainsQ` against `"3. References"`
+  is handed `StringDelete[$Failed, Whitespace]`. Another agent was holding four concurrent kernels and three
+  `MathematicaServer`s in an unrelated repo throughout, and a re-run of that file alone wedged at 0.4% CPU
+  for thirteen minutes rather than finishing. **This session changed no kernel code** — `CLAUDE.md`,
+  `BuildTutorial.wls`, the generated `.nb` and `Work/`, none of which any `.wlt` reads — so the failure
+  cannot be its doing; but it is recorded as unresolved rather than as green, and it wants one re-run on a
+  quiet machine before 0.1.21.
