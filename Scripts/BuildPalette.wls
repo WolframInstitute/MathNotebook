@@ -146,6 +146,11 @@ $groups = {
       "Inserts an unnumbered display equation after the selected cell." ],
     kernelButton[ "Equation (n)", WolframInstitute`MathNotebook`InsertEnvironment[ "DisplayFormulaNumbered" ],
       "Inserts a numbered display equation after the selected cell. The number belongs to the document and follows the equation when cells move." ],
+    (* Placed after the two equation buttons because that is the order it is used in: a block
+       interrupted by a display equation is carried on with this, and the new cell repeats the
+       block's own style, which is what makes it line up. *)
+    kernelButton[ "Continue block", WolframInstitute`MathNotebook`InsertEnvironment[ Automatic ],
+      "Carries the block the cursor is in on into a new cell of the same style, showing no second name or number. Use it after inserting an equation inside a definition or a theorem: an ordinary text cell there would start 64 pt to the left of the block's own prose." ],
     (* T3. Not written at the selection, unlike every other button in this group: an entry belongs
        in the bibliography, so it appends there and starts one under a References heading if the
        notebook has none. *)

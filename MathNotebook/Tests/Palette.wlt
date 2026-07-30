@@ -20,7 +20,7 @@ buttonQ[ label_String ] :=
    --------------------------------------------------------------------------------------------- *)
 
 VerificationTest[
-  Select[ { "Insert environment", "Proof", "Equation", "Equation (n)", "Reference",
+  Select[ { "Insert environment", "Proof", "Equation", "Equation (n)", "Continue block", "Reference",
       "Copy reference", "Insert citation", "\\[UpArrow] Go back", "Refresh labels", "Sort bibliography",
       "math \\[Rule] MaTeX", "MaTeX \\[Rule] math",
       "Apply stylesheet", "Reset view",
@@ -71,7 +71,7 @@ VerificationTest[
    assertion that they say what they should. *)
 VerificationTest[
   StringCount[ $paletteSource, "TooltipBox[" ],
-  24
+  25
 ]
 
 VerificationTest[

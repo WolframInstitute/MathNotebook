@@ -27,6 +27,11 @@ PackageScope["$bibliographySortMethods"]
 PackageScope["$bibliographyAnchorTag"]
 PackageScope["unescapedRun"]
 PackageScope["escapedRun"]
+PackageScope["environmentStyleQ"]
+PackageScope["retagged"]
+PackageScope["environmentWrapped"]
+PackageScope["environmentRuns"]
+PackageScope["environmentSourceName"]
 
 ImportLaTeXDocument[ file_String ] :=
   With[ { source = Import[ file, "Text" ] },
@@ -67,8 +72,74 @@ notebookToLaTeX[ notebook : Notebook[ cells_List, ___ ] ] :=
   With[ { tagging = documentTagging[ notebook ] },
     tagging[ "Preamble" ] <> tagging[ "BodyPrefix" ] <>
       StringJoin @ Map[ cell |-> cellToLaTeX[ cell ] <> cellSeparator[ cell ],
-        Select[ notebookCellList[ cells ], exportedCellQ ] ] <>
+        environmentWrapped[
+          Select[ notebookCellList[ cells ], exportedCellQ ],
+          tagging[ "Preamble" ] ] ] <>
       tagging[ "Postamble" ] ]
+
+(* A hand-written block had no LaTeX form at all: cellToLaTeX is keyed on the stored "EnvironmentOpen"
+   and "EnvironmentClose" rules the IMPORTER writes and on nothing else, so Cell["A graph is a pair",
+   "Definition"] exported as bare prose — measured, no \begin{definition} anywhere in the output. Every
+   one of the palette's twelve environment buttons was therefore screen-only.
+
+   The repair writes those same two rules rather than adding a clause, so the whole existing machinery
+   — separators, labels, nesting, the plain StringJoin — applies unchanged and an imported block and a
+   typed one export through one path. It runs AFTER the Select, so the evaluation family a figure leaves
+   behind cannot split a block in two. *)
+environmentWrapped[ cells_List, preamble_String ] :=
+  Fold[ environmentWrappedRun[ #1, #2, preamble ] &, cells, environmentRuns[ cells ] ]
+
+(* Where the blocks are. A run opens at a cell of an environment style carrying neither rule and no
+   CellDingbat -> None (that is what "heads a block" means, the census's own key) and extends through
+   continuation cells of the SAME style and through the cells a body may contain. It ENDS at the last
+   cell of the environment style, never at a trailing equation: an equation after the final prose cell
+   is exactly as likely to follow the block as to belong to it, and closing before it is the reading
+   that cannot silently swallow a following display. *)
+environmentRuns[ cells_List ] :=
+  Module[ { n = Length[ cells ], runs = { }, index = 1, style, ahead, last },
+    While[ index <= n,
+      If[ blockHeadQ @ cells[[ index ]],
+        style = cells[[ index, 2 ]];
+        last = index;
+        ahead = index + 1;
+        While[ ahead <= n &&
+          ( blockContinuationQ[ cells[[ ahead ]], style ] || MemberQ[ $bodyStyles, cellStyle @ cells[[ ahead ]] ] ),
+          If[ blockContinuationQ[ cells[[ ahead ]], style ], last = ahead ];
+          ahead++ ];
+        AppendTo[ runs, { index, last, style } ];
+        index = last + 1,
+        index++ ] ];
+    runs ]
+
+wrappedAlreadyQ[ cell_Cell ] :=
+  cellTagging[ cell, "EnvironmentOpen" ] =!= "" || cellTagging[ cell, "EnvironmentClose" ] =!= ""
+
+blockHeadQ[ cell_Cell ] :=
+  environmentStyleQ @ cellStyle[ cell ] && ! wrappedAlreadyQ[ cell ] && FreeQ[ cell, CellDingbat -> None ]
+
+blockContinuationQ[ cell_Cell, style_String ] :=
+  cellStyle[ cell ] === style && ! wrappedAlreadyQ[ cell ] && ! FreeQ[ cell, CellDingbat -> None ]
+
+(* The opening needs a newline of its own ("BodyIndent", which an imported block uses for the source's
+   own indentation) or \begin{definition} would run into the first word. The environment NAME is the
+   document's if the document declares one — a paper whose preamble says \newtheorem{defn}{Definition}
+   wants \begin{defn} for a block typed into it — and otherwise the style lowercased, which is the
+   repo's existing convention for the six commands. *)
+environmentWrappedRun[ cells_List, { first_Integer, last_Integer, style_String }, preamble_String ] :=
+  With[ { name = environmentSourceName[ preamble, style ] },
+    MapAt[ retagged[ #, <| "EnvironmentClose" -> "\n\\end{" <> name <> "}" |> ] &,
+      MapAt[ retagged[ #, <| "EnvironmentOpen" -> "\\begin{" <> name <> "}", "BodyIndent" -> "\n" |> ] &,
+        cells, first ],
+      last ] ]
+
+(* Read off theoremDeclarations and NOT off theoremEnvironments, which is that table joined ONTO the
+   twelve defaults: measured, the inverse lookup there answered "definition" for a paper whose only
+   declaration is \newtheorem{defn}{Definition}, because the default entry is joined first and wins.
+   That is the one answer that cannot compile — the document defines defn and nothing else. *)
+environmentSourceName[ preamble_String, style_String ] :=
+  FirstCase[ theoremDeclarations[ preamble ],
+    declaration_Association /; declaration[ "Printed" ] === style :> declaration[ "Name" ],
+    ToLowerCase[ style ] ]
 
 (* Evaluating a figure's code leaves an Output cell beside it, and neither the code nor the graphic
    has a LaTeX form — the figure's own markup is what goes back into the .tex. So the whole
@@ -431,8 +502,15 @@ environmentStyledCell[ Cell[ content_, "Text", options___ ], spec_Association, f
 $plainEnvironments = { "Proof", "Abstract" }
 
 environmentStyle[ printed_String ] :=
-  If[ KeyExistsQ[ $theoremEnvironments, printed ] || MemberQ[ $plainEnvironments, printed ],
-    printed, "Theorem" ]
+  If[ environmentStyleQ[ printed ], printed, "Theorem" ]
+
+(* Delayed rather than a stored list: $theoremEnvironments is defined in Referencing.wl and
+   $plainEnvironments here, so an immediate Join would depend on which file the loader reads first. *)
+environmentStyleQ[ style_String ] :=
+  KeyExistsQ[ $theoremEnvironments, style ] || MemberQ[ $plainEnvironments, style ]
+
+environmentStyleQ[ _ ] :=
+  False
 
 (* Nothing is written when the style already prints exactly the right thing: one of the twelve, or Proof
    or Abstract, numbered the way the sheets number it. Anything else — a printed name outside the twelve
@@ -753,7 +831,7 @@ $bibliographyCommand =
   ( " " | "\t" ) ... ~~ ( "\\bibliographystyle" | "\\printbibliography" | "\\bibliography" ) ~~ Except[ "\n" ] ...
 
 bibliographyCells[ entries_Association, block_String ] :=
-  MapAt[ retagged[ #, <| "Suppressed" -> "", "BibliographyTeX" -> block |> ] &,
+  headedBibliography @ MapAt[ retagged[ #, <| "Suppressed" -> "", "BibliographyTeX" -> block |> ] &,
     KeyValueMap[ bibliographyCell, entries ], -1 ]
 
 bibliographyCell[ key_String, entry_Association ] :=
@@ -775,7 +853,7 @@ entryRules[ ] :=
       widest : ( ( "{" ~~ Except[ "}" ] ... ~~ "}" ) | "" ) ~~ trailing : Except[ "\n" ] ... ~~
       Shortest[ inner___ ] ~~ StartOfLine ~~ closingIndent : ( " " | "\t" ) ... ~~
       "\\end{thebibliography}" :>
-    entryCells[ indent <> "\\begin{thebibliography}" <> widest, trailing, inner,
+    headedBibliography @ entryCells[ indent <> "\\begin{thebibliography}" <> widest, trailing, inner,
       closingIndent <> "\\end{thebibliography}" ] }
 
 entryCells[ opening_String, trailing_String, inner_String, closing_String ] :=
@@ -876,19 +954,33 @@ openedBibliographyCell[ cell_Cell, tag_String ] :=
 referenceEntryCell[ tag_String ] :=
   Cell[ "", "Reference", CellTags -> tag, Sequence @@ referenceDingbat[ tag ] ]
 
-(* The heading a bibliography starts at, created once — by the first InsertReference into a notebook
-   that has none — and every one of its three options is load-bearing. CounterIncrements -> { }
-   because thebibliography prints an UNNUMBERED heading, and a plain Section would read "6
-   References" in the notebook where the compiled paper has no number there at all. "Suppressed"
-   because thebibliography prints that heading itself, so a cell emitting one too would put
-   References in the PDF twice. And the tag, which is how SortBibliography finds where the block
-   begins. Its CellTags is therefore a marker and not a \label — which costs nothing, since a
-   suppressed cell reaches no exporter to write one. *)
+(* The heading a bibliography starts at — written by InsertReference into a notebook that has none, and
+   by both import routes above — and every one of its four options is load-bearing. thebibliography
+   prints an UNNUMBERED heading, and it takes BOTH counter options to get one: CounterIncrements -> { }
+   stops the counter advancing, and CellDingbat -> None stops the number being DRAWN. Suppressing only
+   the increment leaves the sheets' own Section dingbat printing whatever the counter already holds, so
+   the heading read "3. References" three sections in — measured on a rendered page under two sheets,
+   and exactly the "6 References" this comment used to claim the one option prevented. "Suppressed"
+   because the environment prints that heading itself, so a cell emitting one too would put References
+   in the PDF twice — which is also what lets the importer add this cell with the round trip still
+   byte-exact. And the tag, a marker rather than a \label, which costs nothing since a suppressed cell
+   reaches no exporter to write one. *)
 bibliographyAnchorCell[ ] :=
-  Cell[ "References", "Section", CellTags -> $bibliographyAnchorTag, CounterIncrements -> { },
+  Cell[ "References", "Section", CellTags -> $bibliographyAnchorTag,
+    CounterIncrements -> { }, CellDingbat -> None,
     TaggingRules -> <| "MathNotebook" -> <| "Suppressed" -> "True" |> |> ]
 
 $bibliographyAnchorTag = "MathNotebookBibliography"
+
+(* Both import routes head their block with it, so an imported paper shows in the notebook the heading
+   its compiled PDF has — thebibliography prints one and \bibliography prints one, and the notebook had
+   neither. It costs the specimen census one cell and one Section in each paper that imports a
+   bibliography, re-measured rather than guessed; it costs the round trip nothing, the cell being
+   suppressed. InsertReference still writes the anchor itself for a notebook with no bibliography at
+   all, and does not write a second one here, its three cases being told apart by the Reference cells
+   this block already has. *)
+headedBibliography[ cells_List ] :=
+  Prepend[ cells, bibliographyAnchorCell[ ] ]
 
 (* T5. Reordering the block, which is three moving parts and only one of them travels with a cell.
    POSITIONAL: the \begin{thebibliography} prefix, which belongs to whichever entry is first; the

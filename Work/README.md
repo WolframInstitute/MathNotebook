@@ -21,7 +21,22 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 
 ## Active
 
-Empty. `FirstReadingDefects` closed on 2026-07-30 with all six tasks done; the two clauses it left are
+[Environment Blocks](Active/EnvironmentBlocks.md) — a second session's item, worked alongside
+Bibliography Display below and interleaved with it in `Document.wl`, `Document.wlt` and `FrontEnd.wlt`.
+
+[Bibliography Display](Done/2026-07-30-BibliographyDisplay.md) closed on 2026-07-30, three defects found
+in the tail of `FirstReadingDefects` S6 while answering Pavel's report that the entry labels were
+invisible in the deployed samples. That report was the deploy script and is fixed separately; these were
+the paclet's. `PlainArticle`'s `Reference` resolved **Times 12** against prose of **Source Sans Pro 15**,
+having fallen through to Default's own `Reference` because `geometryStyleCell` dropped the base cell's
+`StyleDefinitions -> StyleData["Text"]` — and fixing it widened the shared gutter 185 → **205**, the key
+measuring 190 at the new face. The bibliography anchor printed **"3. References"** three sections in,
+`CounterIncrements -> { }` suppressing the increment and not the drawing, so it carries `CellDingbat ->
+None` too. And an imported bibliography had **no heading at all**; both routes head it now, suppressed,
+so the round trip is untouched — the causal paper's census `Cells` 167 → 168, `Section` 8 → 9,
+`Tagged` 39 → 40.
+
+`FirstReadingDefects` closed on 2026-07-30 with all six tasks done; the two clauses it left are
 Pavel's, not a session's — see its Hand-off.
 
 [First Reading Defects](Done/2026-07-30-FirstReadingDefects.md) — Pavel read the imported causal-graphs paper

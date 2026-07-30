@@ -213,16 +213,21 @@ $measured = Map[ specimenCensus, $specimens ]
    compound \cite commands are one button per key now, each key resolving, where the compound
    ButtonData was the one thing dangling in a paper that ships its .bib. hodgepaper moves nowhere --
    measured, it writes no compound \cite -- and its 15 dangling keys are T10's missing .bib, not a
-   defect of the citations. *)
+   defect of the citations.
+
+   BibliographyDisplay T3 heads an imported bibliography with the anchor, which is the causal paper's
+   Cells 167 -> 168, its Sections 8 -> 9 and its Tagged 39 -> 40 -- the anchor being a tagged Section.
+   hodgepaper moves nowhere again, and for a reason worth keeping: it declares a .bib it ships without,
+   so it imports no bibliography at all and there is nothing to head. *)
 $expected = <|
   "Causal graphs" -> <|
     "Bytes" -> 36656,
-    "Cells" -> 167,
+    "Cells" -> 168,
     "Styles" -> <| "Abstract" -> 1, "Author" -> 1, "Caption" -> 7, "Construction" -> 2, "Date" -> 1,
       "Definition" -> 20, "DisplayFormula" -> 2, "Input" -> 7, "Item" -> 38, "ItemNumbered" -> 3,
-      "Reference" -> 14, "Section" -> 8, "Subsection" -> 11, "Text" -> 41, "Theorem" -> 10,
+      "Reference" -> 14, "Section" -> 9, "Subsection" -> 11, "Text" -> 41, "Theorem" -> 10,
       "Title" -> 1 |>,
-    "Tagged" -> 39,
+    "Tagged" -> 40,
     "Buttons" -> 21,
     "Dangling" -> 0,
     "Counters" -> 101,

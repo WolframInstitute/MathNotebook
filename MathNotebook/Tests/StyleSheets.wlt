@@ -127,10 +127,12 @@ VerificationTest[
 (* ImportDisplayDefects T1: an imported bibliography entry hangs its BibTeX key as a CellDingbat, and
    a dingbat wider than the left margin is anchored at the window edge — clipped — with the body
    pushed right of the prose. The widest key of the causal-graphs specimen measures 173 pt at
-   Palatino 13, so every sheet reserves 185; PlainArticle carries the geometry and nothing else, the
-   same exception the environments already are to its "Default's typography" rule. ComplexSystems
-   deviates from its journal-measured 100/84 deliberately: those fit the journal's own numbered
-   labels, not a key. *)
+   Palatino 13 but 190 at PlainArticle's Source Sans Pro 15, which is the widest face of the six now
+   that that sheet's Reference inherits Text rather than Default's own Reference — so every sheet
+   reserves 205, the same 15 pt of clearance 185 gave over 173 (BibliographyDisplay T1). PlainArticle
+   carries the geometry and the inheritance and nothing else, the same exception the environments
+   already are to its "Default's typography" rule. ComplexSystems deviates from its journal-measured
+   100/84 deliberately: those fit the journal's own numbered labels, not a key. *)
 VerificationTest[
   Map[
     sheet |-> With[ { options = FirstCase[ First[ sheet ],
@@ -141,7 +143,7 @@ VerificationTest[
       Map[ Get[ FileNameJoin[ { $styleSheetDirectory, # <> ".nb" } ] ] &,
         Append[ $templateNames, "ComplexSystems" ] ],
       { $plainSheet } ] ],
-  ConstantArray[ { 185, -24 }, 7 ]
+  ConstantArray[ { 205, -24 }, 7 ]
 ]
 
 VerificationTest[

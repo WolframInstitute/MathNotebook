@@ -44,14 +44,24 @@ Cell[TextData[{
    ButtonBox["InsertEnvironment",
     BaseStyle->"Link",
     ButtonData->"paclet:WolframInstitute/MathNotebook/ref/InsertEnvironment"], 
+   RowBox[{"[", "Automatic", "]"}]}]], "InlineFormula",ExpressionUUID->
+  "354f3ff2-5860-51bb-63f7-17671c0882bf"],
+ " \[LineSeparator]",
+ "carries the block the selection is in on into a new cell of that same style, showing no second name or number, so that prose written after a display equation inside a definition or a theorem still lines up with the rest of the block and still exports inside it.",
+ "\n",
+ Cell[BoxData[
+  RowBox[{
+   ButtonBox["InsertEnvironment",
+    BaseStyle->"Link",
+    ButtonData->"paclet:WolframInstitute/MathNotebook/ref/InsertEnvironment"], 
    RowBox[{"[", 
     RowBox[{"notebook", ", ", " ", "style"}], "]"}]}]], "InlineFormula",ExpressionUUID->
-  "354f3ff2-5860-51bb-63f7-17671c0882bf"],
+  "8a90bc01-d0ae-05be-f013-4db9b4f592d3"],
  " \[LineSeparator]",
  "inserts it into the given ",
  Cell[BoxData[
   StyleBox["notebook", "TI"]], "InlineFormula",ExpressionUUID->
-  "a29bfa43-f614-c3ad-5161-1527c57b0a67"],
+  "1eb53739-acfe-1780-c93e-8e05ba87372c"],
  "."
 }], "Usage",
  CellID->862098484,ExpressionUUID->"1fa7b0c1-0c77-4d86-b75e-d224148c2e68"],

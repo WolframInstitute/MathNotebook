@@ -23,6 +23,10 @@ PackageScope["referenceLabelOptions"]
 PackageScope["withInputNotebook"]
 PackageScope["citationChoices"]
 PackageScope["citationChooserRows"]
+PackageScope["environmentContinuationCell"]
+PackageScope["enclosingEnvironment"]
+PackageScope["cellStyleName"]
+PackageScope["$bodyStyles"]
 
 (* InputNotebook[] answers $Failed when no document is open — a palette with no paper beside it,
    which is where a new author starts. SelectedCells[$Failed] then stays unevaluated, so a guard
@@ -425,7 +429,7 @@ GoBack[] :=
         _ :> MessageDialog[ "The cell that link was followed from is gone!" ] } ],
     _ :> MessageDialog[ "Follow a hyperlink first!" ] } ]
 
-InsertEnvironment[ style_String ] :=
+InsertEnvironment[ style : _String | Automatic ] :=
   withInputNotebook[ InsertEnvironment[ #, style ] & ]
 
 InsertEnvironment[ notebook_NotebookObject, style : "DisplayFormula" | "DisplayFormulaNumbered" ] :=
@@ -433,6 +437,77 @@ InsertEnvironment[ notebook_NotebookObject, style : "DisplayFormula" | "DisplayF
 
 InsertEnvironment[ notebook_NotebookObject, style_String ] :=
   writeEnvironmentCell[ notebook, Cell[ "", style ] ]
+
+(* An environment is ONE block spanning several cells, and what holds it together on screen is the
+   style rather than a group. Measured: CellGroupData leaves every resolved CellMargins identical
+   ({130, 66, 130, 66} grouped and ungrouped), so grouping cannot align anything. The body sits at
+   130 pt under six of the seven sheets against Text's 66 — the 79 pt "Definition 1.1." hangs to the
+   LEFT of the cell margin and that gap is the room it needs — so prose typed after a display equation
+   lands 64 pt out and the block visibly falls apart. A body carries on in cells of the same style with
+   the label and the counter suppressed, which is exactly what the importer already writes
+   (environmentStyledCell in Document.wl) and is suppressed on the CELL rather than declared as a
+   continuation style for the importer's own reason: "this cell continues the one above" is true under
+   every stylesheet, so retargeting a paper by swapping sheets still works.
+
+   Two things travel to whichever cell is now last, and neither is optional. The QED square is a
+   CellFrameLabels on the style, so the cell it used to end on has to suppress it explicitly. And an
+   imported block's "\end{...}" rides on its last cell (T7): left there, the new cell would export
+   AFTER the environment closed, as bare prose. *)
+InsertEnvironment[ notebook_NotebookObject, Automatic ] :=
+  Replace[ enclosingEnvironment[ notebook ], {
+    { anchor_CellObject, block_CellObject } :> continueEnvironment[ notebook, anchor, block ],
+    _ :> MessageDialog[ "Put the cursor in a block first!" ] } ]
+
+(* Which block the selection is in: walk up from the selected cell through the cells a body may
+   legitimately contain — display equations and list items — and take the nearest cell of an
+   environment style. The walk STOPS at anything else (TakeWhile, not FirstCase): a Text cell above
+   means the block ended there, and finding an earlier definition through it would continue the wrong
+   one. With nothing selected the anchor is the last cell of the notebook, which is where an author
+   who has just clicked the palette is writing. *)
+enclosingEnvironment[ notebook_NotebookObject ] :=
+  Module[ { cells = Cells[ notebook ], anchor, index },
+    anchor = Replace[ SelectedCells[ notebook ], { { cell_, ___ } :> cell, _ :> Last[ cells, None ] } ];
+    index = Replace[ FirstPosition[ cells, anchor, None, { 1 } ], { { i_Integer } :> i, _ :> None } ];
+    If[ index === None, None,
+      Replace[
+        FirstCase[ TakeWhile[ Reverse @ Take[ cells, index ], environmentBodyCellQ ],
+          cell_CellObject /; environmentStyleQ @ cellStyleName[ cell ], None, { 1 } ],
+        { block_CellObject :> { anchor, block }, _ :> None } ] ] ]
+
+$bodyStyles = { "DisplayFormula", "DisplayFormulaNumbered",
+  "Item", "ItemNumbered", "ItemParagraph", "Subitem", "SubitemNumbered", "SubitemParagraph",
+  "Subsubitem", "SubsubitemNumbered", "SubsubitemParagraph" }
+
+environmentBodyCellQ[ cell_CellObject ] :=
+  With[ { style = cellStyleName[ cell ] },
+    environmentStyleQ[ style ] || MemberQ[ $bodyStyles, style ] ]
+
+(* A live notebook's styles are read off its cells, never pattern-matched out of NotebookGet: an
+   embedded stylesheet puts its own cells in the expression and writing cells groups them. *)
+cellStyleName[ cell_CellObject ] :=
+  Replace[ Flatten @ { CurrentValue[ cell, CellStyle ] }, { { style_String, ___ } :> style, _ :> "" } ]
+
+(* Per-cell writes, never NotebookPut: rewriting the notebook to change two cells invalidates every
+   CellObject in the document, which is what made "Refresh labels" break the references it had just
+   drawn (FirstReadingDefects T6). *)
+continueEnvironment[ notebook_NotebookObject, anchor_CellObject, block_CellObject ] :=
+  With[ { style = cellStyleName[ block ], closing = environmentClosing[ block ] },
+    If[ ! FreeQ[ AbsoluteCurrentValue[ block, CellFrameLabels ], _Cell ],
+      SetOptions[ block, CellFrameLabels -> { { None, None }, { None, None } } ] ];
+    If[ closing =!= "",
+      CurrentValue[ block, { TaggingRules, "MathNotebook", "EnvironmentClose" } ] = Inherited ];
+    SelectionMove[ anchor, After, Cell ];
+    NotebookWrite[ notebook, environmentContinuationCell[ style, closing ], All ];
+    SelectionMove[ notebook, All, CellContents ] ]
+
+environmentClosing[ cell_CellObject ] :=
+  Replace[ CurrentValue[ cell, { TaggingRules, "MathNotebook", "EnvironmentClose" } ],
+    Except[ _String ] -> "" ]
+
+environmentContinuationCell[ style_String, closing_String ] :=
+  Cell[ "", style, CellDingbat -> None, CounterIncrements -> { },
+    Sequence @@ If[ closing === "", { },
+      { TaggingRules -> <| "MathNotebook" -> <| "EnvironmentClose" -> closing |> |> } ] ]
 
 $theoremEnvironments = <|
   "Theorem" -> "Plain", "Lemma" -> "Plain", "Proposition" -> "Plain",

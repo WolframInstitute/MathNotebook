@@ -187,11 +187,14 @@ $citeSource = "\\documentclass{article}\n\\begin{document}\n\nProse citing \\cit
 $citeNotebook = latexToNotebook[ $citeSource, $entries ]
 
 (* Only the cited keys become cells, as LaTeX prints only those, and they come in the order of the
-   .bib. Each is tagged with its key and dingbatted with it, which is what a citation navigates to. *)
+   .bib. Each is tagged with its key and dingbatted with it, which is what a citation navigates to.
+   The block is headed by the anchor, so an imported paper shows the heading its compiled PDF has
+   (BibliographyDisplay T3) — a suppressed cell, so the .tex is unchanged. *)
 VerificationTest[
   Cases[ First @ $citeNotebook, Cell[ _, style_String, options___ ] :>
     { style, Lookup[ { options }, CellTags, None ] } ],
-  { { "Text", None }, { "Reference", "first" }, { "Reference", "second" } }
+  { { "Text", None }, { "Section", "MathNotebookBibliography" },
+    { "Reference", "first" }, { "Reference", "second" } }
 ]
 
 (* Every entry but the last emits nothing, and the last carries the commands the .tex actually has —
@@ -884,7 +887,20 @@ $entryNotebook = latexToNotebook[ $entrySource ]
 VerificationTest[
   Cases[ First @ $entryNotebook, Cell[ _, style_String, options___ ] :>
     { style, Lookup[ { options }, CellTags, None ] } ],
-  { { "Text", None }, { "Reference", "smith" }, { "Reference", "jones" }, { "Text", None } }
+  { { "Text", None }, { "Section", "MathNotebookBibliography" },
+    { "Reference", "smith" }, { "Reference", "jones" }, { "Text", None } }
+]
+
+(* T3, the two things that make heading the block safe rather than merely nicer: the heading takes BOTH
+   counter options — CounterIncrements -> { } alone leaves the sheets' Section dingbat printing whatever
+   the counter already holds, which read "3. References" three sections in — and it is suppressed, so
+   the .tex comes back byte for byte with no heading of its own added. *)
+VerificationTest[
+  { FirstCase[ First @ $entryNotebook,
+      Cell[ text_, "Section", options___ ] :>
+        { text, Lookup[ { options }, { CounterIncrements, CellDingbat, CellTags } ] } ],
+    notebookToLaTeX[ $entryNotebook ] === $entrySource },
+  { { "References", { { }, None, "MathNotebookBibliography" } }, True }
 ]
 
 (* The dingbat is referenceLabel's [key], the same string the citation pointing at it shows, so the
@@ -893,7 +909,7 @@ VerificationTest[
 VerificationTest[
   { Cases[ First @ $entryNotebook, Cell[ ___, CellDingbat -> dingbat_, ___ ] :> dingbat ],
     Cases[ $entryNotebook, ButtonBox[ boxes_, ___ ] :> boxes, Infinity ] },
-  { { Cell[ TextData[ "[smith]" ] ], Cell[ TextData[ "[jones]" ] ] },
+  { { None, Cell[ TextData[ "[smith]" ] ], Cell[ TextData[ "[jones]" ] ] },
     { RowBox @ { "[", "smith", "]" }, RowBox @ { "[", "jones", "]" } } }
 ]
 
@@ -905,6 +921,7 @@ VerificationTest[
     Cell[ _, _, TaggingRules -> <| "MathNotebook" -> tagging_ |>, ___ ] :>
       Lookup[ tagging, { "EnvironmentOpen", "EnvironmentClose" }, "" ] ],
   { { "", "" },
+    { "", "" },
     { "\\begin{thebibliography}{99}\n\n\\bibitem[Sm09]{smith} ", "" },
     { "\\bibitem{jones}\n", "" },
     { "", "\n\n\\end{thebibliography}" } }
@@ -1086,4 +1103,92 @@ VerificationTest[
     "issue #42 and \\#Tag",
     True,
     "Keep 100\\%\nof the line." }
+]
+
+(* ---------------------------------------------------------------------------------------------- *)
+(* EnvironmentBlocks. A block the AUTHOR typed had no LaTeX form at all: cellToLaTeX is keyed on the
+   stored "EnvironmentOpen"/"EnvironmentClose" rules the importer writes and on nothing else, so
+   Cell["A graph is a pair", "Definition"] exported as bare prose and every one of the palette's
+   twelve environment buttons was screen-only. environmentWrapped writes those same two rules onto a
+   hand-written run, so one export path serves an imported block and a typed one. *)
+
+$blockEquation = Cell[ BoxData[ FormBox[ RowBox[ { "G", "=", RowBox[ { "(", RowBox[ { "V", ",", "E" } ], ")" } ] } ], TraditionalForm ] ], "DisplayFormula" ]
+
+$blockContinuation[ text_String ] := Cell[ text, "Definition", CellDingbat -> None, CounterIncrements -> { } ]
+
+(* Where the runs are. A body carries on through a display equation into a continuation cell, and the
+   run ends at the last cell of the environment style — cell 3, not the Text cell after it. *)
+VerificationTest[
+  environmentRuns[ { Cell[ "A", "Definition" ], $blockEquation, $blockContinuation[ "B" ], Cell[ "C", "Text" ] } ],
+  { { 1, 3, "Definition" } }
+]
+
+(* A trailing equation is left OUTSIDE the block: it is as likely to follow the definition as to
+   belong to it, and closing before it is the reading that cannot silently swallow a display. *)
+VerificationTest[
+  environmentRuns[ { Cell[ "A", "Definition" ], $blockEquation, Cell[ "C", "Text" ] } ],
+  { { 1, 1, "Definition" } }
+]
+
+(* Two consecutive heads are two blocks, not one run: a head is told from a continuation by carrying
+   no CellDingbat -> None, which is the specimen census's own key for "this cell heads a group". *)
+VerificationTest[
+  environmentRuns[ { Cell[ "First.", "Definition" ], Cell[ "Second.", "Definition" ] } ],
+  { { 1, 1, "Definition" }, { 2, 2, "Definition" } }
+]
+
+(* An IMPORTED block is never re-wrapped — it already carries both rules — so the export of a paper
+   read in from LaTeX has exactly the delimiters its source had. The byte round trip below asserts the
+   same thing from the other side; this one names the count, so a double wrap cannot hide in it. *)
+VerificationTest[
+  { StringCount[ notebookToLaTeX[ $notebook ], "\\begin{defn}" ],
+    StringCount[ notebookToLaTeX[ $notebook ], "\\end{defn}" ],
+    environmentRuns[ $cells ] },
+  { 1, 1, { } }
+]
+
+(* The whole point, end to end: the block delimits itself around the equation, and the ordinary text
+   cell after it stays outside. *)
+VerificationTest[
+  notebookToLaTeX @ Notebook[ {
+    Cell[ "A graph is a pair", "Definition" ], $blockEquation,
+    $blockContinuation[ "with V finite." ], Cell[ "Ordinary prose.", "Text" ] } ],
+  "\\begin{definition}\nA graph is a pair\n\n\\[ G=(V,E) \\]\n\nwith V finite.\n\\end{definition}\n\nOrdinary prose.\n\n"
+]
+
+(* Proof and abstract are environments outside the twelve that the sheets declare a style for, and
+   they wrap by the same route. *)
+VerificationTest[
+  notebookToLaTeX @ Notebook[ { Cell[ "Immediate.", "Proof" ] } ],
+  "\\begin{proof}\nImmediate.\n\\end{proof}\n\n"
+]
+
+(* A tag on the cell is still the \label, and it lands after the \begin where LaTeX wants it. *)
+VerificationTest[
+  notebookToLaTeX @ Notebook[ { Cell[ "A graph.", "Definition", CellTags -> "def:graph" ] } ],
+  "\\begin{definition}\\label{def:graph}\nA graph.\n\\end{definition}\n\n"
+]
+
+(* The environment NAME is the document's own where the document declares one: a block typed into a
+   paper whose preamble says \newtheorem{defn}{Definition} must be a \begin{defn}, or the compiled
+   paper has an undefined environment. With no preamble it is the style lowercased, which is the
+   repo's existing convention for the six commands. *)
+VerificationTest[
+  { environmentSourceName[ $preamble, "Definition" ],
+    environmentSourceName[ $preamble, "Corollary" ],
+    environmentSourceName[ "", "Definition" ],
+    environmentSourceName[ "", "Observation" ] },
+  { "defn", "cor", "definition", "observation" }
+]
+
+(* A continuation cell the author made inside an imported block carries the \end moved onto it by
+   InsertEnvironment (Referencing.wl), so it exports INSIDE the environment. Left on the old last
+   cell, the new prose would have landed after \end{defn} — the one thing the wrapping pass cannot
+   repair, since a hand-written continuation of an imported block is not a run of its own. *)
+VerificationTest[
+  With[ {
+    head = retagged[ Cell[ "Body.", "Definition" ], <| "EnvironmentOpen" -> "\\begin{defn}", "BodyIndent" -> "\n" |> ],
+    tail = retagged[ $blockContinuation[ "More body." ], <| "EnvironmentClose" -> "\n\\end{defn}" |> ] },
+    notebookToLaTeX @ Notebook[ { head, $blockEquation, tail } ] ],
+  "\\begin{defn}\nBody.\n\n\\[ G=(V,E) \\]\n\nMore body.\n\\end{defn}\n\n"
 ]

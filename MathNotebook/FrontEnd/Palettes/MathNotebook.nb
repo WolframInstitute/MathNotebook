@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       154,          7]
-NotebookDataLength[     51719,       1149]
-NotebookOptionsPosition[     51060,       1125]
-NotebookOutlinePosition[     51749,       1151]
-CellTagsIndexPosition[     51706,       1148]
+NotebookDataLength[     52863,       1172]
+NotebookOptionsPosition[     52204,       1148]
+NotebookOutlinePosition[     52893,       1174]
+CellTagsIndexPosition[     52850,       1171]
 WindowTitle->MathNotebook
 WindowFrame->Palette*)
 
@@ -185,6 +185,30 @@ The number belongs to the document and follows the equation when cells move.",
              {
               TagBox[
                TooltipBox[
+                ButtonBox["\<\"Continue block\"\>",
+                 Appearance->"Palette",
+                 
+                 ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
+                  WolframInstitute`MathNotebook`InsertEnvironment[Automatic]),
+                 
+                 Evaluator->Automatic,
+                 ImageSize->{200, 27},
+                 Method->"Queued"],
+                
+                "\"Carries the block the cursor is in on into a new cell of \
+the same style, showing no second name or number. Use it after inserting an \
+equation inside a definition or a theorem: an ordinary text cell there would \
+start 64 pt to the left of the block's own prose.\"",
+                TooltipStyle->"TextStyling"],
+               
+               Annotation[#, 
+                "Carries the block the cursor is in on into a new cell of the \
+same style, showing no second name or number. Use it after inserting an \
+equation inside a definition or a theorem: an ordinary text cell there would \
+start 64 pt to the left of the block's own prose.", "Tooltip"]& ]},
+             {
+              TagBox[
+               TooltipBox[
                 ButtonBox["\<\"Reference\"\>",
                  Appearance->"Palette",
                  
@@ -289,7 +313,6 @@ offers it.", "Tooltip"]& ]}
 Pasted anywhere in the paper it becomes a live cross-reference reading as \
 that cell's own number.\"",
                 TooltipStyle->"TextStyling"],
-               
                Annotation[#, 
                 "Copies a link to the selected cell to the clipboard. Pasted \
 anywhere in the paper it becomes a live cross-reference reading as that \
@@ -1121,7 +1144,7 @@ palette on a real paper.", "Tooltip"]& ]}
    GridBoxAlignment->{"Columns" -> {{Left}}},
    GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
    GridBoxSpacings->{"Columns" -> {{Automatic}}, "Rows" -> {{0.4}}}],
-  "Column"]],ExpressionUUID->"2e5e3813-407f-4be0-8590-8ad55b08e283"]
+  "Column"]],ExpressionUUID->"8944d822-024c-4f5f-9353-5c207048ab13"]
 },
 Editable->False,
 Saveable->False,
@@ -1137,7 +1160,7 @@ TaggingRules-><|
   "ViewOpen" -> True, "DocumentOpen" -> True, "SetupOpen" -> True|>,
 FrontEndVersion->"15.0 for Mac OS X ARM (64-bit) (May 19, 2026)",
 StyleDefinitions->"Palette.nb",
-ExpressionUUID->"d1c62eaf-c122-4c13-b941-8fba3e4b95ab"
+ExpressionUUID->"01a58e35-4d85-4c67-8457-25d0df92ce67"
 ]
 (* End of Notebook Content *)
 
@@ -1150,7 +1173,7 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[581, 21, 50475, 1102, 778, InheritFromParent,ExpressionUUID->"2e5e3813-407f-4be0-8590-8ad55b08e283"]
+Cell[581, 21, 51619, 1125, 805, InheritFromParent,ExpressionUUID->"8944d822-024c-4f5f-9353-5c207048ab13"]
 }
 ]
 *)

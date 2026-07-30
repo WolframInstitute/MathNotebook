@@ -436,6 +436,10 @@ $noDocumentCalls = <|
   "TagSelectedCell" -> Hold @ TagSelectedCell[],
   "InsertCitation" -> Hold @ InsertCitation[],
   "InsertEnvironment" -> Hold @ InsertEnvironment[ "Theorem" ],
+  (* the continuation form goes through the same guard, and needs its own entry: it takes Automatic
+     where the twelve take a style string, so a wrapper accepting only _String would leave it
+     unevaluated — the very shape the guard was written for *)
+  "ContinueEnvironment" -> Hold @ InsertEnvironment[ Automatic ],
   "LabelReferences" -> Hold @ LabelReferences[],
   (* T5: the same hole in the seven entry points T2 did not touch, each of which handed $Failed to a
      notebook_NotebookObject overload — or to convertCells — and returned unevaluated with no
@@ -749,6 +753,11 @@ referenceGutter[ sheet_ ] :=
   Module[ { notebook = CreateDocument[ { }, Visible -> False, StyleDefinitions -> sheet ], values },
     values = <|
       "Margin" -> CurrentValue[ notebook, { StyleDefinitions, "Reference", CellMargins } ][[ 1, 1 ]],
+      (* BibliographyDisplay T1 reads its face off this same document rather than opening one of its
+         own: the service front end answered $Failed for every measurement after these once six more
+         CreateDocuments were added beside them, and every test after that failed with it. *)
+      "Face" -> Map[ CurrentValue[ notebook, { StyleDefinitions, "Reference", # } ] &, { FontFamily, FontSize } ],
+      "Prose" -> Map[ CurrentValue[ notebook, { StyleDefinitions, "Text", # } ] &, { FontFamily, FontSize } ],
       "Label" -> First @ ImageDimensions @ Rasterize[
         Cell[ TextData[ "[woodhous1973differentiable]" ],
           FontFamily -> CurrentValue[ notebook, { StyleDefinitions, "Reference", FontFamily } ],
@@ -758,10 +767,102 @@ referenceGutter[ sheet_ ] :=
     values
   ]
 
+(* T2: the heading a bibliography starts at prints no number. Only a rendered page can say so — a
+   CounterBox reads 0 in a single-cell Rasterize — and the paper needs sections before it, since the
+   defect was that CounterIncrements -> { } suppresses the INCREMENT and leaves the sheets' Section
+   dingbat printing whatever the counter already holds: "3. References", three sections in. *)
+bibliographyHeading[ sheet_ ] :=
+  Module[ { notebook, file, text },
+    notebook = NotebookPut @ Notebook[ {
+        Cell[ "One", "Section" ], Cell[ "Prose one.", "Text" ],
+        Cell[ "Two", "Section" ], Cell[ "Prose two.", "Text" ],
+        Cell[ "Three", "Section" ], Cell[ "Prose three.", "Text" ] },
+      StyleDefinitions -> sheet, LightDark -> "Light", Visible -> False ];
+    SelectionMove[ Last @ Cells[ notebook ], After, Cell ];
+    InsertReference[ notebook, "smith" ];
+    file = Export[ FileNameJoin[ { $TemporaryDirectory, "MathNotebookBibliographyHeading.pdf" } ], notebook ];
+    text = StringDelete[ Import[ file, "Plaintext" ], Whitespace ];
+    NotebookClose[ notebook ];
+    <| "Heading" -> StringContainsQ[ text, "three.References", IgnoreCase -> True ],
+      "Numbered" -> StringContainsQ[ text, DigitCharacter ~~ "." ~~ "References", IgnoreCase -> True ] |>
+  ]
+
+(* EnvironmentBlocks. The reported defect is a DISPLAY one and so has no kernel measurement: prose
+   typed after an equation inside a definition lands 64 pt to the left of the block's own prose,
+   because the body sits at the sheet's environment margin and a Text cell at the sheet's Text margin.
+   So the assertion is the resolved margin of a real cell against the head's — and against a Text
+   cell's, or "they agree" would also pass if the continuation had silently become a Text cell.
+
+   Grouping is measured here too, and it is the reason this is a style and not a CellGroup: writing
+   the four cells as a group leaves every one of those margins unchanged. *)
+continueBlockDrive[ parent_ ] :=
+  Module[ { notebook, head, cells, continuation, measurements },
+    notebook = NotebookPut @ Notebook[ {
+      Cell[ "A graph is a pair", "Definition" ],
+      Cell[ "Ordinary prose.", "Text" ] },
+      StyleDefinitions -> parent, Visible -> False ];
+    head = First @ Cells[ notebook ];
+    SelectionMove[ head, All, Cell ];
+    InsertEnvironment[ notebook, "DisplayFormula" ];
+    InsertEnvironment[ notebook, Automatic ];
+    cells = Cells[ notebook ];
+    continuation = cells[[ 3 ]];
+    measurements = <|
+      "Styles" -> Map[ First @ Flatten @ { CurrentValue[ #, CellStyle ] } &, cells ],
+      "Margins" -> Map[ AbsoluteCurrentValue[ #, CellMargins ][[ 1, 1 ]] &, cells ],
+      (* the number belongs to the head alone: a continuation that incremented would read 2 here *)
+      "Counters" -> Map[ CurrentValue[ #, { "CounterValue", "Theorem" } ] &, { head, continuation } ],
+      "Dingbats" -> Map[ Head @ AbsoluteCurrentValue[ #, CellDingbat ] &, { head, continuation } ] |>;
+    (* the same four cells grouped: CellGroupData carries no typography, which is what rules the
+       obvious reading of the request out *)
+    SelectionMove[ notebook, All, Notebook ];
+    FrontEndTokenExecute[ notebook, "CellGroup" ];
+    measurements[ "Grouped" ] = Map[ AbsoluteCurrentValue[ #, CellMargins ][[ 1, 1 ]] &, Cells[ notebook ] ];
+    NotebookClose[ notebook ];
+    measurements
+  ]
+
+(* Proof is the one environment whose style carries a CellFrameLabels, and the QED square belongs to
+   whichever cell is now last — left on the old one it would print in the middle of the proof. *)
+continueProofDrive[ parent_ ] :=
+  Module[ { notebook, head, cells, measurements },
+    notebook = NotebookPut @ Notebook[ { Cell[ "Immediate.", "Proof" ] },
+      StyleDefinitions -> parent, Visible -> False ];
+    head = First @ Cells[ notebook ];
+    SelectionMove[ head, All, Cell ];
+    InsertEnvironment[ notebook, Automatic ];
+    cells = Cells[ notebook ];
+    measurements = <|
+      "Squares" -> Map[ ! FreeQ[ AbsoluteCurrentValue[ #, CellFrameLabels ], _Cell ] &, cells ] |>;
+    NotebookClose[ notebook ];
+    measurements
+  ]
+
+(* An imported block closes on its LAST cell (T7), so continuing one has to move that \end onto the new
+   cell or the author's prose exports after the environment closed — as bare text, silently, with the
+   notebook looking right. Only a live notebook can show it: the move is made on cell objects. *)
+continueImportedDrive[ source_String ] :=
+  Module[ { notebook, definition, measurements },
+    notebook = NotebookPut @ Append[ latexToNotebook[ source ], Visible -> False ];
+    definition = FirstCase[ Cells[ notebook ],
+      cell_ /; First @ Flatten @ { CurrentValue[ cell, CellStyle ] } === "Definition" ];
+    SelectionMove[ definition, All, Cell ];
+    InsertEnvironment[ notebook, Automatic ];
+    NotebookWrite[ notebook, "Carried on." ];
+    measurements = <| "Source" -> notebookToLaTeX @ NotebookGet[ notebook ] |>;
+    NotebookClose[ notebook ];
+    measurements
+  ]
+
+$continueImportedSource = "\\documentclass{article}\n\\usepackage{amsthm}\n\\newtheorem{defn}{Definition}\n\\begin{document}\n\n\\begin{defn}\nA body.\n\\end{defn}\n\n\\end{document}\n"
+
 (* "NoDocument" is first in this association on purpose: a notebook left open by any measurement
    above it would become the input notebook, and the state under test would be gone. *)
 $measured = UsingFrontEnd @ <|
   "NoDocument" -> noDocumentDialogs[ ],
+  "ContinueBlock" -> continueBlockDrive @ Get @ FileNameJoin[ { $sheetDirectory, "PlainArticle.nb" } ],
+  "ContinueProof" -> continueProofDrive @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
+  "ContinueImported" -> continueImportedDrive[ $continueImportedSource ],
   "GoBack" -> goBackDrive[ ],
   "Referencing" -> referencingDrive @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
   "Relabel" -> labelReferencesDrive @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
@@ -798,7 +899,12 @@ $measured = UsingFrontEnd @ <|
     referenceGutter @ Get @ FileNameJoin[ { $sheetDirectory, # } ] &,
     Join[ $templates, { "ComplexSystems.nb", "PlainArticle.nb" } ] ],
   "Citations" -> citationMeasurements @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
-  "MaTeX" -> If[ $maTeXAvailable, maTeXMeasurements @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ] ]
+  "MaTeX" -> If[ $maTeXAvailable, maTeXMeasurements @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ] ],
+  (* LAST, deliberately, and it is the mirror of NoDocument having to be FIRST: this one inserts a
+     bibliography into a paper and exports the page as a PDF, and placed mid-association it left the
+     service front end answering $Failed for every measurement after it — four tests failing on a
+     front end that had died rather than on anything they assert. Nothing follows it now. *)
+  "BibliographyHeading" -> bibliographyHeading @ Get @ FileNameJoin[ { $sheetDirectory, "PlainArticle.nb" } ]
 |>;
 
 (* Nothing below is meaningful unless the template sheets actually loaded: Default.nb sizes Title
@@ -816,6 +922,25 @@ VerificationTest[
       100 < gutter[ "Label" ] < gutter[ "Margin" ] ] &,
     Join[ $templates, { "ComplexSystems.nb", "PlainArticle.nb" } ] ],
   AssociationMap[ True &, Join[ $templates, { "ComplexSystems.nb", "PlainArticle.nb" } ] ]
+]
+
+(* BibliographyDisplay T1. An entry is set in the document's own prose face under every sheet. The bite
+   is PlainArticle: it reached Reference through geometryStyleCell, which emitted a bare
+   StyleData["Reference"] and so dropped the base's StyleDefinitions -> StyleData["Text"], leaving the
+   sheet to fall through to DEFAULT'S OWN Reference — measured Times 12 against prose of Source Sans
+   Pro 15, a bibliography in a face belonging to no part of the document. That face is also why the
+   gutter above had to widen: the key measures 190 at it against 173 at the widest template face. The
+   screen pair, since ComplexSystems prints its entries at 9 against prose of 10 by the journal's call. *)
+VerificationTest[
+  Map[ #[ "Face" ] === #[ "Prose" ] &, $measured[ "ReferenceGutter" ] ],
+  AssociationMap[ True &, Join[ $templates, { "ComplexSystems.nb", "PlainArticle.nb" } ] ]
+]
+
+(* T2. Three sections in, the heading is there and carries no number — the two halves apart, because a
+   heading that failed to render at all would also satisfy "no number". *)
+VerificationTest[
+  { $measured[ "BibliographyHeading", "Heading" ], $measured[ "BibliographyHeading", "Numbered" ] },
+  { True, False }
 ]
 
 (* The reported defect, literally: on every template, Theorem, Proof, Reference, Item and
@@ -877,9 +1002,46 @@ VerificationTest[
 VerificationTest[
   $measured[ "NoDocument" ],
   AssociationMap[ "Open a notebook first!" &,
-    { "CopyCellReference", "TagSelectedCell", "InsertCitation", "InsertEnvironment", "LabelReferences",
+    { "CopyCellReference", "TagSelectedCell", "InsertCitation", "InsertEnvironment",
+      "ContinueEnvironment", "LabelReferences",
       "SetDocumentFontSize", "SetMathFontSize", "ResetDocumentView",
       "ConvertLaTeXCells", "ConvertMathCells", "ConvertToMaTeX", "ConvertFromMaTeX" } ]
+]
+
+(* EnvironmentBlocks. The reported defect and its repair, as resolved margins of real cells. Under
+   PlainArticle a Definition body sits at 130 and a Text cell at 66: the continuation must land on 130
+   like the head, and the assertion names the Text cell's 66 in the same list so that a continuation
+   which had quietly become a Text cell fails rather than passing an "equal to the head" test. *)
+VerificationTest[
+  { $measured[ "ContinueBlock", "Styles" ],
+    $measured[ "ContinueBlock", "Margins" ],
+    $measured[ "ContinueBlock", "Counters" ],
+    $measured[ "ContinueBlock", "Dingbats" ] },
+  { { "Definition", "DisplayFormula", "Definition", "Text" },
+    { 130, 66, 130, 66 },
+    { 1, 1 },
+    { Cell, Symbol } }
+]
+
+(* Grouping the same four cells changes not one of those margins, which is why the block is carried by
+   the style and not by a CellGroup — the obvious reading of the request, ruled out by measurement. *)
+VerificationTest[
+  $measured[ "ContinueBlock", "Grouped" ],
+  $measured[ "ContinueBlock", "Margins" ]
+]
+
+(* The QED square moves to whichever cell is last, and is gone from the one it was on. *)
+VerificationTest[
+  $measured[ "ContinueProof", "Squares" ],
+  { False, True }
+]
+
+(* Continuing an IMPORTED block: the new prose is inside the environment, the \end having moved with
+   it. Left where it was, this export would read "\\end{defn}\n\nCarried on." — right in the notebook
+   and wrong in the paper. *)
+VerificationTest[
+  StringContainsQ[ $measured[ "ContinueImported", "Source" ], "Carried on.\n\\end{defn}" ],
+  True
 ]
 
 (* BasicFunctionality T3: the palette's "Go back" before any hyperlink has been followed, which is
