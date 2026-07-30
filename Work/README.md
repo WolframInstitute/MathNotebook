@@ -40,6 +40,16 @@ of its group *and* scans for `$Failed`, because the id catches a transparent rel
 non-reporting file, since `$Aborted["TestsFailedCount"]` is not a number and `Boole` never evaluates —
 loud in the log, green at the shell. Suite **384/0**.
 
+**0.1.21 published and verified against the cloud install, 2026-07-30.** Marker `0.1.21`, paclet
+installs, 25 public symbols against 24 declared (the gap being `$LastHyperlinkCell`, as recorded), all
+25 carrying usage strings; an imported paper round-trips byte-exact, a typed notebook's blocks export
+as real `\begin{definition}`/`\begin{theorem}` and its bibliography as a `thebibliography`, and the
+citation chooser driven over a notebook `InsertReference` **built** offers the two entries and not the
+anchor's marker tag — the 0.1.18 cross, clean. The check's own first two readings were probe faults of
+kinds `CLAUDE.md` already names (a trailing newline, and a `PackageScope` symbol reached in the wrong
+context), both now written down there. Nothing in `Kernel/` changed in this release: it is the test
+harness, the runner and the record.
+
 **T4 closed on 2026-07-30 in both
 directions.** The shape is the product's — `SetDocumentFontSize` + `ResetDocumentView` + `NotebookClose`
 on a document whose stylesheet is a **name** kills the next whole-notebook render **4/5**, and **5/5** on
