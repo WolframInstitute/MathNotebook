@@ -36,10 +36,15 @@ because "this cell continues the one above" is true under every stylesheet.
 
 ## Hand-off
 
-**One re-run owed.** `Tests/FrontEnd.wlt` sits at 57/1 on the bibliography-anchor measurement, whose
-read came back `$Failed` under another agent's concurrent kernels; the whole suite is otherwise 383/1.
-Re-run that one file on a quiet machine before 0.1.21 — if it stays red the assertion is real and is
-`BibliographyDisplay`'s, not this item's.
+**The re-run happened, and the artifact was not one.** `Tests/FrontEnd.wlt` is **57/1** on an idle
+machine with no other Wolfram process alive — both in the full suite (383/1) and run alone — and the
+failure is always `BibliographyHeading` (TestID `t0v83dcroxjjzb`). The service front end link dies
+before the export (`LinkObject::linkd`, then `Import::nffil` on a PDF never written), so the assertion
+receives `StringContainsQ[StringDelete[$Failed, Whitespace], …]`. Driven standalone the measurement is
+**correct**, so it is the association's accumulated 27 notebooks it does not survive, not its own
+content. Filed as [Front End Test Isolation](../Backlog/FrontEndTestIsolation.md) and recorded in
+`CLAUDE.md`; it is `BibliographyDisplay`'s test, not this item's, and it means the unnumbered
+bibliography heading is currently **unasserted**.
 
 Two further clauses, and neither is a session's:
 
@@ -141,3 +146,10 @@ this item — they are the in-flight `BibliographyDisplay` work's `headedBibliog
   `BuildTutorial.wls`, the generated `.nb` and `Work/`, none of which any `.wlt` reads — so the failure
   cannot be its doing; but it is recorded as unresolved rather than as green, and it wants one re-run on a
   quiet machine before 0.1.21.
+
+  > Superseded: the re-run was done on a silent machine and it is **not** an environment artifact —
+  > `FrontEnd.wlt` is 57/1 there too, always on `BibliographyHeading`, whose front end link dies before
+  > the export. The clause above attributing it to another agent's kernels is wrong; the two paragraphs
+  > of it that read on the concurrency are a diagnosis I made twice and should have tested once. See
+  > `CLAUDE.md` § *Build & test* and [Front End Test
+  > Isolation](../Backlog/FrontEndTestIsolation.md).

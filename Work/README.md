@@ -37,10 +37,11 @@ the repair writes those same two rules onto a hand-written run, so one path serv
 a typed one and separators, labels and nesting all apply unchanged. T3 filed the durable half into
 `CLAUDE.md` (two bullets) and found the tutorial stale in **five** passages where one was predicted, two
 of them predating `ComplexSystems` by two days rather than belonging to this item at all — which is why
-that bullet now prescribes a two-directional audit of both build scripts instead of a grep. Suite 383/1,
-the one failure a front-end availability artifact under another agent's concurrent kernels and owed a
-re-run. The preamble-less export it exposed became [Hand-Written
-Preamble](Backlog/HandWrittenPreamble.md).
+that bullet now prescribes a two-directional audit of both build scripts instead of a grep. Suite 383/1
+— and the one failure turned out **not** to be the environment artifact two passes had called it, but
+`FrontEnd.wlt`'s `BibliographyHeading` dying on a silent machine as well, now
+[Front End Test Isolation](Backlog/FrontEndTestIsolation.md). The preamble-less export it exposed became
+[Hand-Written Preamble](Backlog/HandWrittenPreamble.md).
 
 [Bibliography Display](Done/2026-07-30-BibliographyDisplay.md) closed on 2026-07-30, three defects found
 in the tail of `FirstReadingDefects` S6 while answering Pavel's report that the entry labels were
@@ -162,6 +163,14 @@ holds five files beside `Images/`, `LaTeX/`, `MathNotebook/`, `Notebooks/`, `Res
 `Work/`, and there is deliberately no `Wiki/` — durable knowledge is `CLAUDE.md`.
 
 ## Backlog
+
+[Front End Test Isolation](Backlog/FrontEndTestIsolation.md) — `Tests/FrontEnd.wlt` has one
+**permanently red** test and 0.1.20 shipped with it red: `BibliographyHeading` (TestID `t0v83dcroxjjzb`)
+fails on an idle machine, in the suite and alone, because the service front end link dies before its
+export and the PDF is never written. The measurement is correct standalone, so it is the association's
+27 notebooks it does not survive — being last only decides which measurement finds the corpse. The cost
+of not knowing this: the unnumbered bibliography heading is **unasserted**, and the failure was written
+off as load twice before anyone read the TestID.
 
 [Hand-Written Preamble](Backlog/HandWrittenPreamble.md) — a notebook that was never imported exports a
 body and nothing else, so it compiles nowhere: measured 2026-07-30, a typed six-cell paper comes out as
