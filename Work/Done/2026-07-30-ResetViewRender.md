@@ -41,17 +41,15 @@ outstanding clause), so a repair verified only headless may not be a repair.
 
 ## Tasks
 
-- [ ] T2 — repair, and pin it with a rate rather than a single run: the fixed sequence must measure
-      0/5 where the bare `SetOptions[ nb, StyleDefinitions -> name ]` measures 5/5, in a test that
-      reads the front-end link id across a render. **The obvious repair is ruled out already**:
-      assigning the parent back as an embedded `Get` measures 0/5 and is not available to the
-      product, because an embedded parent lets every unoverridden style fall through to `Default.nb`
-      and takes the sheet out of the Format menu (`CLAUDE.md` § *Style overrides*). So the repair has
-      to keep the name and change *when* or *whether* it is re-resolved — re-resolving while the
-      document is still open, or leaving the option untouched when it already is the parent, are the
-      two candidates T1 did not distinguish.
+*All tasks complete.*
 
 ### Done
+
+- [x] T2 (S2) — `applyViewSettings` makes **one** assignment and never a bare stylesheet name: the new
+      sheet is installed directly onto the recovered parent, and a reset installs a *neutral* sheet
+      (every style at its own base size) rather than removing the private sheet. **0/10 deaths against
+      the shipped shape's 6/10–9/10**, with the resolved sizes of eight styles identical to the bare
+      parent's on all ten runs; pinned in `Tests/FrontEnd.wlt` as a 5-repetition rate.
 
 - [x] T1 (S1) — the by-**name** re-resolution, not the private sheet's removal:
       `SetOptions[ nb, StyleDefinitions -> "Default.nb" ]` after a size call, closed, kills the next
@@ -60,7 +58,35 @@ outstanding clause), so a repair verified only headless may not be a repair.
 
 ## Hand-off
 
-**T1 is answered and it is the name, not the removal — and the defect is wider than
+**Closed. The repair is to never assign a bare stylesheet name at all, and the old intermediate
+assignment turned out to be unnecessary as well as lethal.** `applyViewSettings` used to put the
+recovered parent back by name, unconditionally, and only then install the new private sheet; its
+comment said that was to stop a second call nesting inside the first call's sheet, but nesting is
+already prevented by using the *recovered* parent as the new sheet's parent. So there is now one
+`SetOptions`, always of a private sheet, and a reset installs a **neutral** sheet — every style
+restated at its own base size, the "scale exactly 1" state `View.wl` already distinguished from
+`Automatic` — instead of removing the sheet. Measured with a fresh front end per repetition: **0/10
+deaths, the PDF written 10/10, and the resolved sizes of eight styles identical to the bare parent's on
+all ten runs**, against the shipped shape's 6/10 in the same script.
+
+**Four candidate repairs were measured and rejected, and two of them are the interesting ones.**
+Taking the private sheet off first (`Inherited`, or `Automatic`), assigning the name twice, and
+resetting the front end's menus before the close all still die — 6/8 to 8/8 — so the name is the
+clause and not the ordering. `CurrentValue[ nb, StyleDefinitions ] = parent` measures **0/10 by being a
+silent no-op**: the private sheet survives, the document stays at the overridden size, and "reset"
+stops resetting. That one was nearly shipped, and the lesson is the item's own: **a death rate cannot
+distinguish a repair from a function that quietly stopped working**, so every candidate here was
+measured for *both* the rate and what the styles resolve to. A pass-through private sheet with no
+override cells is the other false positive — 0/10, and `Theorem` resolves 15 where the parent says 12.
+
+**What the repair costs, and what it does not fix.** A document keeps a private sheet after a reset
+rather than returning to a bare name, so the Format menu no longer shows its stylesheet selected; the
+page is identical, `parentStyleSheet` still recovers the real sheet, and a second reset is idempotent.
+And the hazard is **not** gone from the product: choosing a stylesheet from the Format menu is the front
+end making that same assignment itself. It is gone from every path this paclet controls, which is as
+far as a paclet can reach — the defect is Wolfram 15.0's.
+
+**T1 established the mechanism, and it is the name, not the removal — and the defect is wider than
 `ResetDocumentView`.** Measured 2026-07-30 with a fresh front end per repetition
 (`UsingFrontEnd` then `Developer`UninstallFrontEnd[]`), five repetitions per variant, a death being the
 front-end `LinkObject`'s id changing across the next whole-notebook `Export`:
@@ -97,6 +123,9 @@ clock (`perl -e 'alarm N; exec @ARGV'`), because a blocked front end does not ta
 | A rate, not a single run, is the unit of evidence here. | The single-shot sweep that named `viewMeasurements["Default.nb"]` cannot distinguish a 4/5 rate from a certainty, and that entry measures 0/6 under repetition. | `FrontEndTestIsolation` S3 against T4. |
 | The mechanism is named as the by-name assignment, not as `ResetDocumentView`. | The lethal clause is reachable without the reset at all and is lethal *more* often without it, so scoping the defect to the exported function would scope the repair wrongly too. | `SetOptions[ nb, StyleDefinitions -> name ]` alone 5/5 against the whole reset's 2/5. |
 | Embedding the parent is ruled out as the repair despite measuring 0/5. | It buys the render back by breaking the sheet: an embedded parent lets every unoverridden style fall through to `Default.nb` and removes the sheet from the Format menu, which is the trap `CLAUDE.md` § *Style overrides* already records from the testing side. | Embedded `Get` 0/5 — correct, and unusable. |
+| Every candidate is measured for what the styles resolve to as well as for its death rate. | A rate alone cannot distinguish a repair from a function that stopped working, and the candidate that nearly shipped was exactly that. | `CurrentValue[ nb, StyleDefinitions ] = parent` — 0/10 deaths, private sheet still installed, document still at 20 pt. |
+| A reset installs a neutral sheet rather than removing the private one. | It is the only shape that never assigns a bare name, and the neutral sheet is the state the file already had a name for — every style at its own base size, which is what `fontSizeCells` writes at scale exactly 1. | 0/10 deaths with eight styles resolving identically to the bare parent, 10/10 runs. |
+| The Format-menu cost is accepted rather than worked around. | The page is identical, the real sheet is still recoverable, and the alternative is a front end that cannot print. A document already carried a private sheet whenever a size was set; this extends that to after a reset. | `parentStyleSheet` recovers the name from the marker cell; a second reset is idempotent. |
 
 ## Progress
 
@@ -106,3 +135,10 @@ clock (`perl -e 'alarm N; exec @ARGV'`), because a blocked front end does not ta
   0/5. The table and the three consequences are in `## Hand-off`; the one that changes T2 is that the
   lethal clause is reachable without `ResetDocumentView`, and that the embedded form — the obvious
   repair — is ruled out on stylesheet grounds rather than on this measurement.
+- **S2** 2026-07-30 T2 — repaired: `applyViewSettings` makes one assignment and never a bare name,
+  and a reset installs a neutral sheet instead of removing the private one. **0/10 against 6/10**,
+  with eight styles resolving exactly as the bare parent on all ten runs; pinned as a 5-repetition
+  rate in `Tests/FrontEnd.wlt`, deliberately outside `ownFrontEnd` because that guard's job is to
+  abort on a death and here a death is the quantity. Four candidates rejected, two of them 0/10 false
+  positives — the `CurrentValue` route is a silent no-op and a pass-through sheet moves the styles —
+  which is why every candidate was measured for resolution as well as rate. Item complete.

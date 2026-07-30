@@ -5,6 +5,7 @@ PackageExport[ExportLaTeXDocument]
 
 PackageScope["latexToNotebook"]
 PackageScope["notebookToLaTeX"]
+PackageScope["notebookToLaTeXDocument"]
 PackageScope["theoremEnvironments"]
 PackageScope["environmentNumbering"]
 PackageScope["equationNumbering"]
@@ -32,16 +33,23 @@ PackageScope["retagged"]
 PackageScope["environmentWrapped"]
 PackageScope["environmentRuns"]
 PackageScope["environmentSourceName"]
+PackageScope["importedDocumentQ"]
+PackageScope["generatedPreamble"]
+PackageScope["generatedPackages"]
+PackageScope["generatedTheoremLines"]
+PackageScope["generatedEnvironmentStyles"]
+PackageScope["notebookSheetName"]
+PackageScope["maketitleCells"]
 
 ImportLaTeXDocument[ file_String ] :=
   With[ { source = Import[ file, "Text" ] },
     latexToNotebook[ source, bibliographyEntries[ source, file ] ] ]
 
 ExportLaTeXDocument[ notebook_Notebook ] :=
-  notebookToLaTeX[ notebook ]
+  notebookToLaTeXDocument[ notebook ]
 
 ExportLaTeXDocument[ notebook_Notebook, file_String ] :=
-  Export[ file, notebookToLaTeX[ notebook ], "Text" ]
+  Export[ file, notebookToLaTeXDocument[ notebook ], "Text" ]
 
 ExportLaTeXDocument[ notebook_NotebookObject, rest___ ] :=
   ExportLaTeXDocument[ NotebookGet[ notebook ], rest ]
@@ -68,14 +76,164 @@ latexToNotebook[ source_String, entries_Association ] :=
           "BodyPrefix" -> joinMarks @ TakeWhile[ pieces, MatchQ[ _separatorMark ] ] |> |> ] ]
   ]
 
+(* The BODY converter, and it reads the stored frame and nothing else — which is what keeps it the
+   pure core the tests drive on bare Notebook expressions. Generating a preamble here instead was
+   measured to be the wrong layer: every one of Document.wlt's assertions about a hand-written block
+   is a bare Notebook with no tagging, so a generated frame would prepend a document to all of them. *)
 notebookToLaTeX[ notebook : Notebook[ cells_List, ___ ] ] :=
-  With[ { tagging = documentTagging[ notebook ] },
-    tagging[ "Preamble" ] <> tagging[ "BodyPrefix" ] <>
-      StringJoin @ Map[ cell |-> cellToLaTeX[ cell ] <> cellSeparator[ cell ],
-        environmentWrapped[
-          Select[ notebookCellList[ cells ], exportedCellQ ],
-          tagging[ "Preamble" ] ] ] <>
-      tagging[ "Postamble" ] ]
+  notebookToLaTeX[ notebook, documentTagging[ notebook ], Select[ notebookCellList[ cells ], exportedCellQ ] ]
+
+notebookToLaTeX[ notebook_Notebook, frame_Association, cells_List ] :=
+  frame[ "Preamble" ] <> frame[ "BodyPrefix" ] <>
+    StringJoin @ Map[ cell |-> cellToLaTeX[ cell ] <> cellSeparator[ cell ],
+      environmentWrapped[ cells, frame[ "Preamble" ] ] ] <>
+    frame[ "Postamble" ]
+
+(* The DOCUMENT converter, one layer up, and what ExportLaTeXDocument calls. A notebook that was
+   never imported carries no preamble, and before this it exported a body and nothing else: measured
+   on a typed six-cell paper, 229 bytes with \documentclass 0, \begin{document} 0 and \newtheorem 0 —
+   every block correct LaTeX with nothing to resolve it against, so the file compiled nowhere. *)
+notebookToLaTeXDocument[ notebook : Notebook[ cells_List, ___ ] ] :=
+  With[ { exported = Select[ notebookCellList[ cells ], exportedCellQ ] },
+    If[ importedDocumentQ[ notebook ],
+      notebookToLaTeX[ notebook, documentTagging[ notebook ], exported ],
+      With[ { frame = generatedFrame[ exported, notebook ] },
+        notebookToLaTeX[ notebook, frame, frame[ "Cells" ] ] ] ] ]
+
+(* The test is whether the stored tagging has the KEY, never whether its value is empty. An imported
+   FRAGMENT legitimately stores "" — documentParts falls back to { "", source, "" } when there is no
+   \begin{document} — and such a paper round-trips byte-exact today; guarding on the value would give
+   it a preamble it never had and break the repo's tightest invariant on exactly the papers that have
+   the least to say about it. latexToNotebook always writes all three keys, so their presence is the
+   discriminator. *)
+importedDocumentQ[ Notebook[ _, options___ ] ] :=
+  KeyExistsQ[ storedDocumentTagging @ { options }, "Preamble" ]
+
+importedDocumentQ[ _ ] :=
+  False
+
+generatedFrame[ cells_List, notebook_Notebook ] :=
+  With[ { preamble = generatedPreamble[ cells, notebook ] },
+    <| "Preamble" -> preamble, "BodyPrefix" -> "\n\n", "Postamble" -> "\\end{document}\n",
+       "Cells" -> maketitleCells[ cells ] |> ]
+
+(* Pavel's four calls, 2026-07-30 (HandWrittenPreamble T1), and three of them are decisions to look at
+   the notebook rather than to emit a constant.
+
+   article ALWAYS. Every one of the twelve environments is definable under it, so the emitted body
+   always resolves; the stylesheet is the paclet's typography and not a declared submission target,
+   and reading amsart off AMSArticle.nb would be a guess that also silently changes equation numbering
+   (amsart numbers within the section and never says so). The sheet is named in a comment instead, so
+   an author who does want a journal class knows which one to reach for.
+
+   Blocks rather than lines, riffled with a blank line and with the empty ones dropped: a paper with
+   no environments must not acquire a stray blank line, and a preamble is read by people. *)
+$generatedClass = "article"
+
+generatedPreamble[ cells_List, notebook_Notebook ] :=
+  StringRiffle[
+    DeleteCases[
+      { "\\documentclass{" <> $generatedClass <> "}",
+        StringRiffle[ generatedComment[ notebook ], "\n" ],
+        StringRiffle[ "\\usepackage{" <> # <> "}" & /@ generatedPackages[ cells ], "\n" ],
+        StringRiffle[ generatedTheoremLines[ cells, notebook ], "\n" ],
+        "\\begin{document}" },
+      "" ],
+    "\n\n" ]
+
+generatedComment[ notebook_Notebook ] :=
+  { "% Preamble written by the MathNotebook paclet: this notebook was not imported from LaTeX.",
+    "% It was on the " <> notebookSheetName[ notebook ] <> " stylesheet. Edit this freely — a paper",
+    "% that already carries a preamble keeps its own, byte for byte." }
+
+(* amsmath, amssymb and amsthm are what the environments and the display mathematics need in every
+   case. The other three are each implied by a feature the notebook either has or has not, and the
+   scan is cheap insurance in the direction that matters: an absent package is a compile error where
+   a spurious one is only noise. hyperref goes last, as it must. *)
+$generatedPackages = { "amsmath", "amssymb", "amsthm" }
+
+generatedPackages[ cells_List ] :=
+  Join[ $generatedPackages,
+    If[ generatedFigureQ[ cells ], { "graphicx" }, { } ],
+    If[ generatedLabelledItemQ[ cells ], { "enumitem" }, { } ],
+    If[ generatedReferenceQ[ cells ], { "hyperref" }, { } ] ]
+
+generatedFigureQ[ cells_List ] :=
+  AnyTrue[ cells,
+    cellStyle[ # ] === "Caption" || cellTagging[ #, "FigurePrefix" ] =!= "" ||
+      cellTagging[ #, "FigureTeX" ] =!= "" || ! FreeQ[ #, "\\includegraphics" ] & ]
+
+(* An \item[label] is what enumitem is for, and the label rides in the stored marker; a typed item
+   carrying an explicit CellDingbat is the notebook-side form of the same thing. *)
+generatedLabelledItemQ[ cells_List ] :=
+  AnyTrue[ cells,
+    StringContainsQ[ cellTagging[ #, "EnvironmentOpen" ], "\\item[" ] ||
+      ( MemberQ[ $bodyStyles, cellStyle[ # ] ] && ! FreeQ[ #, CellDingbat -> _Cell ] ) & ]
+
+generatedReferenceQ[ cells_List ] :=
+  ! FreeQ[ cells, _ButtonBox ]
+
+(* The numbering is the sheet's here, not the document's — there is no document yet — so the lines
+   reproduce what the notebook is already drawing. Six of the seven sheets declare ONE Theorem counter
+   for all twelve styles, reset by Section and printed Section.Theorem, which in LaTeX is the first
+   environment taking [section] and every other one sharing its counter. ComplexSystems deliberately
+   breaks that clause — one counter per environment, no section prefix and no reset — so it emits the
+   bare form, and a scan that wrote [section] for every sheet would be wrong for exactly one of them
+   and wrong invisibly: the notebook and the compiled paper would disagree about the numbers and
+   nothing structural would notice.
+
+   Proof and Abstract are excluded although environmentStyleQ accepts them: amsthm defines proof and
+   article defines abstract, so declaring either is an error rather than a redundancy. *)
+generatedTheoremLines[ cells_List, notebook_Notebook ] :=
+  With[ { styles = generatedEnvironmentStyles[ cells ] },
+    If[ styles === { }, { },
+      If[ sharedTheoremCounterQ @ notebookSheetName[ notebook ],
+        Prepend[
+          Map[ "\\newtheorem{" <> ToLowerCase[ # ] <> "}[" <> ToLowerCase[ First @ styles ] <> "]{" <> # <> "}" &,
+            Rest[ styles ] ],
+          "\\newtheorem{" <> ToLowerCase[ First @ styles ] <> "}{" <> First[ styles ] <> "}[section]" ],
+        Map[ "\\newtheorem{" <> ToLowerCase[ # ] <> "}{" <> # <> "}" &, styles ] ] ] ]
+
+(* First-appearance order, so which environment carries the shared counter is the one the paper opens
+   with — deterministic, and the reading a person would make of the source. *)
+generatedEnvironmentStyles[ cells_List ] :=
+  DeleteDuplicates @ Select[ Map[ cellStyle, cells ], KeyExistsQ[ $theoremEnvironments, # ] & ]
+
+sharedTheoremCounterQ[ sheet_String ] :=
+  sheet =!= "ComplexSystems"
+
+notebookSheetName[ Notebook[ _, options___ ] ] :=
+  sheetOptionName @ Lookup[ Association @ Cases[ { options }, _Rule ], StyleDefinitions, "Default.nb" ]
+
+(* Three shapes reach here: a name, the FrontEnd`FileName the importer writes, and a private
+   stylesheet notebook the view controls install — whose own parent is one of the first two. *)
+sheetOptionName[ name_String ] :=
+  FileBaseName[ name ]
+
+sheetOptionName[ HoldPattern[ FrontEnd`FileName ][ _, name_String, ___ ] ] :=
+  FileBaseName[ name ]
+
+sheetOptionName[ Notebook[ sheetCells_, ___ ] ] :=
+  sheetOptionName @ FirstCase[ sheetCells,
+    HoldPattern[ Cell[ StyleData[ StyleDefinitions -> parent_ ] ] ] :> parent,
+    "Default.nb", Infinity ]
+
+sheetOptionName[ _ ] :=
+  "Default"
+
+(* A \title alone prints NOTHING — article needs \maketitle — and \maketitle cannot go in the preamble
+   because it has to follow the front matter. So it rides in the "Separator" of the last Title/Author/
+   Date cell, which is the same carried-source slot the importer drops a source \maketitle into on the
+   way in; the export stays a plain StringJoin and no clause is added. A notebook with no Title cell
+   gets none, an \author and a \date alone having nothing to typeset. *)
+$frontMatterStyles = { "Title", "Author", "Date" }
+
+maketitleCells[ cells_List ] :=
+  Module[ { styles = Map[ cellStyle, cells ], positions },
+    positions = Flatten @ Position[ styles, Alternatives @@ $frontMatterStyles ];
+    If[ ! MemberQ[ styles, "Title" ] || positions === { },
+      cells,
+      MapAt[ retagged[ #, <| "Separator" -> "\n\n\\maketitle\n\n" |> ] &, cells, Last @ positions ] ] ]
 
 (* A hand-written block had no LaTeX form at all: cellToLaTeX is keyed on the stored "EnvironmentOpen"
    and "EnvironmentClose" rules the IMPORTER writes and on nothing else, so Cell["A graph is a pair",
@@ -1791,5 +1949,11 @@ storedTagging[ _ ] :=
 
 documentTagging[ Notebook[ _, options___ ] ] :=
   Join[ <| "Preamble" -> "", "Postamble" -> "", "BodyPrefix" -> "" |>,
-    Replace[ Lookup[ Association @ Cases[ { options }, _Rule ], TaggingRules, <| |> ],
-      { tagging_ :> Replace[ Lookup[ Association @ tagging, "MathNotebook", <| |> ], Except[ _Association ] -> <| |> ] } ] ]
+    storedDocumentTagging @ { options } ]
+
+(* Factored out because importedDocumentQ has to ask whether a key is PRESENT, which the Join above
+   destroys — it supplies all three, so a notebook that never had them is indistinguishable from one
+   whose values are empty once documentTagging has answered. *)
+storedDocumentTagging[ options_List ] :=
+  Replace[ Lookup[ Association @ Cases[ options, _Rule ], TaggingRules, <| |> ],
+    { tagging_ :> Replace[ Lookup[ Association @ tagging, "MathNotebook", <| |> ], Except[ _Association ] -> <| |> ] } ]

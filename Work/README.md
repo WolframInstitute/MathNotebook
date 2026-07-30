@@ -21,11 +21,43 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 
 ## Active
 
-*Nothing active.* `Front End Test Isolation` closed on 2026-07-30 with T3; the two open items are in
-`Backlog/`, and [Reset View Render](Backlog/ResetViewRender.md) is the one with a measured mechanism
-and a repair left to write.
+*Nothing active, and the backlog is empty.* All three open items closed on 2026-07-30. The suite is
+**401/0** and 0.1.22 is published.
+
+One thing was opened rather than closed and is deliberately not an item yet: a hand-typed **list** has
+the hole the twelve environments had before `EnvironmentBlocks` T2 — an `Item` cell carrying no stored
+`EnvironmentOpen` exports as bare prose, with no `\begin{itemize}` and no `\item` — which is why the
+generated preamble scans for `enumitem` and nothing typed can yet trigger it. It is recorded in
+[Hand-Written Preamble](Done/2026-07-30-HandWrittenPreamble.md)'s hand-off.
 
 ## Recently closed
+
+[Reset View Render](Done/2026-07-30-ResetViewRender.md) — **closed 2026-07-30**. T1 found the mechanism:
+it is the assignment of a stylesheet **name** onto a document carrying a private sheet, not the sheet's
+removal (5/5 against 0/5 for deleting the tagging rules and leaving the sheet installed). T2 repaired it
+by never making that assignment — `applyViewSettings` now does **one** `SetOptions`, always of a private
+sheet, installed directly onto the recovered parent, and a reset installs a *neutral* sheet (every style
+at its own base size) rather than removing one. **0/10 deaths, PDF written 10/10, eight styles resolving
+identically to the bare parent on all ten runs**, against 6/10 for the shipped shape; pinned as a
+5-repetition rate in `Tests/FrontEnd.wlt`, outside `ownFrontEnd` because that guard aborts on a death
+and here a death is the quantity. The old intermediate assignment turned out to be unnecessary as well
+as lethal. **Two of the four rejected candidates measure 0/10 and are false**, which is the lesson worth
+keeping: `CurrentValue[ nb, StyleDefinitions ] = parent` is a silent no-op and a pass-through sheet moves
+the resolutions, so a death rate cannot distinguish a repair from a function that stopped working. Cost:
+a document keeps a private sheet after a reset, so `Format ▸ Stylesheet` no longer shows it ticked; and
+the hazard remains in the product, since picking a sheet from that menu is the front end making the same
+assignment itself.
+
+[Hand-Written Preamble](Done/2026-07-30-HandWrittenPreamble.md) — **closed 2026-07-30**. A typed paper
+exported 229 bytes with `\documentclass` 0 and compiled nowhere; it now gets a frame written for it in a
+new `notebookToLaTeXDocument`, one layer above the body converter — which is what leaves
+`Document.wlt`'s 113 bare-`Notebook` assertions and both round trips untouched by construction. The
+discriminator is the stored key's **presence**, so an imported *fragment* keeps its legitimately empty
+preamble. Pavel's four T1 calls implemented: `article` always, `\newtheorem` only for the styles used
+and numbered as the sheet draws them, three packages always plus three scanned, `thebibliography` in
+place. A `\title` alone prints nothing, so `\maketitle` rides in the last front-matter cell's separator
+and its *position* is asserted; the generated preamble is re-parseable by the importer, so a re-import
+round-trips.
 
 [Front End Test Isolation](Done/2026-07-30-FrontEndTestIsolation.md) — **closed 2026-07-30 with T3**: a
 front end that does not survive a measurement group now aborts `Tests/FrontEnd.wlt` with
@@ -58,7 +90,7 @@ with the document left open and 0/5 with no render — but the feared symptom is
 paper on that named sheet, drags **either** slider, resets the view and prints *that paper* loses nothing,
 0/5 deaths with the PDF written 5/5. So the palette's font slider does not crash the front end on the next
 print; what remains is reset, **close**, then print a second paper, which is
-[Reset View Render](Backlog/ResetViewRender.md). S3's culprit is corrected rather than confirmed —
+[Reset View Render](Done/2026-07-30-ResetViewRender.md). S3's culprit is corrected rather than confirmed —
 `viewMeasurements["Default.nb"]` survives **0/6** under repetition, so the entry it named is not the killer
 and a single-shot sweep of twenty controls could never have told a 4/5 rate from a certainty. **And the
 wedge that cost S1 a whole session is solved and was never ours**: it is AppKit's "reopen windows after a
@@ -115,8 +147,8 @@ of them predating `ComplexSystems` by two days rather than belonging to this ite
 that bullet now prescribes a two-directional audit of both build scripts instead of a grep. Suite 383/1
 — and the one failure turned out **not** to be the environment artifact two passes had called it, but
 `FrontEnd.wlt`'s `BibliographyHeading` dying on a silent machine as well, now
-[Front End Test Isolation](Backlog/FrontEndTestIsolation.md). The preamble-less export it exposed became
-[Hand-Written Preamble](Backlog/HandWrittenPreamble.md).
+[Front End Test Isolation](Done/2026-07-30-FrontEndTestIsolation.md). The preamble-less export it exposed became
+[Hand-Written Preamble](Done/2026-07-30-HandWrittenPreamble.md).
 
 [Bibliography Display](Done/2026-07-30-BibliographyDisplay.md) closed on 2026-07-30, three defects found
 in the tail of `FirstReadingDefects` S6 while answering Pavel's report that the entry labels were
@@ -239,34 +271,6 @@ holds five files beside `Images/`, `LaTeX/`, `MathNotebook/`, `Notebooks/`, `Res
 
 ## Backlog
 
-[Reset View Render](Backlog/ResetViewRender.md) — `ResetDocumentView` after `SetDocumentFontSize` on a
-paper whose stylesheet is a *name*, once that paper is **closed**, leaves the front end unable to render a
-page: measured 2026-07-30 at 4/5 for `"Default.nb"` and 5/5 for the paclet's own sheet name, with the PDF
-simply never written, against 0/5 for the same sheet embedded with `Get`, for either call alone, and with
-the document left open. Backlog rather than Active because the author's common path is clean — printing the
-paper you just reset is 0/5 — so this is reached by closing a paper and printing a second one. **T1 closed
-2026-07-30 and it is the *name*, not the removal**: `SetOptions[ nb, StyleDefinitions -> "Default.nb" ]`
-alone, tagging rules left in place, kills the next render **5/5**, while deleting the tagging rules and
-leaving the private sheet installed is 0/5 and the same assignment embedded with `Get` is 0/5. Two things
-that follow — the lethal clause is reachable **without** `ResetDocumentView` and is lethal more often
-without it (5/5 against the whole reset's 2/5, on a sequence that contains it), so the defect is wider
-than the exported function; and the obvious repair is ruled out on other grounds, an embedded parent
-letting every unoverridden style fall through to `Default.nb` and leaving the Format menu. T2 is the
-repair, and it has to keep the name and change *when* it is re-resolved.
-
-[Hand-Written Preamble](Backlog/HandWrittenPreamble.md) — a notebook that was never imported exports a
-body and nothing else, so it compiles nowhere: measured 2026-07-30, a typed six-cell paper comes out as
-229 bytes with `\documentclass` 0, `\begin{document}` 0 and `\newtheorem` 0, its three blocks all
-correct LaTeX with nothing to resolve them against. `EnvironmentBlocks` T2 is what makes it worth an
-item — before it the blocks were bare prose and a missing `\newtheorem` was moot. **T1 closed 2026-07-30
-with Pavel's four calls**: `\documentclass{article}` always, with the sheet named in a `%` comment;
-`\newtheorem` only for the styles the notebook uses, numbered as the sheet draws them (`[section]` on one
-shared counter for six sheets, one counter per environment for `ComplexSystems`);
-`amsmath`/`amssymb`/`amsthm` unconditionally with `graphicx`, `hyperref` and `enumitem` on a scan; and
-`thebibliography` in place with no `\bibliographystyle`. Three of the four are "look at the notebook"
-rather than a constant, so T2 is now a writing task — and it must leave an imported paper's stored
-preamble byte for byte.
-
-Before that: reduced from eight items to three on 2026-07-27 — the four in `Dropped/` each carry a note
-saying why and what would reopen them — the one item left was activated and closed on 2026-07-28, and
-the item its scoping task proposed was written, worked and closed the same day.
+*Empty.* Everything proposed has been built, dropped, or folded into a closed item — 2026-07-30.
+The one thing known and not yet specced is the hand-typed **list** hole named under *Active* above;
+open an item with `/work` when it is worth a session.

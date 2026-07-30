@@ -64,11 +64,17 @@ not touch it — so a generated preamble is written **only** when the stored one
 
 ## Tasks
 
-- [ ] T2 — generate the preamble and postamble when the stored ones are empty, leaving an imported
-      paper's bytes untouched.
-- [ ] T3 — a test that a typed notebook's export compiles, and that both specimens are still byte-exact.
+*All tasks complete.*
 
 ### Done
+
+- [x] T2 (S2) — `notebookToLaTeXDocument` generates the frame when the notebook was never imported;
+      `notebookToLaTeX` stays the body converter, untouched. An imported paper — including a
+      **fragment** whose stored preamble is legitimately `""` — is byte-identical.
+- [x] T3 (S2) — twelve assertions in `Tests/Document.wlt`: the frame's five counts, the shared-counter
+      form against `ComplexSystems`' bare one, the three sheet-name shapes, the conditional packages,
+      `\maketitle`'s presence *and its position*, the imported/typed discriminator, the fragment, a
+      re-import round trip of the generated output, and the four sample papers still byte-exact.
 
 - [x] T1 (S1) — all four decided with Pavel, 2026-07-30. `article` always; `\newtheorem` only for the
       styles the notebook uses, numbered as the sheet draws them; `amsmath`/`amssymb`/`amsthm`
@@ -77,7 +83,45 @@ not touch it — so a generated preamble is written **only** when the stored one
 
 ## Hand-off
 
-**T1 is closed and T2 is now a writing task rather than a design one.** The four rows below are
+**Closed. A typed six-cell paper now exports a document that compiles, and the layer it is generated at
+is the one thing worth carrying forward.** The generation went into a new `notebookToLaTeXDocument`,
+one level above `notebookToLaTeX`, because `notebookToLaTeX` is the pure body converter that every one
+of `Document.wlt`'s hand-written-block assertions drives on a bare `Notebook` with no tagging — putting
+the frame there prepends a whole document to all of them. `ExportLaTeXDocument` calls the new one; the
+body core is unchanged, so the round trip and the census are untouched by construction rather than by
+being re-checked.
+
+**The discriminator is the presence of the stored key, never its value, and that is not a nicety.**
+An imported *fragment* — a `.tex` with no `\begin{document}` — legitimately stores `"" `, since
+`documentParts` falls back to `{ "", source, "" }`, and such a paper round-trips byte-exact today.
+Guarding on the value would have handed it a `\documentclass` it never had and broken the repo's
+tightest invariant on exactly the papers with the least to say about it. `latexToNotebook` always
+writes all three keys, so `importedDocumentQ` asks `KeyExistsQ` — which meant factoring
+`storedDocumentTagging` out of `documentTagging`, whose `Join` supplies all three defaults and so
+destroys the very distinction.
+
+**Two findings inside the generation.** A `\title` alone **prints nothing** — `article` needs
+`\maketitle`, and it cannot go in the preamble because it has to follow the front matter — so it rides
+in the `"Separator"` of the last `Title`/`Author`/`Date` cell, which is the same carried-source slot
+the importer drops a source `\maketitle` into on the way in; no export clause was added. Its *position*
+needs its own assertion, since a count cannot tell `\maketitle` before the `\author` from after it. And
+the generated preamble is **re-parseable by the importer**: the `\newtheorem` names it declares are
+exactly the `\begin` names `environmentSourceName` produces for the same styles, so a re-import gives
+the same cells back and re-exports byte for byte — which is what makes the generated numbering a
+statement about the document rather than a decoration.
+
+**One probe fault worth skipping.** `exportedCellQ` is file-private, so a probe doing
+`Select[ cells, exportedCellQ ]` from outside selects **nothing** and every reading taken over the
+result — the environment styles, the packages, the `\newtheorem` lines — comes back empty while the
+real export is correct. It read exactly like a scan that had failed. `PackageScope` is the whole list
+this item added; `exportedCellQ` is not on it and did not need to be.
+
+**What is still not done and is a different item.** A hand-typed *list* has the same shape of hole the
+twelve environments had before `EnvironmentBlocks` T2: an `Item` cell carrying no stored
+`EnvironmentOpen` exports as bare prose, with no `\begin{itemize}` and no `\item`. That is why
+`enumitem` is scanned for but nothing in a typed notebook can yet trigger it.
+
+**T1's decisions are below; T2 was a writing task rather than a design one.** The four rows below are
 Pavel's calls of 2026-07-30, and three of them are decisions to *look at the notebook* rather than to
 emit a constant — the scan is the work.
 
@@ -116,3 +160,11 @@ the numbers and nothing structural notices.
 - **S1** 2026-07-30 T1 — the four questions decided with Pavel and recorded as `## Decisions` rows;
   three of the four are "scan the notebook" rather than a constant, which is what T2's work now is.
   No code written, deliberately — the Spec's own framing is that the deliverable was a decision first.
+- **S2** 2026-07-30 T2 + T3 — a typed paper exports a compilable document: `\documentclass{article}`,
+  the three unconditional packages plus the three scanned ones, one `\newtheorem` per environment
+  style used in first-appearance order (shared counter for six sheets, bare for `ComplexSystems`),
+  `\maketitle` after the front matter, `\begin`/`\end{document}`. Generated in a new
+  `notebookToLaTeXDocument` one layer above the body converter, which is what leaves
+  `Document.wlt`'s bare-`Notebook` assertions and both round trips untouched. Twelve new tests. The
+  discriminator is the stored key's *presence*, so an imported fragment keeps its empty preamble.
+  Item complete.

@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       154,          7]
-NotebookDataLength[     52863,       1172]
-NotebookOptionsPosition[     52204,       1148]
-NotebookOutlinePosition[     52893,       1174]
-CellTagsIndexPosition[     52850,       1171]
+NotebookDataLength[     54817,       1213]
+NotebookOptionsPosition[     54158,       1189]
+NotebookOutlinePosition[     54847,       1215]
+CellTagsIndexPosition[     54804,       1212]
 WindowTitle->MathNotebook
 WindowFrame->Palette*)
 
@@ -64,6 +64,31 @@ Cell[BoxData[
         {
          PaneSelectorBox[{True->
           TagBox[GridBox[{
+             {
+              TagBox[
+               TooltipBox[
+                ButtonBox["\<\"Front matter\"\>",
+                 Appearance->"Palette",
+                 
+                 ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
+                  WolframInstitute`MathNotebook`InsertFrontMatter[]),
+                 Evaluator->Automatic,
+                 ImageSize->{200, 27},
+                 Method->"Queued"],
+                
+                "\"Inserts empty Title, Author and Abstract cells at the top \
+of the document \[LongDash] not at the selection, unlike the rest of this \
+group \[LongDash] and puts the cursor in the Title. All three export as their \
+LaTeX commands, and an exported paper that carries no preamble of its own \
+gets one written for it, with \\\\maketitle in the right place.\"",
+                TooltipStyle->"TextStyling"],
+               
+               Annotation[#, 
+                "Inserts empty Title, Author and Abstract cells at the top of \
+the document \[LongDash] not at the selection, unlike the rest of this group \
+\[LongDash] and puts the cursor in the Title. All three export as their LaTeX \
+commands, and an exported paper that carries no preamble of its own gets one \
+written for it, with \\maketitle in the right place.", "Tooltip"]& ]},
              {
               TagBox[
                TooltipBox[
@@ -313,6 +338,7 @@ offers it.", "Tooltip"]& ]}
 Pasted anywhere in the paper it becomes a live cross-reference reading as \
 that cell's own number.\"",
                 TooltipStyle->"TextStyling"],
+               
                Annotation[#, 
                 "Copies a link to the selected cell to the clipboard. Pasted \
 anywhere in the paper it becomes a live cross-reference reading as that \
@@ -682,6 +708,21 @@ the content nor the numbering changes: those belong to the document, and the \
 sheet owns only the typography. Applying a sheet clears the two size \
 overrides below.", "Tooltip"]& ]},
              {
+              PaneBox[
+               
+               StyleBox["\<\"Apply one of these first \[LongDash] the \
+environments and their numbering are declared by the stylesheet.\"\>",
+                StripOnInput->False,
+                LineColor->GrayLevel[0.45],
+                FrontFaceColor->GrayLevel[0.45],
+                BackFaceColor->GrayLevel[0.45],
+                GraphicsColor->GrayLevel[0.45],
+                FontSize->9,
+                FontColor->GrayLevel[0.45]],
+               Alignment->{Left, Center},
+               BaseStyle->{LineIndent -> 0},
+               ImageSize->{200, Automatic}]},
+             {
               TagBox[
                TooltipBox[
                 TemplateBox[{
@@ -954,6 +995,7 @@ when done and reports anything it could not find.\"",
                 TooltipStyle->"TextStyling"],
                
                Annotation[#, 
+                
                 "Writes the whole paper into a directory as an arXiv \
 submission: the .tex beside every figure file and .bib it names, plus the \
 .bbl where a local pdfLaTeX is found, since arXiv runs LaTeX but not BibTeX. \
@@ -1046,7 +1088,6 @@ stylesheets ask for. Restart the front end afterwards.", "Tooltip"]& ]},
                TooltipBox[
                 ButtonBox["\<\"Install MaTeX\"\>",
                  Appearance->"Palette",
-                 
                  ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
                   WolframInstitute`MathNotebook`InstallMaTeX[]),
                  Evaluator->Automatic,
@@ -1144,7 +1185,7 @@ palette on a real paper.", "Tooltip"]& ]}
    GridBoxAlignment->{"Columns" -> {{Left}}},
    GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
    GridBoxSpacings->{"Columns" -> {{Automatic}}, "Rows" -> {{0.4}}}],
-  "Column"]],ExpressionUUID->"8944d822-024c-4f5f-9353-5c207048ab13"]
+  "Column"]],ExpressionUUID->"ccd57374-f90a-4bb7-aec9-5540fbb3db8a"]
 },
 Editable->False,
 Saveable->False,
@@ -1160,7 +1201,7 @@ TaggingRules-><|
   "ViewOpen" -> True, "DocumentOpen" -> True, "SetupOpen" -> True|>,
 FrontEndVersion->"15.0 for Mac OS X ARM (64-bit) (May 19, 2026)",
 StyleDefinitions->"Palette.nb",
-ExpressionUUID->"01a58e35-4d85-4c67-8457-25d0df92ce67"
+ExpressionUUID->"c08273bd-22d4-4a98-9a10-a72a95cd1309"
 ]
 (* End of Notebook Content *)
 
@@ -1173,7 +1214,7 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[581, 21, 51619, 1125, 805, InheritFromParent,ExpressionUUID->"8944d822-024c-4f5f-9353-5c207048ab13"]
+Cell[581, 21, 53573, 1166, 871, InheritFromParent,ExpressionUUID->"ccd57374-f90a-4bb7-aec9-5540fbb3db8a"]
 }
 ]
 *)

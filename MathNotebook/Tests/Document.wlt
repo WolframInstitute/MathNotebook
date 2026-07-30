@@ -1192,3 +1192,149 @@ VerificationTest[
     notebookToLaTeX @ Notebook[ { head, $blockEquation, tail } ] ],
   "\\begin{defn}\nBody.\n\n\\[ G=(V,E) \\]\n\nMore body.\n\\end{defn}\n\n"
 ]
+
+(* ------------------------------------------------------------------------------------------------
+   HandWrittenPreamble T3. A notebook that was never imported used to export a body and nothing else
+   — measured, 229 bytes with \documentclass 0, \begin{document} 0 and \newtheorem 0, every block
+   correct LaTeX with nothing to resolve it against — so notebookToLaTeXDocument generates a frame.
+   Note the LAYER: notebookToLaTeX above is the body converter and is deliberately untouched, because
+   every assertion in this file is a bare Notebook with no tagging and a generated frame would prepend
+   a document to all of them.
+   ------------------------------------------------------------------------------------------------ *)
+
+$typedPaper = Notebook[ {
+    Cell[ "A Small Paper", "Title" ],
+    Cell[ "P. Hajek", "Author" ],
+    Cell[ "Preliminaries", "Section" ],
+    Cell[ "A graph is a pair of sets.", "Definition" ],
+    Cell[ "The pair is unordered.", "Definition", CellDingbat -> None, CounterIncrements -> { } ],
+    Cell[ "Every graph is a graph.", "Theorem" ],
+    Cell[ "Immediate.", "Proof" ] },
+  StyleDefinitions -> FrontEnd`FileName[ { "MathNotebook" }, "PlainArticle.nb", CharacterEncoding -> "UTF-8" ] ]
+
+(* The frame is there and it is complete. A \title alone prints nothing, so \maketitle is the fifth
+   count and not a nicety. *)
+VerificationTest[
+  AssociationMap[ StringCount[ notebookToLaTeXDocument @ $typedPaper, # ] &,
+    { "\\documentclass{article}", "\\begin{document}", "\\end{document}", "\\maketitle", "\\newtheorem" } ],
+  <| "\\documentclass{article}" -> 1, "\\begin{document}" -> 1, "\\end{document}" -> 1,
+     "\\maketitle" -> 1, "\\newtheorem" -> 2 |>
+]
+
+(* Pavel's T1 call: only the styles the notebook uses, in first-appearance order, and numbered as the
+   SHEET draws them — one shared Theorem counter reset by Section for six of the seven sheets, which in
+   LaTeX is the first environment taking [section] and every other one sharing its counter. Proof is
+   excluded although environmentStyleQ accepts it: amsthm defines proof, so declaring it is an error. *)
+VerificationTest[
+  generatedTheoremLines[ First @ $typedPaper, $typedPaper ],
+  { "\\newtheorem{definition}{Definition}[section]",
+    "\\newtheorem{theorem}[definition]{Theorem}" }
+]
+
+(* ComplexSystems is the one sheet that breaks the shared-counter clause deliberately — one counter per
+   environment, no section prefix and no reset — so it gets the bare form. A scan that wrote [section]
+   for every sheet would be wrong for exactly this one and wrong INVISIBLY: the notebook and the
+   compiled paper would disagree about the numbers and no structural test would notice. *)
+VerificationTest[
+  With[ { paper = Notebook[ First @ $typedPaper,
+      StyleDefinitions -> FrontEnd`FileName[ { "MathNotebook" }, "ComplexSystems.nb", CharacterEncoding -> "UTF-8" ] ] },
+    generatedTheoremLines[ First @ paper, paper ] ],
+  { "\\newtheorem{definition}{Definition}",
+    "\\newtheorem{theorem}{Theorem}" }
+]
+
+(* The sheet name is read off three shapes: a bare name, the FrontEnd`FileName the importer writes,
+   and a private stylesheet notebook the view controls install, whose own parent is one of the first
+   two. FrontEnd`FileName is HoldAll, so this is also a check that the pattern matches at all. *)
+VerificationTest[
+  { notebookSheetName[ $typedPaper ],
+    notebookSheetName @ Notebook[ { }, StyleDefinitions -> "AMSArticle.nb" ],
+    notebookSheetName @ Notebook[ { } ],
+    notebookSheetName @ Notebook[ { }, StyleDefinitions -> Notebook[ {
+        Cell[ StyleData[ StyleDefinitions -> "ComplexSystems.nb" ] ],
+        Cell[ StyleData[ "MathNotebookView" ] ] } ] ] },
+  { "PlainArticle", "AMSArticle", "Default", "ComplexSystems" }
+]
+
+(* Three packages always; the other three on a scan, because an absent package is a compile error
+   where a spurious one is only noise. hyperref last, as it must be. *)
+VerificationTest[
+  { generatedPackages[ First @ $typedPaper ],
+    generatedPackages[ { Cell[ "Caption text", "Caption" ] } ],
+    generatedPackages[ { Cell[ TextData[ { ButtonBox[ "1" ] } ], "Text" ] } ] },
+  { { "amsmath", "amssymb", "amsthm" },
+    { "amsmath", "amssymb", "amsthm", "graphicx" },
+    { "amsmath", "amssymb", "amsthm", "hyperref" } }
+]
+
+(* \maketitle rides in the Separator of the last front-matter cell — the same carried-source slot the
+   importer drops a source \maketitle into on the way in — so no export clause is added. A notebook
+   with no Title cell gets none: an \author alone has nothing to typeset. *)
+VerificationTest[
+  { StringCount[ notebookToLaTeXDocument @ Notebook[ { Cell[ "T", "Title" ], Cell[ "A", "Author" ], Cell[ "p", "Text" ] } ], "\\maketitle" ],
+    StringCount[ notebookToLaTeXDocument @ Notebook[ { Cell[ "A", "Author" ], Cell[ "p", "Text" ] } ], "\\maketitle" ],
+    StringCount[ notebookToLaTeXDocument @ Notebook[ { Cell[ "p", "Text" ] } ], "\\maketitle" ] },
+  { 1, 0, 0 }
+]
+
+(* The \maketitle goes AFTER the front matter and BEFORE the body, which a count cannot check.
+   StringPosition answers a list of {start, end} PAIRS, so the index wanted is First @ First — comparing
+   the pairs leaves the < unevaluated and the test fails reporting {336, 342} < {348, 357}. *)
+VerificationTest[
+  With[ { tex = notebookToLaTeXDocument @ Notebook[ { Cell[ "T", "Title" ], Cell[ "A", "Author" ], Cell[ "One", "Section" ] } ] },
+    With[ { at = command |-> First @ First @ StringPosition[ tex, command ] },
+      { at[ "\\title" ] < at[ "\\author" ] < at[ "\\maketitle" ] < at[ "\\section" ] } ] ],
+  { True }
+]
+
+(* The discriminator is the PRESENCE of the stored key, never its value. An imported fragment with no
+   \begin{document} legitimately stores "" and round-trips byte-exact today; guarding on the value
+   would hand it a preamble it never had and break the repo's tightest invariant. *)
+VerificationTest[
+  { importedDocumentQ @ latexToNotebook[ "\\section{One}\n\nSome prose.\n" ],
+    importedDocumentQ @ $typedPaper,
+    importedDocumentQ @ Notebook[ { }, TaggingRules -> <| "MathNotebook" -> <| "Preamble" -> "" |> |> ],
+    importedDocumentQ @ Notebook[ { }, TaggingRules -> <| "Other" -> 1 |> ] },
+  { True, False, True, False }
+]
+
+VerificationTest[
+  With[ { fragment = "\\section{One}\n\nSome prose.\n" },
+    { notebookToLaTeXDocument @ latexToNotebook[ fragment ] === fragment,
+      StringContainsQ[ notebookToLaTeXDocument @ latexToNotebook[ fragment ], "\\documentclass" ] } ],
+  { True, False }
+]
+
+(* The generated preamble has to be re-parseable by the importer, or the notebook and the .tex would
+   agree only until someone opened the file again: the \newtheorem names it declares are exactly the
+   \begin names environmentSourceName produces for the same styles, so a re-import gives the same
+   cells back and re-exports byte for byte. *)
+VerificationTest[
+  With[ { tex = notebookToLaTeXDocument @ $typedPaper },
+    { Counts @ Cases[ latexToNotebook[ tex ], Cell[ _, style_String, ___ ] :> style, Infinity ],
+      notebookToLaTeXDocument @ latexToNotebook[ tex ] === tex } ],
+  { <| "Title" -> 1, "Author" -> 1, "Section" -> 1, "Definition" -> 2, "Theorem" -> 1, "Proof" -> 1 |>,
+    True }
+]
+
+(* A notebook with no environments must not acquire a stray blank line where the \newtheorem block
+   would have been — a preamble is read by people. *)
+VerificationTest[
+  notebookToLaTeXDocument @ Notebook[ { Cell[ "Just prose.", "Text" ] } ],
+  "\\documentclass{article}\n\n" <>
+    "% Preamble written by the MathNotebook paclet: this notebook was not imported from LaTeX.\n" <>
+    "% It was on the Default stylesheet. Edit this freely \[LongDash] a paper\n" <>
+    "% that already carries a preamble keeps its own, byte for byte.\n\n" <>
+    "\\usepackage{amsmath}\n\\usepackage{amssymb}\n\\usepackage{amsthm}\n\n" <>
+    "\\begin{document}\n\nJust prose.\n\n\\end{document}\n"
+]
+
+(* And the four documents the repo actually contains are untouched, which is the invariant this whole
+   item was not allowed to move. Specimens.wlt pins the two real papers; these are the samples. *)
+VerificationTest[
+  Map[
+    With[ { source = Import[ #, "Text" ] },
+      notebookToLaTeXDocument @ latexToNotebook[ source ] === source ] &,
+    FileNames[ "Sample-*.tex", FileNameJoin[ { DirectoryName[ PacletObject[ "WolframInstitute/MathNotebook" ][ "Location" ] ], "LaTeX" } ] ] ],
+  { True, True, True, True }
+]

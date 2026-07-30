@@ -4,6 +4,7 @@ PackageExport[CopyCellReference]
 PackageExport[TagSelectedCell]
 PackageExport[GoBack]
 PackageExport[InsertEnvironment]
+PackageExport[InsertFrontMatter]
 PackageExport[InsertCitation]
 PackageExport[InsertReference]
 PackageExport[SortBibliography]
@@ -431,6 +432,46 @@ GoBack[] :=
 
 InsertEnvironment[ style : _String | Automatic ] :=
   withInputNotebook[ InsertEnvironment[ #, style ] & ]
+
+(* The front matter as one block, Pavel's call 2026-07-30: Title, Author, Abstract and no Date, most
+   papers letting LaTeX supply the date. All three styles already export as commands — Title and Author
+   through $commandStyles (the style name lowercased IS the command) and Abstract as an environment —
+   so this button needs no export support of its own, which is the whole reason it is three cells and
+   not a template string.
+
+   Three cells and not one call per style, because the ORDER is the point: \maketitle prints what the
+   front matter declared before it, and the generated preamble hangs \maketitle on the last
+   Title/Author/Date cell (Document.wl), so a notebook whose author cell sits after the abstract
+   typesets its title without the author. Written in one NotebookWrite so an undo takes the block.
+   The selection lands in the Title, which is where the author types next. *)
+InsertFrontMatter[ ] :=
+  withInputNotebook[ InsertFrontMatter ]
+
+InsertFrontMatter[ notebook_NotebookObject ] :=
+  Module[ { before = Cells[ notebook ] },
+    (* At the TOP of the document and not at the selection, which is the one place front matter can go:
+       \title, \author and the abstract are what \maketitle typesets, and the generated preamble hangs
+       \maketitle on the last of them (Document.wl), so a title block landing in the middle of a paper
+       would typeset the paper's opening from wherever the cursor happened to be. Every other button in
+       this group writes at the selection; this one and InsertReference are the two that do not.
+
+       Where the document already has front matter, a second Title is the author's business to undo —
+       refusing would be the wrong call for a paper being assembled out of order. *)
+    SelectionMove[ notebook, Before, Notebook ];
+    NotebookWrite[ notebook, $frontMatterCells, All ];
+    frontMatterFirstCell[ notebook, before ] ]
+
+$frontMatterCells = { Cell[ "", "Title" ], Cell[ "", "Author" ], Cell[ "", "Abstract" ] }
+
+(* Put the cursor in the Title, and find it by taking the cells that are NEW in document order.
+   Complement is wrong here and wrong silently: it SORTS its result, so on a real notebook it answered
+   the Abstract and the cursor landed in the wrong cell — measured. Select over Cells[] keeps the
+   document's own order, and reading by difference rather than by counting three is deliberate, a
+   NotebookWrite of a list being free to group. *)
+frontMatterFirstCell[ notebook_NotebookObject, before_List ] :=
+  Replace[ Select[ Cells[ notebook ], ! MemberQ[ before, # ] & ], {
+    { first_CellObject, ___ } :> ( SelectionMove[ first, All, CellContents ]; first ),
+    _ :> None } ]
 
 InsertEnvironment[ notebook_NotebookObject, style : "DisplayFormula" | "DisplayFormulaNumbered" ] :=
   writeEnvironmentCell[ notebook, Cell[ BoxData[ FormBox[ "\[Placeholder]", TraditionalForm ] ], style ] ]

@@ -635,6 +635,12 @@ inlineMathScaling[ parent_ ] :=
        "InlineScaled" -> render[ inline, SetMathFontSize[ #, 2 mathFontSizeAnchor[ parent ] ] & ],
        "InlineReset" -> render[ inline,
          ( SetMathFontSize[ #, 2 mathFontSizeAnchor[ parent ] ]; ResetDocumentView[ # ] ) & ],
+       (* ResetViewRender T2's reference reading. A reset no longer REMOVES the private sheet — it
+          installs a neutral one, every style at its own base size — so what it must return to is that
+          neutral state and not the unwrapped document, and the two differ under an embedded parent for
+          the reason the next comment gives. Setting the slider to the anchor is the same neutral state
+          reached the other way, so this is the comparison that has a claim in it. *)
+       "InlineNeutral" -> render[ inline, SetDocumentFontSize[ #, documentFontSizeAnchor[ parent ] ] & ],
        "ProseBase" -> render[ prose, Null & ],
        "ProseScaled" -> render[ prose, SetMathFontSize[ #, 2 mathFontSizeAnchor[ parent ] ] & ] |> ]
 
@@ -795,6 +801,28 @@ bibliographyHeading[ sheet_ ] :=
 
    Grouping is measured here too, and it is the reason this is a style and not a CellGroup: writing
    the four cells as a group leaves every one of those margins unchanged. *)
+(* The front-matter button, and the ORDER is the assertion. \maketitle prints what the front matter
+   declared before it, and the generated preamble hangs \maketitle on the LAST Title/Author/Date cell,
+   so an author cell landing after the abstract would typeset a title with no author — which is
+   invisible in the notebook and shows only in the compiled PDF. The cursor has to end in the Title,
+   which is read back as the selection rather than assumed. *)
+frontMatterDrive[ parent_ ] :=
+  Module[ { notebook, returned, measurements },
+    notebook = NotebookPut @ Notebook[ { Cell[ "Existing prose.", "Text" ] },
+      StyleDefinitions -> parent, Visible -> False ];
+    returned = InsertFrontMatter[ notebook ];
+    measurements = <|
+      "Styles" -> Map[ First @ Flatten @ { CurrentValue[ #, CellStyle ] } &, Cells[ notebook ] ],
+      "Selected" -> Replace[ SelectedCells[ notebook ],
+        { { cell_, ___ } :> First @ Flatten @ { CurrentValue[ cell, CellStyle ] }, _ :> None } ],
+      "ReturnedTitle" -> Replace[ returned,
+        { cell_CellObject :> First @ Flatten @ { CurrentValue[ cell, CellStyle ] }, other_ :> other } ],
+      (* and the block a hand-written notebook exports from it: the three commands in source order *)
+      "TeX" -> notebookToLaTeXDocument @ NotebookGet[ notebook ] |>;
+    NotebookClose[ notebook ];
+    measurements
+  ]
+
 continueBlockDrive[ parent_ ] :=
   Module[ { notebook, head, cells, continuation, measurements },
     notebook = NotebookPut @ Notebook[ {
@@ -928,6 +956,7 @@ $measuredDialogs = ownFrontEnd[ "Dialogs", <|
    rendering a page. A Rasterize of a cell belongs here — it is InlineInk's and ReferenceGutter's
    measurement — because it draws one box and not a document. *)
 $measuredLive = ownFrontEnd[ "Live", <|
+  "FrontMatter" -> frontMatterDrive @ Get @ FileNameJoin[ { $sheetDirectory, "PlainArticle.nb" } ],
   "ContinueBlock" -> continueBlockDrive @ Get @ FileNameJoin[ { $sheetDirectory, "PlainArticle.nb" } ],
   "ContinueProof" -> continueProofDrive @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
   "ContinueImported" -> continueImportedDrive[ $continueImportedSource ],
@@ -990,6 +1019,49 @@ $measuredRendered = ownFrontEnd[ "Rendered", <|
   "DisplayInk" -> displayInk[ $displayParagraph ],
   "BibliographyHeading" -> bibliographyHeading @ Get @ FileNameJoin[ { $sheetDirectory, "PlainArticle.nb" } ]
 |> ];
+
+(* ResetViewRender T2, and the one measurement in this file whose unit is a RATE. Assigning a bare
+   stylesheet NAME onto a document that carries a private sheet left the front end unable to render a
+   page once that document was closed — 6/10 to 9/10 across the shipped shape and four candidate
+   repairs — so applyViewSettings now makes one assignment and never a name. A single run cannot pin
+   that: the old shape wrote the PDF 1/10 to 4/10 of the time, so one observation of success is
+   worth nothing.
+
+   Deliberately NOT routed through ownFrontEnd. A death relaunches the front end transparently, so the
+   link id changes at each one and the deaths can simply be counted inside one front end — and
+   ownFrontEnd's whole job is to ABORT the file on a death, which is the opposite of what is wanted
+   where a death is the quantity under test. *)
+resetRenderRate[ reps_Integer ] :=
+  Module[ { pdf = FileNameJoin[ { $TemporaryDirectory, "MathNotebookResetRender.pdf" } ], body, runs },
+    body = { Cell[ "A Paper", "Title" ], Cell[ "Intro", "Section" ], Cell[ "Some prose here.", "Text" ] };
+    runs = Table[
+      Module[ { before, paper, target, after },
+        before = frontEndLinkId[ ];
+        paper = CreateDocument[ body, Visible -> False, StyleDefinitions -> "Default.nb" ];
+        SetDocumentFontSize[ paper, 20 ];
+        ResetDocumentView[ paper ];
+        NotebookClose[ paper ];
+        Quiet @ DeleteFile[ pdf ];
+        target = CreateDocument[ body, Visible -> False ];
+        Quiet @ Export[ pdf, target ];
+        Quiet @ NotebookClose[ target ];
+        after = frontEndLinkId[ ];
+        <| "Died" -> ( before =!= after ), "Wrote" -> FileExistsQ[ pdf ] |> ],
+      reps ];
+    <| "Reps" -> reps,
+       "Deaths" -> Count[ runs, KeyValuePattern[ "Died" -> True ] ],
+       "Wrote" -> Count[ runs, KeyValuePattern[ "Wrote" -> True ] ] |>
+  ];
+
+$measuredResetRender =
+  Module[ { value = UsingFrontEnd @ resetRenderRate[ 5 ] },
+    Quiet @ Developer`UninstallFrontEnd[ ];
+    value ];
+
+VerificationTest[
+  $measuredResetRender,
+  <| "Reps" -> 5, "Deaths" -> 0, "Wrote" -> 5 |>
+]
 
 $measured = Join[ $measuredDialogs, $measuredLive, $measuredRendered ];
 
@@ -1197,6 +1269,25 @@ VerificationTest[
    the entries included because SetOptions mutates a cell where NotebookPut replaces it. This is the
    whole claim of the rewrite: the old route answered False here for every cell in the notebook, which
    is why a reference clicked after a refresh, and Go back, stopped working. *)
+(* The front-matter button lands three cells in the order \maketitle needs, leaves the cursor in the
+   Title, and returns that cell. Reading the selection back is the point: "puts the cursor in the
+   Title" is the half of the button an author notices and the half no structural check would see. *)
+VerificationTest[
+  KeyTake[ $measured[ "FrontMatter" ], { "Styles", "Selected", "ReturnedTitle" } ],
+  <| "Styles" -> { "Title", "Author", "Abstract", "Text" },
+     "Selected" -> "Title", "ReturnedTitle" -> "Title" |>
+]
+
+(* And it exports as the three commands in source order, with \maketitle after the author and before
+   the abstract — the generated preamble putting it on the last front-matter cell. *)
+VerificationTest[
+  With[ { tex = $measured[ "FrontMatter", "TeX" ],
+      at = ( command |-> First @ First @ StringPosition[ $measured[ "FrontMatter", "TeX" ], command ] ) },
+    { StringContainsQ[ tex, "\\documentclass{article}" ],
+      at[ "\\title" ] < at[ "\\author" ] < at[ "\\maketitle" ] < at[ "\\begin{abstract}" ] } ],
+  { True, True }
+]
+
 VerificationTest[
   $measured[ "Relabel", "Survived" ],
   { True, True, True, True }
@@ -1276,13 +1367,24 @@ VerificationTest[
    What isolates the math control is therefore the two RATIOS: inline mathematics must grow by MORE than
    that document-wide perturbation does. No magic threshold, and it is exactly the claim Pavel asked
    for — the inline size follows the math slider and not merely the page. *)
+(* One clause of this changed with ResetViewRender T2 and the change is a claim, not an accommodation.
+   A reset used to take the private sheet OFF, which is the assignment that left the front end unable
+   to render a page; it now installs a NEUTRAL sheet instead — every style restated at its own base
+   size. Under a real named sheet the two are indistinguishable, measured: eight styles resolve
+   identically to the bare parent on ten runs out of ten. Under the EMBEDDED parent this measurement
+   is obliged to use they are not, and for the trap named above rather than for a new reason — an
+   unwrapped document lets unoverridden styles fall through to Default.nb (Text 15) where the neutral
+   sheet states the sheet's own (13), so "reset returns to the unwrapped base" is no longer the right
+   reference. The right one is the same neutral state reached the other way, by dragging the text
+   slider to the sheet's own size. *)
 VerificationTest[
   { Divide[ $measured[ "InlineScaling", "InlineScaled" ], $measured[ "InlineScaling", "InlineBase" ] ] >
       Divide[ $measured[ "InlineScaling", "ProseScaled" ], $measured[ "InlineScaling", "ProseBase" ] ],
-    $measured[ "InlineScaling", "InlineReset" ] === $measured[ "InlineScaling", "InlineBase" ],
+    $measured[ "InlineScaling", "InlineReset" ] === $measured[ "InlineScaling", "InlineNeutral" ],
+    $measured[ "InlineScaling", "InlineReset" ] < $measured[ "InlineScaling", "InlineScaled" ],
     $measured[ "InlineScaling", "InlineBase" ] > 0,
     $measured[ "InlineScaling", "ProseScaled" ] > $measured[ "InlineScaling", "ProseBase" ] },
-  { True, True, True, True }
+  { True, True, True, True, True }
 ]
 
 (* FirstReadingDefects T5. The sheet's own ratio is 1.05 and a relative FontSize renders at its square,

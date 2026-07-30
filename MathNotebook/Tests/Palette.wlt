@@ -20,7 +20,7 @@ buttonQ[ label_String ] :=
    --------------------------------------------------------------------------------------------- *)
 
 VerificationTest[
-  Select[ { "Insert environment", "Proof", "Equation", "Equation (n)", "Continue block", "Reference",
+  Select[ { "Front matter", "Insert environment", "Proof", "Equation", "Equation (n)", "Continue block", "Reference",
       "Copy reference", "Insert citation", "\\[UpArrow] Go back", "Refresh labels", "Sort bibliography",
       "math \\[Rule] MaTeX", "MaTeX \\[Rule] math",
       "Apply stylesheet", "Reset view",
@@ -43,6 +43,25 @@ VerificationTest[
   Map[ Head @ ToExpression[ "WolframInstitute`MathNotebook`" <> # <> "::usage" ] &,
     { "TagSelectedCell", "ConvertLaTeXCells", "ConvertMathCells" } ],
   { String, String, String }
+]
+
+(* Pavel's reading, 2026-07-30: nothing on the palette said that a MathNotebook stylesheet has to be
+   applied before the rest of it does what it looks like it does. The environments are declared BY the
+   sheet, so on Default.nb a Definition cell has no name, no number and no indent and a \ref to it
+   renders "2.0" — which reads as a broken paclet rather than as a missing step. The hint is static
+   text at the menu, so it is assertable as text like everything else here; the README says it too. *)
+VerificationTest[
+  StringContainsQ[ $paletteSource, "Apply one of these first" ] &&
+    StringContainsQ[ $paletteSource, "declared by the stylesheet" ],
+  True
+]
+
+(* The hint has to be at the stylesheet MENU and not somewhere else on the palette, or it is advice
+   with nothing to click. Between the menu and the first slider is where it belongs. *)
+VerificationTest[
+  With[ { at = ( text |-> First @ First @ StringPosition[ $paletteSource, text ] ) },
+    at[ "Apply stylesheet" ] < at[ "Apply one of these first" ] < at[ "Text size" ] ],
+  True
 ]
 
 (* The headings, and the ORDER of them, which is what he actually asked for: what an author makes,
@@ -71,7 +90,7 @@ VerificationTest[
    assertion that they say what they should. *)
 VerificationTest[
   StringCount[ $paletteSource, "TooltipBox[" ],
-  25
+  26
 ]
 
 VerificationTest[

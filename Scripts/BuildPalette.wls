@@ -112,6 +112,18 @@ viewSlider[ label_String, key_String, setter_Symbol, range_List, default_, toolt
 staticViewSlider[ label_String, range_List, default_, tooltip_String ] :=
   sliderRow[ label, Slider[ default, range, ImageSize -> $sliderSize ], default, tooltip ]
 
+(* Pavel's reading, 2026-07-30: nothing on the palette said that a MathNotebook stylesheet has to be
+   applied before any of it does what it looks like it does. It is not a small omission — the twelve
+   environments are declared BY THE SHEET, so on Default.nb a Definition cell gets no name, no number
+   and no indent, and a \ref to it renders "2.0" (the section counter increments and the theorem
+   counter never does), which reads as a broken paclet rather than as a missing step. A hint at the
+   menu is the cheapest place to say so, being where the fix is one click away; the README says it too.
+   Static text, no Dynamic, so it costs no kernel and Rasterize can see it — which is why the
+   screenshot needs no static twin for it. *)
+hintRow[ text_String ] :=
+  Pane[ Style[ text, 9, GrayLevel[ 0.45 ] ], ImageSize -> { $buttonSize[[ 1 ]], Automatic },
+    Alignment -> { Left, Center }, BaseStyle -> { LineIndent -> 0 } ]
+
 (* Rasterize leaves a Dynamic unevaluated, so the screenshot needs a static stand-in for every
    dynamic item; dual pairs the live rendition with it. *)
 SetAttributes[ dual, HoldAll ]
@@ -138,6 +150,11 @@ $groups = {
      ConvertLaTeXCells and ConvertMathCells stay exported and documented; only their buttons are
      gone, so any of the three is one line here to restore. *)
   { "Blocks", "Blocks", {
+    (* First in the group because it is first in a paper. Title, Author and Abstract in that order,
+       which \maketitle depends on: the generated preamble hangs \maketitle on the last front-matter
+       cell, so an author cell placed after the abstract typesets a title with no author. *)
+    kernelButton[ "Front matter", WolframInstitute`MathNotebook`InsertFrontMatter[ ],
+      "Inserts empty Title, Author and Abstract cells at the top of the document \[LongDash] not at the selection, unlike the rest of this group \[LongDash] and puts the cursor in the Title. All three export as their LaTeX commands, and an exported paper that carries no preamble of its own gets one written for it, with \\maketitle in the right place." ],
     menuButton[ "Insert environment", Map[ environmentItem, $environments ],
       "Inserts an empty theorem-like block after the selected cell. The block numbers itself under the document's stylesheet, and a tag on it can be cited from anywhere in the paper." ],
     kernelButton[ "Proof", WolframInstitute`MathNotebook`InsertEnvironment[ "Proof" ],
@@ -188,6 +205,7 @@ $groups = {
             notebook_NotebookObject :> SetOptions[ notebook, StyleDefinitions -> "Default.nb", LightDark -> Automatic ],
             _ :> MessageDialog[ "Open a notebook first!" ] } ] ],
       "Retypesets the whole document in a journal's style. Neither the content nor the numbering changes: those belong to the document, and the sheet owns only the typography. Applying a sheet clears the two size overrides below." ],
+    hintRow[ "Apply one of these first \[LongDash] the environments and their numbering are declared by the stylesheet." ],
     dual[ viewSlider[ "Text size", "DocumentFontSize", WolframInstitute`MathNotebook`SetDocumentFontSize,
         $fontSizeRange, $defaultFontSize,
         "Scales the whole focused document, on screen and in print alike \[LongDash] prose and mathematics together, unless Math size below has been set." ],

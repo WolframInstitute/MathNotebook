@@ -132,14 +132,45 @@ applyViewSettings[ notebook_NotebookObject, changes_Association ] :=
     KeyValueMap[
       { key, value } |-> ( CurrentValue[ notebook, { TaggingRules, "MathNotebook", key } ] = Replace[ value, Automatic -> Inherited ] ),
       changes ];
-    (* The bare parent goes back on first, unconditionally: a second call has to override the
-       document's real stylesheet rather than nest inside the private sheet the first one left. *)
-    SetOptions[ notebook, StyleDefinitions -> parent ];
+    (* ONE assignment, and it is never a bare stylesheet NAME. That is ResetViewRender T2's repair and
+       it is a measured one.
+
+       Assigning a name onto a document that carries a private sheet leaves the front end unable to
+       render a page once that document is closed — measured with a fresh front end per repetition, the
+       old shape killed the next whole-notebook Export 6/10 to 9/10 and the PDF simply was not written.
+       This version never does it: the new sheet is installed directly onto the RECOVERED parent, which
+       is what actually prevents the nesting the old intermediate assignment was there for, so the
+       intermediate was unnecessary as well as lethal. Measured 0/10 with the resolved sizes of eight
+       styles identical to the bare parent's on all ten runs.
+
+       Four alternatives were measured and every one of them is worse. Taking the private sheet off
+       first (Inherited, or Automatic), assigning the name twice, and resetting the front end's menus
+       afterwards all still die (6/8 to 8/8) — the name is the clause, not the order.
+       CurrentValue[ notebook, StyleDefinitions ] = parent measures 0/10 by being a SILENT NO-OP: the
+       private sheet survives, the document stays at the overridden size, and "reset" stops resetting,
+       which a death rate on its own cannot distinguish from a repair. And a pass-through private sheet
+       with no override cells changes what the styles resolve to (Theorem 15 -> 12).
+
+       What this costs is that a document keeps a private sheet after a reset instead of returning to a
+       bare name, so the Format menu no longer shows its sheet selected. The neutral sheet restates each
+       style at its own base size — the "scale exactly 1" state, which this file already distinguishes
+       from Automatic — so the page is identical and parentStyleSheet still recovers the real sheet, and
+       a later reset is idempotent. The hazard is NOT gone from the product: picking a stylesheet from
+       the Format menu is the front end making that same assignment itself. It is gone from every path
+       this paclet controls. The defect is Wolfram 15.0's. *)
     With[ { settings = viewSettings[ notebook ] },
       If[ documentTaggingRules[ notebook ] === <||>,
         CurrentValue[ notebook, { TaggingRules, "MathNotebook" } ] = Inherited ];
-      If[ settings =!= <||>,
-        SetOptions[ notebook, StyleDefinitions -> viewStyleSheet[ parent, settings ] ] ] ] ]
+      SetOptions[ notebook,
+        StyleDefinitions -> viewStyleSheet[ parent, neutralViewSettings[ parent, settings ] ] ] ] ]
+
+(* An empty settings association used to mean "take the private sheet off", which is the lethal
+   assignment. It now means "install a sheet that changes nothing": the document's own anchor size,
+   which fontSizeCells writes out as every style at its base size. *)
+neutralViewSettings[ parent_, settings_Association ] :=
+  If[ settings === <| |>,
+    <| "DocumentFontSize" -> documentFontSizeAnchor[ parent ] |>,
+    settings ]
 
 documentTaggingRules[ notebook_NotebookObject ] :=
   Replace[ CurrentValue[ notebook, { TaggingRules, "MathNotebook" } ], Except[ _Association ] -> <||> ]
