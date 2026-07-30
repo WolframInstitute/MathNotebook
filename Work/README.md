@@ -21,7 +21,10 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 
 ## Active
 
-[First Reading Defects](Active/FirstReadingDefects.md) — Pavel read the imported causal-graphs paper
+Empty. `FirstReadingDefects` closed on 2026-07-30 with all six tasks done; the two clauses it left are
+Pavel's, not a session's — see its Hand-off.
+
+[First Reading Defects](Done/2026-07-30-FirstReadingDefects.md) — Pavel read the imported causal-graphs paper
 and reported six defects, all triaged with measured causes on 2026-07-29. Done: `\varnothing` and the
 178 other glyphless macros draw their characters (T1, S1, suite 329 → 334); the character escapes
 unescape into displayed text and re-escape on export through one shared segmentation that carries
@@ -36,9 +39,15 @@ sliders now agree about mathematics — an untouched math slider means "scale wi
 slider carries prose, display and inline mathematics and MaTeX together while an explicit math size
 overrides it, and the reported double-scaling turned out to sit on top of a front-end fact nothing here
 knew, that a *relative* `FontSize` on `InlineFormula` renders at the **square** of its ratio, so the
-shipped control drew 4.41 × the host where it meant 2.1 (T5, S5, suite 358 → 364). **Next: T6**, the
-last task — `LabelReferences` rewrites the whole notebook to relabel 14 cells, the prime suspect for the
-reported freezes, and the task ends with a measured number.
+shipped control drew 4.41 × the host where it meant 2.1 (T5, S5, suite 358 → 364); and `LabelReferences`
+now writes the bibliography's own cells and nothing else, which turned out to be a correctness fix before
+a speed one — the old whole-notebook `NotebookPut` killed **174 of 174** `CellObject`s and reassigned
+every `CellID`, so a reference clicked after a refresh was pointing at a cell that no longer existed
+(T6, S6, suite 364 → 368; 22 MB over 486 cells handed to the front end became 4.6 kB over 14, and 0.076 s
+became 0.0014 s). Closed with two clauses that are Pavel's: the freeze on a real window, which has no
+headless measurement, and the sample bibliographies his reading turned up — the invisible entry labels
+are in `Scripts/DeployPreviews.wls`, whose sample `Reference` cells carry neither a tag nor a label, and
+not in the paclet, whose importer was measured to rule it out.
 
 [Import Display Defects](Done/2026-07-29-ImportDisplayDefects.md) closed on 2026-07-29 — all five
 display defects fixed, 0.1.17 installed, `main.nb` re-imported through it, and the reading half of T4

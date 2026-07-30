@@ -19,6 +19,7 @@ PackageScope["referenceDingbat"]
 PackageScope["citationButton"]
 PackageScope["cellReferenceSpec"]
 PackageScope["labelReferenceCells"]
+PackageScope["referenceLabelOptions"]
 PackageScope["withInputNotebook"]
 PackageScope["citationChoices"]
 PackageScope["citationChooserRows"]
@@ -328,11 +329,30 @@ bibliographyAuditText[ audit_Association ] :=
 bibliographyAuditLine[ prefix_String, keys_List ] :=
   If[ keys === { }, "", prefix <> StringRiffle[ keys, ", " ] ]
 
+(* Relabelling changes at most two options on the bibliography's own cells, so it writes those cells
+   and nothing else. It used to be NotebookPut[ labelReferenceCells @ NotebookGet[ notebook ],
+   notebook ] — a whole-notebook rewrite, handing the front end all 174 cells and 238 inline-math
+   islands of the causal paper to change 14 dingbats, which is the reported freeze (T6). The two
+   routes leave *byte-identical* cells, which is what makes the swap safe rather than merely faster:
+   SetOptions[ cell, opt -> Inherited ] removes the option from the cell instead of storing the word
+   (measured — Options[cell] answers {}), so a cleared label leaves no trace, exactly as deleting the
+   option from the expression did. *)
 LabelReferences[ notebook_NotebookObject ] :=
-  NotebookPut[ labelReferenceCells @ NotebookGet[ notebook ], notebook ]
+  Scan[ labelReferenceCell, Cells[ notebook, CellStyle -> "Reference" ] ]
 
 LabelReferences[] :=
   withInputNotebook[ LabelReferences ]
+
+labelReferenceCell[ cell_CellObject ] :=
+  SetOptions[ cell, referenceLabelOptions @ CurrentValue[ cell, CellTags ] ]
+
+(* referenceDingbat answers {} for an untagged cell — right for a cell being built, where the option
+   is simply absent — but a live cell may be carrying a label whose tag has since been removed, and
+   that one has to go. Both routes take the label itself from referenceDingbat, so they cannot
+   disagree about it. *)
+referenceLabelOptions[ tags_ ] :=
+  Replace[ referenceDingbat[ tags ],
+    { } :> { CellDingbat -> Inherited, ParagraphIndent -> Inherited } ]
 
 (* The label is the cell's own first tag, so a bibliography entry reads exactly as the
    citation that points at it, and nothing renumbers when cells move. *)

@@ -503,6 +503,41 @@ referencingDrive[ parent_ ] :=
     measurements
   ]
 
+(* FirstReadingDefects T6: relabelling writes the bibliography's own cells and nothing else. What the
+   whole-notebook rewrite it replaced cost is not only time — every CellObject in the document dies
+   (measured 174/174 on the causal paper), so anything still holding one is left pointing at a cell
+   that no longer exists, where SelectionMove answers Null and does nothing: GoBack's stale-cell state,
+   reached without anything having been deleted. So the assertion is LIVENESS and not a timing, which
+   would be flaky and would measure this machine. The cleared cell is compared against a Reference cell
+   that never carried a label rather than against a hard-coded -24, so the claim is "indistinguishable
+   from one that was never labelled" under whatever the sheet declares. *)
+labelReferencesDrive[ parent_ ] :=
+  Module[ { notebook, cells, measurements },
+    notebook = NotebookPut @ Notebook[ {
+      Cell[ "Prose citing something.", "Text" ],
+      Cell[ "Smith, A title", "Reference", CellTags -> "Sm09" ],
+      Cell[ "Jones, a tag since removed", "Reference",
+        CellDingbat -> Cell[ TextData[ "[gone]" ] ], ParagraphIndent -> 0 ],
+      Cell[ "Brown, never labelled", "Reference" ] },
+      StyleDefinitions -> parent, Visible -> False ];
+    cells = Cells[ notebook ];
+    LabelReferences[ notebook ];
+    measurements = <|
+      "Survived" -> Map[ MatchQ[ ParentNotebook[ # ], _NotebookObject ] &, cells ],
+      "Labelled" -> CurrentValue[ cells[[ 2 ]], CellDingbat ],
+      "Indent" -> CurrentValue[ cells[[ 2 ]], ParagraphIndent ],
+      "Cleared" -> Options[ cells[[ 3 ]], { CellDingbat, ParagraphIndent } ],
+      "Fresh" -> Options[ cells[[ 4 ]], { CellDingbat, ParagraphIndent } ],
+      (* Cleared by DELETING the option, not by storing the word Inherited in the cell — measured, and
+         it is what makes the two routes leave byte-identical cells. HoldPattern because a bare
+         Rule in a Cases pattern is read as a transformation and silently answers {}. *)
+      "Stored" -> Cases[ Options @ cells[[ 3 ]],
+        HoldPattern[ ( CellDingbat | ParagraphIndent ) -> _ ] ],
+      "Prose" -> Cases[ Options @ cells[[ 1 ]], HoldPattern[ CellDingbat -> _ ] ] |>;
+    NotebookClose[ notebook ];
+    measurements
+  ]
+
 (* FirstReadingDefects T4: the copied reference, end to end on an imported paper — the one place the
    defect lived. Two things had to be measured rather than asserted from the code. The number is only
    real on a rendered page: a CounterBox in a single-cell Rasterize reads XXX and one keyed on a
@@ -729,6 +764,7 @@ $measured = UsingFrontEnd @ <|
   "NoDocument" -> noDocumentDialogs[ ],
   "GoBack" -> goBackDrive[ ],
   "Referencing" -> referencingDrive @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
+  "Relabel" -> labelReferencesDrive @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
   "Copied" -> copiedReferenceDrive[ $axiomPaper, "AMSArticle.nb" ],
   "AutoTag" -> autoTagDrive @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
   "Placement" -> citationPlacement @ Get @ FileNameJoin[ { $sheetDirectory, "AMSArticle.nb" } ],
@@ -907,6 +943,25 @@ VerificationTest[
 VerificationTest[
   Cases[ $measured[ "Referencing", "Citation" ], _CounterBox, Infinity ],
   { CounterBox[ "Section", "Thm:key" ], CounterBox[ "Theorem", "Thm:key" ] }
+]
+
+(* T6. Refreshing the labels leaves every cell of the document alive — the prose and the entries alike,
+   the entries included because SetOptions mutates a cell where NotebookPut replaces it. This is the
+   whole claim of the rewrite: the old route answered False here for every cell in the notebook, which
+   is why a reference clicked after a refresh, and Go back, stopped working. *)
+VerificationTest[
+  $measured[ "Relabel", "Survived" ],
+  { True, True, True, True }
+]
+
+(* The label itself is unchanged by the route: the tagged entry reads as its citations do, hanging its
+   own indent, and prose is not given a dingbat. A tag since removed leaves the cell indistinguishable
+   from one that was never labelled — and by the option being gone, not set to Inherited. *)
+VerificationTest[
+  { $measured[ "Relabel", "Labelled" ], $measured[ "Relabel", "Indent" ],
+    $measured[ "Relabel", "Cleared" ] === $measured[ "Relabel", "Fresh" ],
+    $measured[ "Relabel", "Stored" ], $measured[ "Relabel", "Prose" ] },
+  { Cell[ TextData[ "[Sm09]" ] ], 0, True, { }, { } }
 ]
 
 (* T3, in a live notebook. The entry joins the bibliography at its end rather than landing at the

@@ -124,9 +124,12 @@ navigation and interaction defects, the classes the census and fidelity tests ca
   the square **root**, because a relative `FontSize` on `InlineFormula` renders at the square of the
   ratio (measured). Rendered widths across all four slider states, plus the tooltips, the tutorial
   and the two usage strings, which all described independence.
-- [ ] **T6 — The freeze.** Rewrite `LabelReferences` to touch only the `Reference` cells, time it on
-  the real `main.nb` before and after, then chase the click-after-refresh freeze on the installed
-  paclet with the rewrite in place. This task ends with a measured number, not "feels fast".
+- [x] **T6 — The freeze.** (S6) `LabelReferences` writes the `Reference` cells and nothing else. Timed
+  on the real `main.nb`: 0.177 s then 0.076 s steady against 0.0029 s then 0.0014 s, and the payload
+  handed to the front end 22,078,272 bytes over 486 cells (7 rasters) against 4,616 bytes over 14. The
+  larger finding is not the time: the old `NotebookPut` killed **174 of 174** `CellObject`s and
+  reassigned every `CellID`, which is the click-after-refresh half of the report and is what the new
+  test asserts, liveness being measurable where a visible window's typesetting is not.
 
 ## Progress
 
@@ -333,3 +336,59 @@ navigation and interaction defects, the classes the census and fidelity tests ca
   which writes every style at its base size and is a real state rather than a contrivance. All in
   CLAUDE.md.
 - **Next:** T6, the last task — the `LabelReferences` freeze.
+
+### Session 6 — 2026-07-30 — T6, the freeze
+
+- **Prompt:** `/next-session`.
+- **Did:** Rewrote `LabelReferences` to `Scan[ labelReferenceCell, Cells[ notebook, CellStyle ->
+  "Reference" ] ]`, each cell taking `referenceLabelOptions @ CurrentValue[ cell, CellTags ]` through
+  `SetOptions`. Measured on the real `main.nb` before and after — 0.177 s then 0.076 s steady against
+  0.0029 s then 0.0014 s, and the payload the front end is handed 22,078,272 bytes over 486 cells with
+  7 rasters in them against 4,616 bytes over 14 cells. But the timing is the smaller half. The old
+  `NotebookPut` **replaces** every cell: measured, **174 of 174** held `CellObject`s answered `$Failed`
+  from `ParentNotebook` afterwards and all 174 carried fresh `CellID`s, and `SelectionMove` on a dead
+  one answers `Null` silently — `GoBack`'s stale-cell state reached with nothing deleted, which is the
+  reported "clicking references afterwards misbehaves" and needed no separate chase. So the shipped
+  assertion is liveness and not a wall clock: a `Visible -> True` notebook in the service front end
+  times identically to an invisible one (0.075 against 0.075), so a real window's typesetting is
+  unmeasurable here, the same class as window focus. The two routes leave *byte-identical* cells, which
+  is what makes the swap safe rather than merely faster — `SetOptions[ cell, option -> Inherited ]`
+  removes the option instead of storing the word, measured, so a label whose tag has gone leaves a cell
+  indistinguishable from one never labelled. Suite 364 → 368: two kernel tests on
+  `referenceLabelOptions` and two in `FrontEnd.wlt`, the cleared cell compared against a never-labelled
+  sibling rather than against a hard-coded −24 so the claim survives a sheet change. Two bites, each
+  restored from the copy and verified byte-identical: putting the whole-notebook route back fails
+  **exactly** the liveness test and the clearing test and nothing else, kernel-side included; emptying
+  the clearing branch fails exactly 1 kernel test and 1 rendered one. `labelReferenceCells` stays — it
+  is what `Scripts/BuildTutorial.wls` uses — and both routes take the label from `referenceDingbat`, so
+  they cannot disagree about what an entry reads. No usage string, tutorial line or reference page
+  changed: all three describe the effect, which is unchanged.
+- **Learned:** Both facts above are in CLAUDE.md — that `NotebookPut` invalidates every `CellObject`
+  and reassigns every `CellID` (so a whole-notebook rewrite is a correctness problem before it is a
+  performance one), and that `SetOptions[ …, option -> Inherited ]` deletes rather than stores. Also a
+  probe fault of the familiar kind while answering Pavel's reference question: `labelReferenceCells`
+  mapped over *cells* instead of applied to the `Notebook` stayed unevaluated and rendered as three
+  empty red boxes, which reads as a stylesheet defect rather than as a fault in the probe.
+- **Also (Pavel's reading, 2026-07-30):** the invisible entry labels he reported are in
+  `Scripts/DeployPreviews.wls`, not in the paclet — its two sample `Reference` cells are built with
+  neither a `CellTags` nor a dingbat, so every sample the README links shows unlabelled entries
+  indented into the 185 pt gutter reserved for the label. Rendered both ways to be sure (5918 ink
+  against 9510 under `PlainArticle`), and the importer measured to rule it out: an imported
+  `thebibliography` shows `[smith]` on the entry and on the `\cite`. Two things that measurement
+  surfaced and that are not this item's: an imported bibliography gets **no heading cell at all**, and
+  `CounterIncrements -> { }` on a `Section` suppresses the increment but not the printing, so such a
+  heading prints the previous section's number. All three in CLAUDE.md. A fix to the samples is a
+  deliverable and is waiting on Pavel rather than taken here.
+
+## Hand-off
+
+- **Pavel's to confirm, and the only clause this item leaves open:** the freeze itself, on a real
+  window. Everything measurable was measured — 55× kernel-side, a 4800× smaller payload, and every
+  `CellObject` in the document surviving where all 174 used to die — but a visible front end's
+  typesetting has no headless measurement, so "Refresh labels on `main.nb` no longer hangs, and a
+  reference clicked afterwards still navigates" is a click on the installed paclet. Nothing is
+  published yet: this needs a version bump before it is installed, a same-version republish being
+  invisible to `UpdateMathNotebook`.
+- **Waiting on Pavel, not on a session:** the sample bibliographies above (a `CellTags` and a label on
+  the two `Reference` cells of `Scripts/DeployPreviews.wls`, and whether the samples should also show a
+  citation in prose as his screenshot does), and which paragraph of the README he wants out.

@@ -197,6 +197,21 @@ VerificationTest[
   Notebook[ { Cell[ "Prose, tagged but not a reference", "Text", CellTags -> "prose" ] } ]
 ]
 
+(* T6. The live route writes options onto the cells themselves, so it needs the clearing stated where
+   the expression route simply deleted the option: referenceDingbat's {} means "no option" to a cell
+   being built and "this label has to go" to one already carrying it. Both take the label from
+   referenceDingbat, so the two routes cannot disagree about what an entry reads. *)
+VerificationTest[
+  Map[ referenceLabelOptions, { "ollivier", { "first", "second" } } ],
+  { { CellDingbat -> Cell[ TextData[ "[ollivier]" ] ], ParagraphIndent -> 0 },
+    { CellDingbat -> Cell[ TextData[ "[first]" ] ], ParagraphIndent -> 0 } }
+]
+
+VerificationTest[
+  Map[ referenceLabelOptions, { { }, None } ],
+  ConstantArray[ { CellDingbat -> Inherited, ParagraphIndent -> Inherited }, 2 ]
+]
+
 (* ---------------------------------------------------------------------------------------------
    InsertReference: the pure core. Three cases, told apart by what the block's last cell carries.
    --------------------------------------------------------------------------------------------- *)
