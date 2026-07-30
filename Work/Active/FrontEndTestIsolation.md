@@ -45,13 +45,13 @@ what produced the current state.
 - [ ] T3 — make a dead front end fail loudly rather than as a content mismatch: a measurement that
       returns `$Failed` where a string was expected should abort the file with a named message, so this
       cannot be mistaken for an assertion about the paclet again.
-- [ ] T4 — find whether the `Default` poison is the *product's* and not the suite's. A named
-      stylesheet parent under `SetDocumentFontSize` + `ResetDocumentView` is what an author's own paper
-      is; the other 33 entries embed their sheet with `Get` and none of them poisons anything. Narrow
-      it to the call (open/close alone, the size call, the reset, the chain read), and if a real
-      document reproduces it, the palette's font slider crashes the front end on the next print.
 
 ### Done
+
+- [x] T4 (S4) — the shape is the product's and the feared symptom is not: `ResetDocumentView` after
+      `SetDocumentFontSize` on a *named*-sheet document, once closed, kills the next page render 4/5
+      (5/5 on a paclet sheet name), while the author's own paper printed after either slider is 0/5.
+      Split out as `Work/Backlog/ResetViewRender.md`.
 
 - [x] T1 (S2) — give the PDF-exporting measurements a front end of their own, and prove it by the
       TestID going green on an idle machine.
@@ -68,31 +68,40 @@ probe faults that hid it, is in `CLAUDE.md` § *Build & test*, and the test file
 entry. So T1's split is right for a narrower reason than it claimed, and the rule it leaves is in the
 group comment: do not move a page renderer into the live group.
 
-**T4 is what this session found rather than what it set out to do, and it is the one that might not be
-about the suite at all.** Every entry but `Default` embeds its sheet with `Get`; `Default` passes a name,
-which is what a real document has. If `SetDocumentFontSize` + `ResetDocumentView` on a named-sheet
-document is what poisons the front end, the palette's font slider crashes the front end on the author's
-next print and the suite was merely the first place it showed. **Unmeasured** — the narrowing probe was
-written and never ran, because the machine wedged first (below). Take it before T3: T3 is a reporting
-improvement, T4 is possibly a shipping defect.
+**T4 is answered in both directions, and the negative is the one to carry: the palette's font slider does
+not crash the front end on the author's next print.** Open a paper on the paclet's own named sheet, drag
+either slider, reset the view and print *that paper* — 0/5 deaths, PDF written 5/5. What does kill a
+render is the same three calls with the document **closed** first, and only when the sheet is a *name*:
+4/5 for `"Default.nb"`, **5/5** for `FrontEnd`FileName[{"MathNotebook"}, …]`, against 0/5 for the sheet
+embedded with `Get`, 0/5 for either call alone, 0/5 with the document left open and 0/5 with no render.
+The table is in [`CLAUDE.md` § *Build & test*](../../CLAUDE.md); the product half is its own item,
+[Reset View Render](../Backlog/ResetViewRender.md). **S3's attribution is corrected rather than
+confirmed**: `viewMeasurements[ "Default.nb" ]` survives 0/6 under repetition, so the entry it named is
+not the killer — the *shape* it shares with the killer is — and a single-shot sweep of twenty controls
+cannot tell a 4/5 rate from a certainty. What immunises that entry is unexplained.
 
-**What T3 inherits is unchanged from S2, and one thing is now cheaper.** A *dead* front end is what T3
-was written for; a *wedged* one returns nothing at all and `TimeConstrained` cannot convert it (a blocked
-MathLink read does not take an abort, 120 s in S1), so an **external** wall-clock guard is still needed —
-`perl -e 'alarm N; exec @ARGV'` works and is what S2 and S3 both used (`timeout` is not installed on this
-machine; `gtimeout` and `perl` are the options). What is cheaper: a wedged front end is now identifiable
-**from `ps` alone**, sitting at 94–99 MB of RSS where a working one reaches ~260 MB, so the guard has
-something to report rather than only a timeout.
+**The wedge is solved and it was never ours: it is AppKit's "reopen windows after a crash?" modal, raised
+on a headless front end where nobody can see or click it.** `sample` on the hung process puts its main
+thread in `-[NSPersistentUIRestorer promptToIgnorePersistentStateWithCrashHistory:]` → `-[NSAlert
+runModal]`, and the crash history feeding it is 24 identical `EXC_BAD_ACCESS` reports in
+`~/Library/Logs/DiagnosticReports/WolframNB-*.ips` back to 2026-07-25 — a Wolfram 15.0 service front-end
+bug, nothing of this repo's. **One call clears it**: `defaults write com.wolfram.WolframApp
+ApplePersistenceIgnoreState -bool true`, after which `UsingFrontEnd[ 1 + 1 ]` answered in **one second**
+where it had hung three times running. That retires the reboot, the `pkill` ritual as a *cure*, the RSS
+heuristic (hung front ends measured 103–117 MB here, not 94–99) and the `-code`/`-file` axis — with the
+alert up, both hang identically. S1's `sample` was already the right detector, read one frame too
+shallow: the modal sits *below* `NSApplicationMain`, so the whole call graph has to be read.
 
-**The machine is wedged as of the end of S3, and the trigger is now known: `pkill -9` of a front end that
-a *running* script still holds.** That is this file's own hygiene applied one step too early — between
-attempts it is what makes runs reproducible, during one it is the wedge. It did not clear by killing the
-orphan and waiting, three times, and S1's record says a reboot cleared it. **A fresh session should
-expect to clear the machine before its first front-end run**, and should confirm with a trivial
-`UsingFrontEnd[ 1 + 1 ]` under `-file` before attributing anything to the paclet. Nothing here needs a
-human decision — only a working machine.
+**What T3 inherits is unchanged, and its case is now stronger rather than cheaper.** A *dead* front end is
+what T3 was written for, and T4 produced a reliable way to make one — the 4/5 sequence above — so the
+reporting improvement can finally be bitten instead of argued. An **external** wall-clock guard is still
+needed for a *wedged* one (`perl -e 'alarm N; exec @ARGV'`; `timeout` is not installed on this machine),
+and the first thing a front-end session should run is that trivial `UsingFrontEnd[ 1 + 1 ]`.
 
-**The S2 probe fault still applies, and S3 added three of its own.**
+**The S2 probe fault still applies, S3 added three of its own, and S4 two more** — reading `sample` only
+as far as `NSApplicationMain`, and `CurrentValue[ $FrontEnd, "VersionNumber" ]` as a liveness probe, which
+answers non-numerically on a *healthy* front end and so asserts nothing; the link id changing is the only
+reading that detects a death.
 `TestReport[…]["TestsFailed"]` is not a property — it answers `Missing["KeyAbsent", …]` per test and
 prints phantom failures even on a fully green run, which reads exactly like a broken reporter; the
 working read is `Select[ Values @ report["TestResults"], #["Outcome"] =!= "Success" & ]`. And a killed
@@ -111,6 +120,8 @@ the first of them is why this took three sessions to reach.
 | `BibliographyHeading` is an ordinary member of its group, not pinned last. | Being last only decided which measurement discovered the corpse; a group of its own is what the ordering was standing in for. | The TestID is green with it mid-group, and red for the *right* reason under the bite. |
 | The three-group split stays, and the leak the Spec asked about is not one. | The cause is a single poisoning entry, so the split works because it separates `Default` from the renderers — not because it caps a cost. Closing more notebooks would have changed nothing. | Each of the twenty other live entries alone before a render leaves the link unchanged; `Default` alone replaces it (3098 → 3163). RSS grows 1 MB an entry (259 → 289 over 32) and resets per front end. |
 | The finding is recorded as a warning at the entry rather than as a test. | What a future session can get wrong is *adding a renderer to the live group*, which no assertion over the current file would catch; the comment sits where that edit is made. | `Tests/FrontEnd.wlt`, the `Default` entry and the `ownFrontEnd` block. |
+| A front-end death is measured as a **rate** over repetitions with a fresh front end each, never as one run. | S3's twenty single-shot controls named an entry that measures 0/6, and the real 4/5 sequence would have looked like a certainty from one observation either way; the whole T4 answer turns on the counts. | `Default` 0/6 against the hand-rolled three calls 4/5; the author sequence 0/5 with the PDF written 5/5. |
+| The product defect gets its own Backlog item rather than a task here. | This item is about the suite's isolation, and the suite is already fixed; a repair to `ResetDocumentView` is a different deliverable with a different bite. | `Work/Backlog/ResetViewRender.md`. |
 
 ## Progress
 
@@ -131,3 +142,11 @@ the first of them is why this took three sessions to reach.
   measurement, the three probe faults that hid it and the wedge's second trigger are in
   [`CLAUDE.md` § *Build & test*](../../CLAUDE.md). Opened **T4** — a named-sheet document is what an
   author has, so this may be the palette's defect and not the suite's.
+- **S4** 2026-07-30 T4 — the shape is the product's, the feared symptom is not, and S3's culprit is
+  the wrong one: `SetDocumentFontSize` + `ResetDocumentView` + `NotebookClose` on a *named*-sheet
+  document kills the next page render **4/5** (5/5 on a paclet sheet name) against 0/5 for six
+  controls, while the author's own paper printed after either slider is **0/5** and the entry S3 named
+  is 0/6. Split out as [Reset View Render](../Backlog/ResetViewRender.md). The session's larger find is
+  the wedge: it is AppKit's crash-restore modal on a headless front end, cleared by one `defaults
+  write`, which retires the reboot, the RSS heuristic and the `-code`/`-file` axis — all in
+  [`CLAUDE.md` § *Build & test*](../../CLAUDE.md), whose two front-end bullets it corrects.

@@ -21,8 +21,27 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 
 ## Active
 
-[Front End Test Isolation](Active/FrontEndTestIsolation.md) — next task **T4**, which S3 opened and which
-takes precedence over T3. T2 closed on 2026-07-30 by answering its own question with a no: the 27
+[Front End Test Isolation](Active/FrontEndTestIsolation.md) — next task **T3**, the last one, and it is
+now bitable: T4 produced a sequence that kills a front end on demand. **T4 closed on 2026-07-30 in both
+directions.** The shape is the product's — `SetDocumentFontSize` + `ResetDocumentView` + `NotebookClose`
+on a document whose stylesheet is a **name** kills the next whole-notebook render **4/5**, and **5/5** on
+the paclet's own sheet name, against 0/5 for the sheet embedded with `Get`, 0/5 for either call alone, 0/5
+with the document left open and 0/5 with no render — but the feared symptom is not: an author who opens a
+paper on that named sheet, drags **either** slider, resets the view and prints *that paper* loses nothing,
+0/5 deaths with the PDF written 5/5. So the palette's font slider does not crash the front end on the next
+print; what remains is reset, **close**, then print a second paper, which is
+[Reset View Render](Backlog/ResetViewRender.md). S3's culprit is corrected rather than confirmed —
+`viewMeasurements["Default.nb"]` survives **0/6** under repetition, so the entry it named is not the killer
+and a single-shot sweep of twenty controls could never have told a 4/5 rate from a certainty. **And the
+wedge that cost S1 a whole session is solved and was never ours**: it is AppKit's "reopen windows after a
+crash?" modal, raised on a headless front end where nobody can see or click it — `sample` shows the main
+thread in `-[NSAlert runModal]` under `promptToIgnorePersistentStateWithCrashHistory:`, the history being
+24 identical `EXC_BAD_ACCESS` reports in `~/Library/Logs/DiagnosticReports/` back to 2026-07-25, and one
+`defaults write com.wolfram.WolframApp ApplePersistenceIgnoreState -bool true` took `UsingFrontEnd[1 + 1]`
+from three hangs in a row to answering in **one second**. That retires the reboot, the `pkill` ritual as a
+cure, the RSS heuristic (103–117 MB here, not 94–99) and the `-code`/`-file` axis. Suite **384/0**.
+
+Before that, T2 closed on 2026-07-30 by answering its own question with a no: the 27
 notebooks are **neither a leak nor a ceiling**. Exactly one entry poisons the front end — `"Default" ->
 viewMeasurements[ "Default.nb" ]`, the only one of the 34 passing its stylesheet **by name** where every
 sibling embeds one with `Get` — and after it the next whole-notebook `Export` kills the front end
@@ -191,6 +210,14 @@ holds five files beside `Images/`, `LaTeX/`, `MathNotebook/`, `Notebooks/`, `Res
 `Work/`, and there is deliberately no `Wiki/` — durable knowledge is `CLAUDE.md`.
 
 ## Backlog
+
+[Reset View Render](Backlog/ResetViewRender.md) — `ResetDocumentView` after `SetDocumentFontSize` on a
+paper whose stylesheet is a *name*, once that paper is **closed**, leaves the front end unable to render a
+page: measured 2026-07-30 at 4/5 for `"Default.nb"` and 5/5 for the paclet's own sheet name, with the PDF
+simply never written, against 0/5 for the same sheet embedded with `Get`, for either call alone, and with
+the document left open. Backlog rather than Active because the author's common path is clean — printing the
+paper you just reset is 0/5 — so this is reached by closing a paper and printing a second one. Its T1 is a
+bisection question (the parent's removal, or its by-name re-resolution) and not yet a repair.
 
 [Hand-Written Preamble](Backlog/HandWrittenPreamble.md) — a notebook that was never imported exports a
 body and nothing else, so it compiles nowhere: measured 2026-07-30, a typed six-cell paper comes out as

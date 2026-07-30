@@ -915,14 +915,18 @@ $measuredLive = ownFrontEnd @ <|
   "LetterInk" -> letterInk[ ],
   "GlyphInk" -> glyphInk[ ],
   "Sheets" -> AssociationMap[ viewMeasurements @ Get @ FileNameJoin[ { $sheetDirectory, # } ] &, $templates ],
-  (* THIS is the entry that made one shared front end impossible, and it is the only one of the 34
-     whose stylesheet parent is a NAME where every other embeds one with Get (T2). Measured by
-     running each live entry alone ahead of the first page render: after this one — and after no
-     other of the twenty — the next whole-notebook Export kills the front end (link 3098 -> 3163).
-     So the file's problem was never a leak and never a count. Thirty-two entries survive one front
-     end, "Copied" alone survives, MaTeX immediately before it survives, and the eleven renderers
-     survive together. Do not move a page renderer into this group, and do not read the three-group
-     split as a cost ceiling that a tidier file could dissolve. *)
+  (* This entry is the only one of the 34 whose stylesheet parent is a NAME where every other embeds
+     one with Get, and that shape is what kills a page render — but the entry itself is not the
+     killer, and T2's single-shot sweep that said it was could not tell a rate from a certainty (T4).
+     Measured with a fresh front end per repetition: SetDocumentFontSize + ResetDocumentView +
+     NotebookClose on a named-sheet document kills the next whole-notebook Export 4/5 of the time
+     (5/5 for a paclet sheet name), against 0/5 for the same sheet embedded with Get, 0/5 for either
+     call alone and 0/5 with the document left open — while THIS entry, which makes those same three
+     calls, survives 0/6. What immunises it is unexplained; the chain read before the size call is
+     the only difference. So the file's problem was never a leak and never a count.
+     Do not move a page renderer into this group, and do not read the three-group split as a cost
+     ceiling that a tidier file could dissolve — the shape above is present here whatever its rate,
+     and the product side of it is Work/Backlog/ResetViewRender.md. *)
   "Default" -> viewMeasurements[ "Default.nb" ],
   "SheetLoaded" -> AssociationMap[
     Module[ { notebook = CreateDocument[ { }, Visible -> False,
