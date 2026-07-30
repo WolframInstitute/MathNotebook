@@ -118,7 +118,16 @@ with a tooltip, and `Import .tex file…` / `Export to .tex…` joined them — 
 palette presence at all, which is what made the per-selection buttons look like the only way out to
 LaTeX. Closed with one clause waived: Pavel has not yet read the new palette on a real paper.
 
-**0.1.16 is the published version** (2026-07-28) — **270 tests green**, `Scripts/PublishPaclet.wls` then
+**0.1.20 is the published version** (2026-07-30) — `Scripts/PublishPaclet.wls` then
+`Scripts/DeployPreviews.wls`, and driven from the cloud install before being believed: the marker reads
+0.1.20, an imported paper comes back as `{Section, Text, Section, Reference}` with the anchor heading its
+bibliography, the entry carries its `[smith]` label, and `LabelReferences` leaves every cell of the
+document alive. The one read that looks wrong is the known unmeasurable — a `Reference` margin of 66
+rather than 205, because by-name stylesheet resolution falls through to `Default.nb` for a locally
+installed paclet in this environment (`BasicFunctionality`'s outstanding clause). It carries
+`FirstReadingDefects` T6 and all of `BibliographyDisplay`, plus the second session's `EnvironmentBlocks`.
+
+0.1.16 (2026-07-28) — **270 tests green**, `Scripts/PublishPaclet.wls` then
 `Scripts/DeployPreviews.wls`, installed and driven headless against the installed copy: it is the whole
 `BasicFunctionality` shakedown. Twelve entry points that returned unevaluated with no message now answer
 `"Open a notebook first!"`; `GoBack` reports its two empty states and raises the notebook it returns to;
