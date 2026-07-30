@@ -21,9 +21,22 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 
 ## Active
 
-[Front End Test Isolation](Active/FrontEndTestIsolation.md) — next task **T2**. T1 closed on 2026-07-30
-and the suite is **384/0**: the permanently red `BibliographyHeading` (TestID `t0v83dcroxjjzb`) is green,
-and 0.1.20 had shipped with it red. Two measurements did it, and the first says the task's own suggested
+[Front End Test Isolation](Active/FrontEndTestIsolation.md) — next task **T4**, which S3 opened and which
+takes precedence over T3. T2 closed on 2026-07-30 by answering its own question with a no: the 27
+notebooks are **neither a leak nor a ceiling**. Exactly one entry poisons the front end — `"Default" ->
+viewMeasurements[ "Default.nb" ]`, the only one of the 34 passing its stylesheet **by name** where every
+sibling embeds one with `Get` — and after it the next whole-notebook `Export` kills the front end
+(3098 → 3163), while each of the twenty other live entries leaves the link untouched, `Copied` alone
+survives, and 32 entries survive one front end. Which makes T1's split right for a narrower reason than it
+claimed, and raises **T4**: a named-sheet document under `SetDocumentFontSize` is what an *author's* paper
+is, so the palette's font slider may crash the front end on the next print. Three probe faults hid this
+for three sessions — a dead front end is **relaunched transparently**, so `Length @ Notebooks[]` answers
+`1` straight across a death; ``MathLink`LinkConnectedQ`` answers `False` on a healthy link; and a `ps` line
+grepping for `MathematicaServer` matches its own `bash -c` wrapper. The machine ended S3 wedged, by
+`pkill -9` of a front end a running script still held — this file's own hygiene applied one step too
+early. T1 had closed earlier the same day and the suite is **384/0**: the permanently red
+`BibliographyHeading` (TestID `t0v83dcroxjjzb`) is green, and 0.1.20 had shipped with it red.
+Two measurements did it, and the first says the task's own suggested
 fix was a no-op — **`UsingFrontEnd` does not give you a second front end**, two sequential blocks in one
 kernel reporting the identical `LinkObject`, while `Developer`UninstallFrontEnd[]` does (link 106 → 109
 → 112 → 115, each fresh). The second answers S1's `needs-human:` outright: **`LinkClose` on `$FrontEnd`

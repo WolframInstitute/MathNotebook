@@ -42,47 +42,65 @@ what produced the current state.
 
 ## Tasks
 
-- [x] T1 — give the PDF-exporting measurements a front end of their own (a second `UsingFrontEnd`, or
-      one `$measured` per front end), and prove it by the TestID going green on an idle machine.
-- [ ] T2 — decide whether the 27 notebooks are a leak or a ceiling: close what is opened, and find
-      whether the association survives to 34 entries once it does. `NotebookClose` appears 27 times
-      already, so a naive count says they are closed and something still accumulates.
 - [ ] T3 — make a dead front end fail loudly rather than as a content mismatch: a measurement that
       returns `$Failed` where a string was expected should abort the file with a named message, so this
       cannot be mistaken for an assertion about the paclet again.
+- [ ] T4 — find whether the `Default` poison is the *product's* and not the suite's. A named
+      stylesheet parent under `SetDocumentFontSize` + `ResetDocumentView` is what an author's own paper
+      is; the other 33 entries embed their sheet with `Get` and none of them poisons anything. Narrow
+      it to the call (open/close alone, the size call, the reset, the chain read), and if a real
+      document reproduces it, the palette's font slider crashes the front end on the next print.
+
+### Done
+
+- [x] T1 (S2) — give the PDF-exporting measurements a front end of their own, and prove it by the
+      TestID going green on an idle machine.
+- [x] T2 (S3) — neither a leak nor a ceiling: one entry poisons the front end for the next page
+      render, and it is named in the test file and in `CLAUDE.md`.
 
 ## Hand-off
 
-**T1 is done and the wedge is no longer a mystery — S1's `needs-human:` is discharged and both halves of
-it turned out to be the same fact.** The reboot cleared the machine, and the cause is now a twenty-line
-reproduction rather than a mood: `LinkClose` on `$FrontEnd` leaves the kernel unable to launch another
-front end, and the next `UsingFrontEnd` hangs forever. See `CLAUDE.md` § *Build & test* for the durable
-form. Nothing here needs a human before T2.
+**T2 is answered and the Spec's own question was the wrong one, which is the fact worth carrying: the
+27 notebooks are neither a leak nor a ceiling.** One entry poisons the front end for the next page
+render — `"Default" -> viewMeasurements[ "Default.nb" ]`, the only one of the 34 whose stylesheet parent
+is a *name* — and everything the count hypothesis predicted is false. The durable form, with the three
+probe faults that hid it, is in `CLAUDE.md` § *Build & test*, and the test file names the entry at the
+entry. So T1's split is right for a narrower reason than it claimed, and the rule it leaves is in the
+group comment: do not move a page renderer into the live group.
 
-**What T2 inherits.** The suite is 384/0, so the file no longer has a failure to hide behind, but the
-Spec's leak question is untouched: the rendering group still holds eleven measurements and every one of
-them writes a whole notebook to disk. What T1 changed is only that a front end killed there cannot take
-the other two groups with it. The measurement worth making first is per-entry — evaluating the 34
-entries one at a time inside a single front end and reading `Length @ Notebooks[]` after each answered a
-constant **1** throughout, which says the notebooks *are* being closed and that the accumulation, if
-there is one, is inside the front end rather than in open documents.
+**T4 is what this session found rather than what it set out to do, and it is the one that might not be
+about the suite at all.** Every entry but `Default` embeds its sheet with `Get`; `Default` passes a name,
+which is what a real document has. If `SetDocumentFontSize` + `ResetDocumentView` on a named-sheet
+document is what poisons the front end, the palette's font slider crashes the front end on the author's
+next print and the suite was merely the first place it showed. **Unmeasured** — the narrowing probe was
+written and never ran, because the machine wedged first (below). Take it before T3: T3 is a reporting
+improvement, T4 is possibly a shipping defect.
 
-**What T3 inherits, and its scope is still wrong as written but for a smaller reason now.** It asks that
-a measurement returning `$Failed` where a string was expected abort the file with a named message. That
-covers the *dead* front end. A *wedged* one returns nothing at all, and `TimeConstrained` cannot convert
-it — a blocked MathLink read does not take an abort, measured at 120 s in S1. So the file still needs an
-**external** wall-clock guard for that state; `perl -e 'alarm N; exec @ARGV'` is what this session used
-throughout and it works (`timeout` is not installed on this machine, `gtimeout` and `perl` are the
-options). The new fact that narrows it: the wedge now has a known trigger, so T3 can *assert* against it
-rather than only report it.
+**What T3 inherits is unchanged from S2, and one thing is now cheaper.** A *dead* front end is what T3
+was written for; a *wedged* one returns nothing at all and `TimeConstrained` cannot convert it (a blocked
+MathLink read does not take an abort, 120 s in S1), so an **external** wall-clock guard is still needed —
+`perl -e 'alarm N; exec @ARGV'` works and is what S2 and S3 both used (`timeout` is not installed on this
+machine; `gtimeout` and `perl` are the options). What is cheaper: a wedged front end is now identifiable
+**from `ps` alone**, sitting at 94–99 MB of RSS where a working one reaches ~260 MB, so the guard has
+something to report rather than only a timeout.
 
-**Two probe faults, both of which cost time here and neither of which is about the paclet.**
+**The machine is wedged as of the end of S3, and the trigger is now known: `pkill -9` of a front end that
+a *running* script still holds.** That is this file's own hygiene applied one step too early — between
+attempts it is what makes runs reproducible, during one it is the wedge. It did not clear by killing the
+orphan and waiting, three times, and S1's record says a reboot cleared it. **A fresh session should
+expect to clear the machine before its first front-end run**, and should confirm with a trivial
+`UsingFrontEnd[ 1 + 1 ]` under `-file` before attributing anything to the paclet. Nothing here needs a
+human decision — only a working machine.
+
+**The S2 probe fault still applies, and S3 added three of its own.**
 `TestReport[…]["TestsFailed"]` is not a property — it answers `Missing["KeyAbsent", …]` per test and
 prints phantom failures even on a fully green run, which reads exactly like a broken reporter; the
 working read is `Select[ Values @ report["TestResults"], #["Outcome"] =!= "Success" & ]`. And a killed
 `wolframscript` leaves its `MathematicaServer` and `WolframKernel` children alive, contending for the
-next run — `pkill -9 -f MathematicaServer` between attempts is what made this session's runs
-reproducible where S1's were not.
+next run — `pkill -9 -f MathematicaServer` **between** attempts is what made S2's runs reproducible
+where S1's were not; during one it is the wedge above. S3's three — `Length @ Notebooks[]`,
+``MathLink`LinkConnectedQ`` and a `ps` line that reads its own `grep` wrapper — are in `CLAUDE.md`, and
+the first of them is why this took three sessions to reach.
 
 ## Decisions
 
@@ -91,6 +109,8 @@ reproducible where S1's were not.
 | Isolate with `Developer`UninstallFrontEnd[]` between groups, not with a second `UsingFrontEnd`. | A second `UsingFrontEnd` is a no-op — the task's own suggested fix. | Two sequential blocks report the identical `LinkObject[…, 106, 3]`; after the uninstall the link goes 109, 112, 115, each fresh and each answering. |
 | Three groups — dialogs, live notebooks, page renderers — rather than one front end per entry. | The membership rule is checkable by reading one line of a helper ("does it `Export` the whole notebook"), where a per-entry split is 34 front-end launches for a file that measures in ~17 s. | Suite 384/0 with the split; the rendering group's eleven entries survive one front end. |
 | `BibliographyHeading` is an ordinary member of its group, not pinned last. | Being last only decided which measurement discovered the corpse; a group of its own is what the ordering was standing in for. | The TestID is green with it mid-group, and red for the *right* reason under the bite. |
+| The three-group split stays, and the leak the Spec asked about is not one. | The cause is a single poisoning entry, so the split works because it separates `Default` from the renderers — not because it caps a cost. Closing more notebooks would have changed nothing. | Each of the twenty other live entries alone before a render leaves the link unchanged; `Default` alone replaces it (3098 → 3163). RSS grows 1 MB an entry (259 → 289 over 32) and resets per front end. |
+| The finding is recorded as a warning at the entry rather than as a test. | What a future session can get wrong is *adding a renderer to the live group*, which no assertion over the current file would catch; the comment sits where that edit is made. | `Tests/FrontEnd.wlt`, the `Default` entry and the `ownFrontEnd` block. |
 
 ## Progress
 
@@ -105,3 +125,9 @@ reproducible where S1's were not.
   measured to be a no-op and the wedge S1 could not clear turned out to be one call away from it — both
   in [`CLAUDE.md` § *Build & test*](../../CLAUDE.md), which the two front-end bullets there now correct
   rather than repeat.
+- **S3** 2026-07-30 T2 — neither: `"Default" -> viewMeasurements[ "Default.nb" ]` poisons the front end
+  so the next whole-notebook `Export` kills it, and it is the only one of the 34 passing its stylesheet
+  by name. Named at the entry in `Tests/FrontEnd.wlt` (comment only, no assertion changed); the
+  measurement, the three probe faults that hid it and the wedge's second trigger are in
+  [`CLAUDE.md` § *Build & test*](../../CLAUDE.md). Opened **T4** — a named-sheet document is what an
+  author has, so this may be the palette's defect and not the suite's.

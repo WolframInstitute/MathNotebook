@@ -871,7 +871,15 @@ $continueImportedSource = "\\documentclass{article}\n\\usepackage{amsthm}\n\\new
 
    What the split buys is that a front end killed by one group cannot take the rest of the file with
    it, which is what a single association did: with all 34 entries in one, the service front end died
-   somewhere among them and every measurement after that point answered $Failed. *)
+   somewhere among them.
+
+   Two corrections to that last sentence, both T2 and both measured. A front end that dies is
+   RELAUNCHED transparently, so exactly ONE measurement is damaged per death — the one whose export
+   was in flight — rather than every measurement after it; the eleven renderers ran correctly on the
+   fresh link. And Length @ Notebooks[] therefore answers 1 straight across a death, which is what
+   made the death look like a mystery: the only reading that detects one is the LinkObject's own id
+   changing, and MathLink`LinkConnectedQ answers False even on a healthy link. Which entry does the
+   killing is named at "Default" below. *)
 SetAttributes[ ownFrontEnd, HoldFirst ]
 ownFrontEnd[ measurements_ ] :=
   Module[ { values = UsingFrontEnd @ measurements },
@@ -907,6 +915,14 @@ $measuredLive = ownFrontEnd @ <|
   "LetterInk" -> letterInk[ ],
   "GlyphInk" -> glyphInk[ ],
   "Sheets" -> AssociationMap[ viewMeasurements @ Get @ FileNameJoin[ { $sheetDirectory, # } ] &, $templates ],
+  (* THIS is the entry that made one shared front end impossible, and it is the only one of the 34
+     whose stylesheet parent is a NAME where every other embeds one with Get (T2). Measured by
+     running each live entry alone ahead of the first page render: after this one — and after no
+     other of the twenty — the next whole-notebook Export kills the front end (link 3098 -> 3163).
+     So the file's problem was never a leak and never a count. Thirty-two entries survive one front
+     end, "Copied" alone survives, MaTeX immediately before it survives, and the eleven renderers
+     survive together. Do not move a page renderer into this group, and do not read the three-group
+     split as a cost ceiling that a tidier file could dissolve. *)
   "Default" -> viewMeasurements[ "Default.nb" ],
   "SheetLoaded" -> AssociationMap[
     Module[ { notebook = CreateDocument[ { }, Visible -> False,
