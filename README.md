@@ -20,26 +20,22 @@ PacletInstall["https://www.wolframcloud.com/obj/hajek_pavel/MathNotebook.paclet"
 Needs["WolframInstitute`MathNotebook`"]
 ```
 
-Restart the front end, then open **Palettes ▸ MathNotebook**.
+Restart the front end.
 
-**First, apply a stylesheet: Document view ▸ Apply stylesheet ▸ PlainArticle.** This is not optional
-and it is the one step that is easy to miss. The twelve block environments are *declared by the
-stylesheet*, so on a notebook still using `Default.nb` a Definition cell gets no name, no number and no
-indent, and a cross-reference to it renders `2.0` — which looks like a broken paclet rather than a
-missing step. `PlainArticle` is Default's own typography with the paper's structure added, so it is the
-one to start from; the five journal templates are for a submission. An imported `.tex` picks its sheet
-itself.
+**First steps:**
 
-<p align="center">
-  <img src="Images/Palette.png" alt="MathNotebook palette" width="215">
-</p>
-
-Then **Blocks ▸ Front matter** puts an empty title, author and abstract at the top of the document, and
-the rest of that group inserts theorems, definitions, proofs and equations at the cursor.
+1. Open **Palettes ▸ MathNotebook**.
+2. Apply a stylesheet — Document view ▸ Apply stylesheet ▸ `PlainArticle` (not optional — blocks don't work without it).
+3. **Blocks ▸ Front matter** — title, author, abstract.
+4. **Blocks ▸** environments — theorems, definitions, proofs, equations at the cursor.
 
 Click **Setup ▸ Tutorial** — or `OpenTutorial[]` — to open the **[Tutorial](https://www.wolframcloud.com/obj/hajek_pavel/MathNotebook/Tutorial.nb)** notebook, which is also where what every button does is written down.
 
 Click **Setup ▸ Update from cloud** — or `UpdateMathNotebook[]` — to update to the latest development version.
+
+<p align="center">
+  <img src="Images/Palette.png" alt="MathNotebook palette" width="215">
+</p>
 
 ## 📦 Requirements
 
