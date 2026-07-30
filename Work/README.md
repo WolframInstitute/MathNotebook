@@ -21,7 +21,17 @@ item — clean context per task is the whole point. Use `/work` to create a new 
 
 ## Active
 
-Empty. `EnvironmentBlocks` closed on 2026-07-30 with all three tasks done, and its two remaining clauses
+[Front End Test Isolation](Active/FrontEndTestIsolation.md) — next task **T1**, and it is **blocked on
+the machine, not on the code**. S1 reproduced the Spec on its first command (`FrontEnd.wlt` alone, 57/1,
+`BibliographyHeading`, `Import::nffil`) and then every front-end run after that one **hung instead of
+failing** — eight attempts, never recovering — so T1's acceptance criterion was unreachable and
+`Tests/FrontEnd.wlt` is untouched. The item carries a `needs-human:` line: the wedge wants a reboot or a
+cleared `~/Library/Wolfram/FrontEnd/15.0 Caches`, neither being a session's to do. The durable half is in
+`CLAUDE.md` § *Build & test* — a wedged front end **hangs** where a dead one fails, `TimeConstrained`
+cannot convert it, and `sample` shows both processes healthy and waiting on each other — and it narrows
+T3, which as written covers only the dead case.
+
+`EnvironmentBlocks` closed on 2026-07-30 with all three tasks done, and its two remaining clauses
 are Pavel's — see its Hand-off.
 
 [Environment Blocks](Done/2026-07-30-EnvironmentBlocks.md) closed on 2026-07-30. A theorem-like
@@ -163,14 +173,6 @@ holds five files beside `Images/`, `LaTeX/`, `MathNotebook/`, `Notebooks/`, `Res
 `Work/`, and there is deliberately no `Wiki/` — durable knowledge is `CLAUDE.md`.
 
 ## Backlog
-
-[Front End Test Isolation](Backlog/FrontEndTestIsolation.md) — `Tests/FrontEnd.wlt` has one
-**permanently red** test and 0.1.20 shipped with it red: `BibliographyHeading` (TestID `t0v83dcroxjjzb`)
-fails on an idle machine, in the suite and alone, because the service front end link dies before its
-export and the PDF is never written. The measurement is correct standalone, so it is the association's
-27 notebooks it does not survive — being last only decides which measurement finds the corpse. The cost
-of not knowing this: the unnumbered bibliography heading is **unasserted**, and the failure was written
-off as load twice before anyone read the TestID.
 
 [Hand-Written Preamble](Backlog/HandWrittenPreamble.md) — a notebook that was never imported exports a
 body and nothing else, so it compiles nowhere: measured 2026-07-30, a typed six-cell paper comes out as
