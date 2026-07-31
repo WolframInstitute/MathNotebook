@@ -41,6 +41,50 @@ VerificationTest[
   True
 ]
 
+(* A cell of typed LaTeX is taken whole: the body inside its delimiters where it has any, all of its
+   text where it has none, and the number the source asked for. Both halves of displaySource are
+   asserted here because both decide what MaTeX is handed and what style the cell comes out with. *)
+VerificationTest[
+  Map[ displaySource,
+    { "\\frac{a}{b}", "  $$ x^2 $$  ", "\\[ x^2 \\]", "\\begin{equation}E=mc^2\\end{equation}",
+      "\\begin{align*}a&=b\\end{align*}" } ],
+  { { "\\frac{a}{b}", False }, { "x^2", False }, { "x^2", False }, { "E=mc^2", True },
+    { "\\begin{aligned}\na&=b\n\\end{aligned}", False } }
+]
+
+(* What was typed comes back byte for byte, delimiters and all \[LongDash] which is the whole reason the
+   source is stored beside the body MaTeX is given rather than being recovered from it. *)
+VerificationTest[
+  maTeXToLaTeXCell[ Cell[ "rendered", "DisplayFormula", CellID -> 4,
+    TaggingRules -> <| "MathNotebook" -> <| "SourceTeX" -> "x^2", "MaTeX" -> True,
+      "LaTeXSource" -> "  $$ x^2 $$  " |> |> ] ],
+  Cell[ "  $$ x^2 $$  ", "Text", CellID -> 4 ]
+]
+
+(* A cell rendered from typeset mathematics has no source of its own, so it gets the delimiters its
+   style implies rather than nothing at all. *)
+VerificationTest[
+  Map[ maTeXToLaTeXCell,
+    { Cell[ "rendered", "DisplayFormulaNumbered",
+        TaggingRules -> <| "MathNotebook" -> <| "SourceTeX" -> "x^2", "MaTeX" -> True |> |> ],
+      Cell[ "rendered", "DisplayFormula",
+        TaggingRules -> <| "MathNotebook" -> <| "SourceTeX" -> "x^2", "MaTeX" -> True |> |> ] } ],
+  { Cell[ "\\begin{equation}\nx^2\n\\end{equation}", "Text" ], Cell[ "\\[ x^2 \\]", "Text" ] }
+]
+
+VerificationTest[
+  maTeXToLaTeXCell[ Cell[ "prose", "Text" ] ],
+  Cell[ "prose", "Text" ]
+]
+
+(* Nothing is rendered that is not an author's prose: an empty cell has no LaTeX in it, and an
+   evaluation cell's text is not mathematics. Asserted without MaTeX, so it holds on a machine with
+   no TeX distribution \[LongDash] a cell these clauses did not take would call MaTeX`MaTeX and fail here. *)
+VerificationTest[
+  Map[ laTeXToMaTeXCell[ 14 ], { Cell[ "   ", "Text" ], Cell[ "x^2", "Input" ], Cell[ BoxData[ "x" ], "Text" ] } ],
+  { Cell[ "   ", "Text" ], Cell[ "x^2", "Input" ], Cell[ BoxData[ "x" ], "Text" ] }
+]
+
 VerificationTest[
   StringFreeQ[ userInitFile[], "Documents" ] && StringMatchQ[ userInitFile[], ___ ~~ "Kernel" ~~ $PathnameSeparator ~~ "init.m" ],
   True

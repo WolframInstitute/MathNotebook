@@ -11,8 +11,10 @@ PackageScope["splitDisplayMath"]
 PackageScope["mergeStrings"]
 PackageScope["alignBoxes"]
 PackageScope["displayParse"]
+PackageScope["displaySource"]
 PackageScope["displayBodyBoxes"]
 PackageScope["storedSourceTeX"]
+PackageScope["storedLaTeXSource"]
 PackageScope["cellBoxes"]
 PackageScope["retainedCellOptions"]
 PackageScope["convertLaTeXNotebook"]
@@ -21,6 +23,7 @@ PackageScope["mapCells"]
 PackageScope["convertLaTeXCell"]
 PackageScope["convertMathCell"]
 PackageScope["convertCells"]
+PackageScope["convertSelectedCells"]
 PackageScope["writeCells"]
 
 (* T5: convertCells[ transform, $Failed ] stays unevaluated exactly as the overloads do. *)
@@ -51,6 +54,14 @@ convertMathNotebook[ notebook_Notebook ] :=
 convertCells[ cellTransform_, notebook_NotebookObject ] :=
   Replace[ SelectedCells[ notebook ],
     { {} :> NotebookPut[ mapCells[ cellTransform, NotebookGet[ notebook ] ], notebook ],
+      cells_List :> writeCells[ cellTransform, cells ] } ]
+
+(* An empty selection converts nothing, where convertCells reads it as the whole notebook. Every
+   transform there is keyed on a math style and so leaves prose alone; one keyed on a cell's own
+   text is not, and would take the paper with it. *)
+convertSelectedCells[ cellTransform_, notebook_NotebookObject ] :=
+  Replace[ SelectedCells[ notebook ],
+    { {} :> MessageDialog[ "Select a cell first!" ],
       cells_List :> writeCells[ cellTransform, cells ] } ]
 
 writeCells[ cellTransform_, cells_List ] :=
@@ -342,6 +353,17 @@ displaySpanCell[ span_String, body_String, numbered_, "Single" ] :=
 displaySpanCell[ span_String, body_String, numbered_, "Align" ] :=
   displayFormulaCell[ alignBoxes[ StringTrim[ body ] ], numbered, span ]
 
+(* The LaTeX a display cell is rendered from and whether its source asked for a number: the body
+   inside the delimiters where the text carries any, the whole of it where it carries none, so a
+   bare fragment is as renderable as a full environment. An align becomes an aligned, which is what
+   MaTeX and the front end both draw where the outer environment is the page's business. *)
+displaySource[ text_String ] :=
+  Replace[ displayParse @ StringTrim[ text ],
+    { { body_, numbered_, "Align" } :>
+        { "\\begin{aligned}\n" <> StringTrim[ body ] <> "\n\\end{aligned}", numbered },
+      { body_, numbered_, _ } :> { StringTrim[ body ], numbered },
+      $Failed :> { StringTrim[ text ], False } } ]
+
 displayBodyBoxes[ tex_String ] :=
   First[ StringCases[ StringTrim[ tex ],
     StartOfString ~~ "\\begin{aligned}" ~~ body__ ~~ "\\end{aligned}" ~~ EndOfString :>
@@ -443,10 +465,18 @@ fontTeX[ command_String, content_ ] :=
 mergeStrings[ parts_List ] :=
   FixedPoint[ Replace[ { before___, first_String, second_String, after___ } :> { before, first <> second, after } ], parts ]
 
-storedSourceTeX[ Cell[ ___, TaggingRules -> tagging_, ___ ] ] :=
-  Lookup[ Association @ Lookup[ Association @ tagging, "MathNotebook", <||> ], "SourceTeX", $Failed ]
+storedSourceTeX[ cell_ ] :=
+  storedTagging[ cell, "SourceTeX" ]
 
-storedSourceTeX[ _ ] :=
+(* Kept apart from the TeX a cell is rendered from: a re-render is given the body, and the author's
+   own text — delimiters, line breaks and all — is what the trip back to LaTeX gives him. *)
+storedLaTeXSource[ cell_ ] :=
+  storedTagging[ cell, "LaTeXSource" ]
+
+storedTagging[ Cell[ ___, TaggingRules -> tagging_, ___ ], key_String ] :=
+  Lookup[ Association @ Lookup[ Association @ tagging, "MathNotebook", <||> ], key, $Failed ]
+
+storedTagging[ _, _ ] :=
   $Failed
 
 cellBoxes[ Cell[ BoxData[ FormBox[ boxes_, TraditionalForm ] ], ___ ] ] :=

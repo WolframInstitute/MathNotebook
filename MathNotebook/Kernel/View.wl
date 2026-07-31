@@ -291,5 +291,7 @@ rescaleMaTeXCells[ notebook_NotebookObject ] :=
       Needs[ "MaTeX`" ];
       writeCells[ resizedMaTeXCell[ maTeXFontSize[ notebook ] ], cells ] ] ]
 
+(* The author's own source is carried across the re-render, or dragging either slider would silently
+   cost a converted cell the text ConvertMaTeXToLaTeX gives back. *)
 resizedMaTeXCell[ size_ ][ cell : Cell[ _, style_String, options___ ] ] :=
-  maTeXCell[ storedSourceTeX[ cell ], style, { options }, size ]
+  maTeXCell[ storedSourceTeX[ cell ], style, { options }, size, storedLaTeXSource[ cell ] ]

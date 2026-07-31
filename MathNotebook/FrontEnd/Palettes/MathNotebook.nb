@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       154,          7]
-NotebookDataLength[     54817,       1213]
-NotebookOptionsPosition[     54158,       1189]
-NotebookOutlinePosition[     54847,       1215]
-CellTagsIndexPosition[     54804,       1212]
+NotebookDataLength[     57092,       1259]
+NotebookOptionsPosition[     56433,       1235]
+NotebookOutlinePosition[     57122,       1261]
+CellTagsIndexPosition[     57079,       1258]
 WindowTitle->MathNotebook
 WindowFrame->Palette*)
 
@@ -546,7 +546,53 @@ math, from the LaTeX each of those cells stores.\"",
                
                Annotation[#, 
                 "Turns rendered MaTeX images back into editable typeset math, \
-from the LaTeX each of those cells stores.", "Tooltip"]& ]}
+from the LaTeX each of those cells stores.", "Tooltip"]& ]},
+             {
+              TagBox[
+               TooltipBox[
+                ButtonBox["\<\"LaTeX \[Rule] MaTeX\"\>",
+                 Appearance->"Palette",
+                 
+                 ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
+                  WolframInstitute`MathNotebook`ConvertLaTeXToMaTeX[]),
+                 Evaluator->Automatic,
+                 ImageSize->{200, 27},
+                 Method->"Queued"],
+                
+                "\"Renders the LaTeX you typed into the selected cells \
+through real LaTeX, taking each cell whole \[LongDash] the body inside its \
+$$, \\\\[ \\\\] or equation delimiters, or all of its text if it has none. \
+Select the cells first: nothing is converted without a selection. Optional: \
+needs MaTeX, a TeX distribution and Ghostscript.\"",
+                TooltipStyle->"TextStyling"],
+               
+               Annotation[#, 
+                "Renders the LaTeX you typed into the selected cells through \
+real LaTeX, taking each cell whole \[LongDash] the body inside its $$, \\[ \
+\\] or equation delimiters, or all of its text if it has none. Select the \
+cells first: nothing is converted without a selection. Optional: needs MaTeX, \
+a TeX distribution and Ghostscript.", "Tooltip"]& ]},
+             {
+              TagBox[
+               TooltipBox[
+                ButtonBox["\<\"MaTeX \[Rule] LaTeX\"\>",
+                 Appearance->"Palette",
+                 
+                 ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
+                  WolframInstitute`MathNotebook`ConvertMaTeXToLaTeX[]),
+                 Evaluator->Automatic,
+                 ImageSize->{200, 27},
+                 Method->"Queued"],
+                
+                "\"Turns rendered MaTeX images back into text cells of LaTeX \
+source, giving back exactly what was typed. An image rendered from typeset \
+math instead gives its stored LaTeX in display delimiters.\"",
+                TooltipStyle->"TextStyling"],
+               
+               Annotation[#, 
+                "Turns rendered MaTeX images back into text cells of LaTeX \
+source, giving back exactly what was typed. An image rendered from typeset \
+math instead gives its stored LaTeX in display delimiters.", "Tooltip"]& ]}
             },
             DefaultBaseStyle->"Column",
             GridBoxAlignment->{"Columns" -> {{Left}}},
@@ -995,7 +1041,6 @@ when done and reports anything it could not find.\"",
                 TooltipStyle->"TextStyling"],
                
                Annotation[#, 
-                
                 "Writes the whole paper into a directory as an arXiv \
 submission: the .tex beside every figure file and .bib it names, plus the \
 .bbl where a local pdfLaTeX is found, since arXiv runs LaTeX but not BibTeX. \
@@ -1088,6 +1133,7 @@ stylesheets ask for. Restart the front end afterwards.", "Tooltip"]& ]},
                TooltipBox[
                 ButtonBox["\<\"Install MaTeX\"\>",
                  Appearance->"Palette",
+                 
                  ButtonFunction:>(Needs["WolframInstitute`MathNotebook`"]; 
                   WolframInstitute`MathNotebook`InstallMaTeX[]),
                  Evaluator->Automatic,
@@ -1185,7 +1231,7 @@ palette on a real paper.", "Tooltip"]& ]}
    GridBoxAlignment->{"Columns" -> {{Left}}},
    GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
    GridBoxSpacings->{"Columns" -> {{Automatic}}, "Rows" -> {{0.4}}}],
-  "Column"]],ExpressionUUID->"ccd57374-f90a-4bb7-aec9-5540fbb3db8a"]
+  "Column"]],ExpressionUUID->"21daff1d-0217-4c90-a363-f65769127414"]
 },
 Editable->False,
 Saveable->False,
@@ -1201,7 +1247,7 @@ TaggingRules-><|
   "ViewOpen" -> True, "DocumentOpen" -> True, "SetupOpen" -> True|>,
 FrontEndVersion->"15.0 for Mac OS X ARM (64-bit) (May 19, 2026)",
 StyleDefinitions->"Palette.nb",
-ExpressionUUID->"c08273bd-22d4-4a98-9a10-a72a95cd1309"
+ExpressionUUID->"d0bb38e7-3062-4e8a-b34d-e746d29910d9"
 ]
 (* End of Notebook Content *)
 
@@ -1214,7 +1260,7 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[581, 21, 53573, 1166, 871, InheritFromParent,ExpressionUUID->"ccd57374-f90a-4bb7-aec9-5540fbb3db8a"]
+Cell[581, 21, 55848, 1212, 925, InheritFromParent,ExpressionUUID->"21daff1d-0217-4c90-a363-f65769127414"]
 }
 ]
 *)

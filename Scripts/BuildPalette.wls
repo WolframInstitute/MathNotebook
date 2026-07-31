@@ -197,7 +197,14 @@ $groups = {
     kernelButton[ "math \[Rule] MaTeX", WolframInstitute`MathNotebook`ConvertToMaTeX[ ],
       "Renders the selected display equations through real LaTeX, at the size Math size is showing. The result is an image rather than editable math, so render last. Optional: needs MaTeX, a TeX distribution and Ghostscript." ],
     kernelButton[ "MaTeX \[Rule] math", WolframInstitute`MathNotebook`ConvertFromMaTeX[ ],
-      "Turns rendered MaTeX images back into editable typeset math, from the LaTeX each of those cells stores." ] } },
+      "Turns rendered MaTeX images back into editable typeset math, from the LaTeX each of those cells stores." ],
+    (* The pair above goes through the front end's own typesetting; this one goes straight from the
+       LaTeX an author typed as text, which is the way a paper actually gets written. Below them
+       rather than above because the typeset route is the one that needs nothing installed. *)
+    kernelButton[ "LaTeX \[Rule] MaTeX", WolframInstitute`MathNotebook`ConvertLaTeXToMaTeX[ ],
+      "Renders the LaTeX you typed into the selected cells through real LaTeX, taking each cell whole \[LongDash] the body inside its $$, \\[ \\] or equation delimiters, or all of its text if it has none. Select the cells first: nothing is converted without a selection. Optional: needs MaTeX, a TeX distribution and Ghostscript." ],
+    kernelButton[ "MaTeX \[Rule] LaTeX", WolframInstitute`MathNotebook`ConvertMaTeXToLaTeX[ ],
+      "Turns rendered MaTeX images back into text cells of LaTeX source, giving back exactly what was typed. An image rendered from typeset math instead gives its stored LaTeX in display delimiters." ] } },
   { "View", "Document view", {
     menuButton[ "Apply stylesheet",
       Append[ Map[ stylesheetItem, $styleSheets ],

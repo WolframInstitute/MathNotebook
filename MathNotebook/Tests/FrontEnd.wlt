@@ -388,8 +388,20 @@ maTeXDocument[ parent_ ] :=
 maTeXWidth[ notebook_NotebookObject ] :=
   FirstCase[ NotebookGet[ notebook ], GraphicsBox[ ___, ImageSize -> { width_, _ }, ___ ] :> width, 0, Infinity ]
 
+(* The LaTeX pair, end to end and through the front end, which is the only place the claim can be
+   made: the pure cores say what the tagging rules hold, and only a real render says the image was
+   drawn from them. A cell of typed source comes back as a DisplayFormula carrying a picture, and
+   the trip back gives the author his own text, spaces and dollars included. *)
+typedLaTeXDocument[ parent_ ] :=
+  NotebookPut[ Notebook[ { Cell[ "$$ x^2 $$", "Text" ] }, StyleDefinitions -> parent, Visible -> False ] ]
+
+firstCellShape[ notebook_NotebookObject ] :=
+  Replace[ NotebookRead @ First @ Cells[ notebook ],
+    { Cell[ content_, style_String, ___ ] :> { Replace[ content, { _String -> content, _ :> ! FreeQ[ content, GraphicsBox ] } ], style },
+      other_ :> other } ]
+
 maTeXMeasurements[ parent_ ] :=
-  Module[ { size = 2 mathFontSizeAnchor[ parent ], base, scaled, rescaled, measurements },
+  Module[ { size = 2 mathFontSizeAnchor[ parent ], base, scaled, rescaled, typed, measurements },
     Needs[ "MaTeX`" ];
     MaTeX`ConfigureMaTeX[ "pdfLaTeX" -> findExecutable[ "pdflatex" ], "Ghostscript" -> findExecutable[ "gs" ] ];
     base = maTeXDocument[ parent ];
@@ -400,14 +412,18 @@ maTeXMeasurements[ parent_ ] :=
     rescaled = maTeXDocument[ parent ];
     ConvertToMaTeX[ rescaled ];
     SetMathFontSize[ rescaled, size ];
+    typed = typedLaTeXDocument[ parent ];
+    ConvertLaTeXToMaTeX[ Cells[ typed ] ];
     measurements = <| "Size" -> maTeXFontSize[ scaled ], "Base" -> maTeXWidth[ base ],
       "Scaled" -> maTeXWidth[ scaled ], "Rescaled" -> maTeXWidth[ rescaled ],
       (* BasicFunctionality T4: the MaTeX round trip through the notebook overloads, which is what the
          palette's two MaTeX buttons reach and what no test drove. A rendered cell IS an image, so the
          detector is the GraphicsBox appearing and then going away again. *)
       "Rendered" -> Count[ NotebookGet[ base ], _GraphicsBox, Infinity ],
-      "Unrendered" -> ( ConvertFromMaTeX[ base ]; Count[ NotebookGet[ base ], _GraphicsBox, Infinity ] ) |>;
-    NotebookClose /@ { base, scaled, rescaled };
+      "Unrendered" -> ( ConvertFromMaTeX[ base ]; Count[ NotebookGet[ base ], _GraphicsBox, Infinity ] ),
+      "TypedRendered" -> firstCellShape[ typed ],
+      "TypedBack" -> ( ConvertMaTeXToLaTeX[ typed ]; firstCellShape[ typed ] ) |>;
+    NotebookClose /@ { base, scaled, rescaled, typed };
     measurements
   ]
 
@@ -451,7 +467,11 @@ $noDocumentCalls = <|
   "ConvertLaTeXCells" -> Hold @ ConvertLaTeXCells[],
   "ConvertMathCells" -> Hold @ ConvertMathCells[],
   "ConvertToMaTeX" -> Hold @ ConvertToMaTeX[],
-  "ConvertFromMaTeX" -> Hold @ ConvertFromMaTeX[]
+  "ConvertFromMaTeX" -> Hold @ ConvertFromMaTeX[],
+  (* The LaTeX pair goes through the same guard, and ConvertLaTeXToMaTeX reaches it before its own
+     empty-selection dialog: with no document there is no selection to be empty. *)
+  "ConvertLaTeXToMaTeX" -> Hold @ ConvertLaTeXToMaTeX[],
+  "ConvertMaTeXToLaTeX" -> Hold @ ConvertMaTeXToLaTeX[]
 |>;
 
 noDocumentDialogs[ ] :=
@@ -1163,7 +1183,8 @@ VerificationTest[
     { "CopyCellReference", "TagSelectedCell", "InsertCitation", "InsertEnvironment",
       "ContinueEnvironment", "LabelReferences",
       "SetDocumentFontSize", "SetMathFontSize", "ResetDocumentView",
-      "ConvertLaTeXCells", "ConvertMathCells", "ConvertToMaTeX", "ConvertFromMaTeX" } ]
+      "ConvertLaTeXCells", "ConvertMathCells", "ConvertToMaTeX", "ConvertFromMaTeX",
+      "ConvertLaTeXToMaTeX", "ConvertMaTeXToLaTeX" } ]
 ]
 
 (* EnvironmentBlocks. The reported defect and its repair, as resolved margins of real cells. Under
@@ -1657,5 +1678,16 @@ If[ $maTeXAvailable,
 VerificationTest[
   Lookup[ $measured[ "MaTeX" ], { "Rendered", "Unrendered" } ],
   { 1, 0 }
+]
+]
+
+(* The LaTeX pair the Selection group gained. A typed Text cell becomes a DisplayFormula carrying an
+   image, and comes back as the author's own text — the two spaces and the dollars are the assertion,
+   a paraphrase reading "x^2" or "\\[ x^2 \\]" being what a converter that rebuilds the source rather
+   than storing it would give. *)
+If[ $maTeXAvailable,
+VerificationTest[
+  Lookup[ $measured[ "MaTeX" ], { "TypedRendered", "TypedBack" } ],
+  { { True, "DisplayFormula" }, { "$$ x^2 $$", "Text" } }
 ]
 ]

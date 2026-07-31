@@ -2,6 +2,8 @@ Package["WolframInstitute`MathNotebook`"]
 
 PackageExport[ConvertToMaTeX]
 PackageExport[ConvertFromMaTeX]
+PackageExport[ConvertLaTeXToMaTeX]
+PackageExport[ConvertMaTeXToLaTeX]
 PackageExport[InstallMaTeX]
 PackageExport[OpenMaTeXPreferences]
 
@@ -12,6 +14,10 @@ PackageScope["maTeXCellQ"]
 PackageScope["maTeXCell"]
 PackageScope["toMaTeXNotebook"]
 PackageScope["fromMaTeXNotebook"]
+PackageScope["laTeXToMaTeXCell"]
+PackageScope["maTeXToLaTeXCell"]
+PackageScope["maTeXToLaTeXNotebook"]
+PackageScope["laTeXSourceText"]
 PackageScope["userInitFile"]
 PackageScope["$maTeXPreferences"]
 PackageScope["$maTeXBaseFontSize"]
@@ -43,6 +49,31 @@ ConvertFromMaTeX[ notebook_NotebookObject ] :=
 ConvertFromMaTeX[ cells : { __CellObject } ] :=
   writeCells[ fromMaTeXCell, cells ]
 
+(* The other pair's diagonal: the LaTeX an author typed as text, rendered in one step. Where
+   ConvertToMaTeX reads a typeset cell, this reads the cell's own string — its display delimiters if
+   it carries any, all of it if it carries none — so a cell holding a bare \frac{a}{b} renders as
+   readily as one holding $$ ... $$. The source is stored verbatim beside the body MaTeX is given,
+   which is what lets the trip back give what was typed rather than a re-delimited paraphrase.
+
+   An empty selection converts nothing here, alone among the conversions in this file: every other
+   one touches only cells of a math style, where this one would render every prose cell in the paper. *)
+ConvertLaTeXToMaTeX[] :=
+  withInputNotebook[ { notebook } |->
+    ( Needs[ "MaTeX`" ]; convertSelectedCells[ laTeXToMaTeXCell @ maTeXFontSize[ notebook ], notebook ] ) ]
+
+ConvertLaTeXToMaTeX[ cells : { __CellObject } ] :=
+  ( Needs[ "MaTeX`" ];
+    writeCells[ laTeXToMaTeXCell @ maTeXFontSize @ ParentNotebook @ First[ cells ], cells ] )
+
+ConvertMaTeXToLaTeX[] :=
+  withInputNotebook[ { notebook } |-> convertCells[ maTeXToLaTeXCell, notebook ] ]
+
+ConvertMaTeXToLaTeX[ notebook_NotebookObject ] :=
+  NotebookPut[ maTeXToLaTeXNotebook[ NotebookGet[ notebook ] ], notebook ]
+
+ConvertMaTeXToLaTeX[ cells : { __CellObject } ] :=
+  writeCells[ maTeXToLaTeXCell, cells ]
+
 OpenMaTeXPreferences[] :=
   With[ { file = userInitFile[] },
     If[ ! FileExistsQ[ file ],
@@ -70,6 +101,9 @@ toMaTeXNotebook[ notebook_Notebook, size_ ] :=
 fromMaTeXNotebook[ notebook_Notebook ] :=
   mapCells[ fromMaTeXCell, notebook ]
 
+maTeXToLaTeXNotebook[ notebook_Notebook ] :=
+  mapCells[ maTeXToLaTeXCell, notebook ]
+
 toMaTeXCell[ size_ ][ cell : Cell[ _, style : "DisplayFormula" | "DisplayFormulaNumbered", options___ ] ] :=
   With[ { tex = mathTeX[ cell ] },
     If[ tex === $Failed, cell, maTeXCell[ tex, style, { options }, size ] ]
@@ -80,11 +114,48 @@ toMaTeXCell[ size_ ][ cell_ ] :=
 
 (* The one place a MaTeX cell is built. Converting and re-rendering at a new size differ only in
    where the TeX comes from, and building both here is what keeps them from drifting apart on the
-   size — which is exactly how a converted cell came to ignore the document's math size. *)
+   size — which is exactly how a converted cell came to ignore the document's math size. The fifth
+   argument is the author's own source where a cell has one, carried separately from the body MaTeX
+   renders because that body is what every later re-render is given. *)
 maTeXCell[ tex_String, style_String, options_List, size_ ] :=
+  maTeXCell[ tex, style, options, size, None ]
+
+maTeXCell[ tex_String, style_String, options_List, size_, source_ ] :=
   Cell[ BoxData[ ToBoxes @ MaTeX`MaTeX[ tex, "DisplayStyle" -> True, FontSize -> size ] ], style,
     Sequence @@ retainedCellOptions[ options ],
-    TaggingRules -> <| "MathNotebook" -> <| "SourceTeX" -> tex, "MaTeX" -> True |> |> ]
+    TaggingRules -> <| "MathNotebook" -> <| "SourceTeX" -> tex, "MaTeX" -> True,
+      If[ StringQ[ source ], "LaTeXSource" -> source, Nothing ] |> |> ]
+
+laTeXToMaTeXCell[ size_ ][ Cell[ TextData[ parts : _String | { __String } ], style_String, options___ ] ] :=
+  laTeXToMaTeXCell[ size ][ Cell[ StringJoin @ Flatten @ { parts }, style, options ] ]
+
+laTeXToMaTeXCell[ size_ ][ Cell[ text_String, style_String /; StringFreeQ[ style, "Input" | "Code" | "Output" | "Program" | "Message" | "Print" ], options___ ] ] /; StringTrim[ text ] =!= "" :=
+  Apply[
+    { tex, numbered } |-> maTeXCell[ tex, If[ TrueQ[ numbered ], "DisplayFormulaNumbered", "DisplayFormula" ],
+      { options }, size, text ],
+    displaySource[ text ] ]
+
+laTeXToMaTeXCell[ _ ][ cell_ ] :=
+  cell
+
+maTeXToLaTeXCell[ cell : Cell[ _, style_String, options___ ] ] /; maTeXCellQ[ cell ] :=
+  With[ { text = laTeXSourceText[ cell, style ] },
+    If[ StringQ[ text ], Cell[ text, "Text", Sequence @@ retainedCellOptions[ { options } ] ], cell ] ]
+
+maTeXToLaTeXCell[ cell_ ] :=
+  cell
+
+(* What was typed, where the cell was made from typed LaTeX; the stored body wearing the delimiters
+   its style implies, where it was made from typeset mathematics instead and has no source of its own. *)
+laTeXSourceText[ cell_Cell, style_String ] :=
+  Replace[ storedLaTeXSource[ cell ],
+    Except[ _String ] :> Replace[ storedSourceTeX[ cell ], tex_String :> delimitedTeX[ tex, style ] ] ]
+
+delimitedTeX[ tex_String, "DisplayFormulaNumbered" ] :=
+  "\\begin{equation}\n" <> tex <> "\n\\end{equation}"
+
+delimitedTeX[ tex_String, _String ] :=
+  "\\[ " <> tex <> " \\]"
 
 fromMaTeXCell[ cell : Cell[ _, style_String, options___ ] ] /; maTeXCellQ[ cell ] :=
   With[ { tex = storedSourceTeX[ cell ] },
@@ -104,12 +175,7 @@ maTeXCellQ[ _ ] :=
 
 mathTeX[ cell_Cell ] :=
   With[ { stored = storedSourceTeX[ cell ] },
-    If[ StringQ[ stored ],
-      Replace[ displayParse[ StringTrim[ stored ] ],
-        { { body_, _, "Align" } :> "\\begin{aligned}\n" <> StringTrim[ body ] <> "\n\\end{aligned}",
-          { body_, _, _ } :> StringTrim[ body ],
-          $Failed -> stored } ],
-      boxesToTeX @ cellBoxes[ cell ] ]
+    If[ StringQ[ stored ], First @ displaySource[ stored ], boxesToTeX @ cellBoxes[ cell ] ]
   ]
 
 $maTeXPreferences = "\

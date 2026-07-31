@@ -22,7 +22,7 @@ buttonQ[ label_String ] :=
 VerificationTest[
   Select[ { "Front matter", "Insert environment", "Proof", "Equation", "Equation (n)", "Continue block", "Reference",
       "Copy reference", "Insert citation", "\\[UpArrow] Go back", "Refresh labels", "Sort bibliography",
-      "math \\[Rule] MaTeX", "MaTeX \\[Rule] math",
+      "math \\[Rule] MaTeX", "MaTeX \\[Rule] math", "LaTeX \\[Rule] MaTeX", "MaTeX \\[Rule] LaTeX",
       "Apply stylesheet", "Reset view",
       "Import .tex file\\[Ellipsis]", "Export to .tex\\[Ellipsis]", "Export submission\\[Ellipsis]",
       "Install LaTeX fonts", "Install MaTeX", "MaTeX preferences", "Update from cloud", "Tutorial" },
@@ -90,7 +90,7 @@ VerificationTest[
    assertion that they say what they should. *)
 VerificationTest[
   StringCount[ $paletteSource, "TooltipBox[" ],
-  26
+  28
 ]
 
 VerificationTest[
@@ -99,12 +99,26 @@ VerificationTest[
       "Writes the whole paper into a directory as an arXiv submission",
       "Renders the selected display equations through real LaTeX",
       "Turns rendered MaTeX images back into editable typeset math",
+      "Renders the LaTeX you typed into the selected cells through real LaTeX",
+      "Turns rendered MaTeX images back into text cells of LaTeX source",
       "Adds a bibliography entry at the end of the bibliography rather than at the selection",
       "Rebuilds the [key] label on every bibliography entry",
       "Reorders the bibliography by first citation",
       "Opens a list of everything this notebook has tagged" },
     ! StringContainsQ[ $paletteSource, # ] & ],
   { }
+]
+
+(* The LaTeX pair is the one place on the palette where an empty selection is not "the whole
+   notebook": the transform reads a cell's own text, so with nothing selected it would render every
+   prose cell in the paper as an image. The kernel refuses instead, and the tooltip has to say so —
+   a button that silently does nothing is the shape BasicFunctionality spent an item on. Its code
+   is checked too, a generated palette being free to carry a label whose code was never regenerated. *)
+VerificationTest[
+  { Select[ { "ConvertLaTeXToMaTeX", "ConvertMaTeXToLaTeX" },
+      ! StringContainsQ[ $paletteSource, "MathNotebook`" <> # ] & ],
+    StringContainsQ[ $paletteSource, "Select the cells first: nothing is converted without a selection" ] },
+  { { }, True }
 ]
 
 (* The .bib asymmetry is on the palette and not only in CLAUDE.md: an author sorting the
